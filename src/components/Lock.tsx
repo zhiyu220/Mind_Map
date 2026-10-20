@@ -26,12 +26,13 @@ export default function Lock({ pinHash, faceId, onUnlock }: { pinHash: string; f
   }, [waitFor > 0]);
 
   const press = async (k: string) => {
-    if (!k || waitFor) return;
+    if (!k || waitFor || pin.length === 4) return; // four digits in: checking them
     if (k === '⌫') return setPin(pin.slice(0, -1));
-    const next = (pin + k).slice(0, 4);
+    const next = pin + k;
     setPin(next);
     setWrong(false);
     if (next.length === 4) {
+      await new Promise(r => setTimeout(r, 200)); // let the fourth dot show before moving on
       if ((await hashPin(next)) === pinHash) {
         saveTries(null);
         onUnlock();

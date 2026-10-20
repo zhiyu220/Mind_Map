@@ -147,3 +147,5 @@ npm run icons      # 從 public/icons/favicon.svg 產生 PNG 圖示
 ## 授權
 
 [MIT](LICENSE)。可以自由使用、修改、分享，保留授權聲明即可。
+
+介面用的字型 [jf open 粉圓](https://github.com/justfont/Huninn)（透過 `@fontsource/huninn` 打包進 App）不在 MIT 範圍內，採 [SIL Open Font License 1.1](https://openfontlicense.org)。

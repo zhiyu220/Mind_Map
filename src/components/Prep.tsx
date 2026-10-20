@@ -38,19 +38,27 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
         </div>
 
         {quoted && (
-          <div>
+          <div className="prep-box">
             <div className="label">{quoted === last ? '上次記下的一句話' : `${short(quoted.date)} 記下的一句話`}</div>
             <blockquote className="quote">「{quoted.quote.trim()}」</blockquote>
           </div>
         )}
 
-        <div>
-          <div className="label">想帶去說的</div>
+        <div className="prep-box">
+          <div className="label prep-head">
+            想帶去說的
+            {starred.length > 0 && (
+              <span className="prep-count" aria-label={`${starred.length} 件`}>
+                <svg aria-hidden="true"><use href="#i-star" /></svg>{starred.length}
+              </span>
+            )}
+          </div>
           {starred.length ? (
-            <ul className="brought">
+            <ul className="brought prep-list">
               {starred.map(n => (
                 <li key={n.id}>
-                  <span className="tiny">{short(n.date)}</span>　{n.text || WEATHER_NAME[n.weather!]}
+                  <span className="tiny">{short(n.date)}</span>
+                  <span>{n.text || WEATHER_NAME[n.weather!]}</span>
                 </li>
               ))}
             </ul>
@@ -63,7 +71,7 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
         </div>
 
         {(last || weathers.length > 0) && (
-          <div>
+          <div className="prep-box">
             <div className="label">{last ? `${short(last.date)} 之後的天氣` : '這段日子的天氣'}</div>
             <div className="prep-weather">
               {last && (
@@ -84,12 +92,12 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
         )}
 
         {tried.length > 0 && (
-          <div>
+          <div className="prep-box">
             <div className="label">想練習的事</div>
             <ul className="brought">
               {tried.map(({ p, tries }) => (
                 <li key={p.id} className="prep-practice">
-                  {p.text}
+                  <span>{p.text}</span>
                   <Sprouts tries={tries} />
                 </li>
               ))}
