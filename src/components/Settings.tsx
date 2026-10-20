@@ -4,7 +4,7 @@ import { saveSettings } from '../db';
 import { todayKey } from '../lib/dates';
 import { hashPin } from '../lib/pin';
 import { makeBackup, readBackup, restoreBackup, shareOrDownload } from '../lib/backup';
-import { canRemote, clientId, disconnect, isConnected, startSpotifyLogin } from '../lib/spotify';
+import { clientId, disconnect, isConnected, needsReconnect, playlistInfo, playlistUrl, startSpotifyLogin } from '../lib/spotify';
 import { useToast } from './Toast';
 
 export const HELPLINES = [
@@ -33,7 +33,8 @@ export function NextSessionField({ value, onDone }: { value?: string; onDone?: (
 export default function Settings({ settings, onClose }: { settings: S; onClose: () => void }) {
   const say = useToast();
   const [spotify, setSpotify] = useState<boolean | null>(null);
-  const [remote, setRemote] = useState(false);
+  const [reconnect, setReconnect] = useState(false);
+  const [playlist, setPlaylist] = useState<string | null>(null);
   const [hasClientId, setHasClientId] = useState(false);
   const [cid, setCid] = useState(settings.spotifyClientId ?? '');
   const [pinStep, setPinStep] = useState<'idle' | 'set' | 'again'>('idle');
@@ -45,7 +46,8 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
 
   useEffect(() => {
     isConnected().then(setSpotify);
-    canRemote().then(setRemote);
+    needsReconnect().then(setReconnect);
+    playlistInfo().then(p => setPlaylist(p?.id ?? null));
     clientId().then(id => setHasClientId(!!id));
   }, [settings.spotifyClientId]);
 
@@ -88,13 +90,23 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
           {spotify ? (
             <>
               <p className="tiny">
-                {remote
-                  ? '已連結。記錄時可以用歌名搜尋；有 Premium 的話，紀錄裡可以按「用我的 Spotify 播完整首」，由手機上的 Spotify 播放。'
-                  : '已連結，可以用歌名搜尋。重新連結一次，就能用你的 Spotify 播完整首（需要 Premium）。'}
+                {reconnect
+                  ? '已連結，可以用歌名搜尋。重新連結一次，就能用你的 Spotify 播完整首（需要 Premium）、選剛剛聽的歌，並自動整理「我的天空」歌單。'
+                  : '已連結。記錄時可以用歌名搜尋，或直接選剛剛聽的歌；有 Premium 的話，紀錄裡可以按「用我的 Spotify 播完整首」。'}
               </p>
               <div className="row-buttons">
-                {!remote && <button className="pill sm" type="button" onClick={() => disconnect().then(startSpotifyLogin)}>重新連結</button>}
-                <button className="pill sm" type="button" onClick={() => disconnect().then(() => { setSpotify(false); setRemote(false); })}>取消連結</button>
+                {reconnect && <button className="pill sm" type="button" onClick={() => disconnect().then(startSpotifyLogin)}>重新連結</button>}
+                <button className="pill sm" type="button" onClick={() => disconnect().then(() => { setSpotify(false); setReconnect(false); })}>取消連結</button>
+              </div>
+              <label className="toggle">
+                <input type="checkbox" checked={settings.spotifyPlaylist !== false} onChange={e => saveSettings({ spotifyPlaylist: e.target.checked })} />
+                <span>
+                  自動整理成「我的天空」歌單
+                  <small>每次紀錄附上的歌，照諮商的日期排進你 Spotify 裡的一個私人歌單。</small>
+                </span>
+              </label>
+              <div className="row-buttons">
+                {playlist && settings.spotifyPlaylist !== false && <a className="linkish" href={playlistUrl(playlist)} target="_blank" rel="noreferrer">在 Spotify 打開歌單</a>}
               </div>
             </>
           ) : hasClientId ? (

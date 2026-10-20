@@ -1,5 +1,6 @@
 // Spotify, signed in with your own account (Authorization Code + PKCE: no server, no secret).
-// Used to search songs by name, and (with Premium) to start a song on your own Spotify app.
+// Used to search songs by name, to offer what you've just been listening to, to keep a private
+// 「我的天空」 playlist of every session's song, and (with Premium) to start a song on your Spotify app.
 // In-page full playback (Web Playback SDK) does not work in mobile browsers, so we use the
 // embedded player plus remote control of the Spotify app instead.
 
@@ -14,7 +15,26 @@ interface Tokens {
   scope?: string;
 }
 
-const SCOPES = 'user-modify-playback-state user-read-playback-state';
+const SCOPES = [
+  'user-modify-playback-state',
+  'user-read-playback-state',
+  'user-read-currently-playing',
+  'user-read-recently-played',
+  'playlist-read-private',
+  'playlist-modify-private'
+].join(' ');
+
+/** Signed in, but before some features existed: a fresh sign-in adds the missing permissions. */
+export async function needsReconnect() {
+  const t = await getKV<Tokens>('spotify');
+  if (!t) return false;
+  const have = new Set((t.scope ?? '').split(' '));
+  return SCOPES.split(' ').some(x => !have.has(x));
+}
+
+async function hasScope(x: string) {
+  return !!(await getKV<Tokens>('spotify'))?.scope?.split(' ').includes(x);
+}
 
 const VERIFIER = 'my-sky:spotify-verifier';
 const redirectUri = () => location.origin + location.pathname;
@@ -76,7 +96,7 @@ async function keep(j: { access_token: string; refresh_token?: string; expires_i
 
 /** Signed in with permission to start songs on the Spotify app (needs a fresh sign-in after this feature arrived). */
 export async function canRemote() {
-  return !!(await getKV<Tokens>('spotify'))?.scope?.includes('user-modify-playback-state');
+  return hasScope('user-modify-playback-state');
 }
 
 export async function isConnected() {
@@ -121,12 +141,102 @@ export async function searchTracks(q: string): Promise<Song[] | null> {
   });
   if (!res.ok) return null;
   const j = (await res.json()) as { tracks: { items: ApiTrack[] } };
-  return j.tracks.items.map(it => ({
-    id: it.id,
-    name: it.name,
-    artists: it.artists.map(a => a.name).join('、'),
-    image: [...it.album.images].sort((a, b) => a.width - b.width).find(i => i.width >= 64)?.url
-  }));
+  return j.tracks.items.map(toSong);
+}
+
+const toSong = (it: ApiTrack): Song => ({
+  id: it.id,
+  name: it.name,
+  artists: it.artists.map(a => a.name).join('、'),
+  image: [...it.album.images].sort((a, b) => a.width - b.width).find(i => i.width >= 64)?.url
+});
+
+/** What's playing now and what you listened to lately, newest first, without repeats. */
+export async function recentSongs(): Promise<{ now?: Song; recent: Song[] } | null> {
+  if (!(await hasScope('user-read-recently-played'))) return null;
+  const t = await token();
+  if (!t) return null;
+  const auth = { headers: { Authorization: `Bearer ${t}` } };
+  const [cur, rec] = await Promise.all([
+    fetch('https://api.spotify.com/v1/me/player/currently-playing', auth).catch(() => null),
+    fetch('https://api.spotify.com/v1/me/player/recently-played?limit=20', auth).catch(() => null)
+  ]);
+  let now: Song | undefined;
+  if (cur?.status === 200) {
+    const j = (await cur.json()) as { item?: ApiTrack & { type?: string } };
+    if (j.item?.id && j.item.type !== 'episode') now = toSong(j.item);
+  }
+  const items = rec?.ok ? ((await rec.json()) as { items: { track: ApiTrack }[] }).items : [];
+  return { now, recent: dedupe(items.map(i => toSong(i.track)), now?.id).slice(0, 8) };
+}
+
+export function dedupe(songs: Song[], skip?: string): Song[] {
+  const seen = new Set(skip ? [skip] : []);
+  return songs.filter(s => !seen.has(s.id) && seen.add(s.id));
+}
+
+// ---------- the 「我的天空」 playlist ----------
+
+interface PlaylistState {
+  id: string;
+  /** the track list last written, to skip writing when nothing changed */
+  synced: string;
+}
+
+/** Every session's song in the order of the road (oldest first). */
+export function playlistUris(sessions: { date: string; createdAt: number; song?: Song }[]): string[] {
+  return [...sessions]
+    .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt)
+    .filter(s => s.song?.id)
+    .map(s => `spotify:track:${s.song!.id}`);
+}
+
+export const playlistUrl = (id: string) => `https://open.spotify.com/playlist/${id}`;
+
+export async function playlistInfo() {
+  return getKV<PlaylistState>('spotify-playlist');
+}
+
+/**
+ * Makes the private 「我的天空」 playlist match the road: created on first use, recreated if you
+ * deleted it in Spotify. Returns the playlist id, or null when it can't (not connected / no permission).
+ */
+export async function syncPlaylist(uris: string[]): Promise<string | null> {
+  if (!(await hasScope('playlist-modify-private'))) return null;
+  const t = await token();
+  if (!t) return null;
+  const headers = { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' };
+  const api = (path: string, init?: RequestInit) => fetch(`https://api.spotify.com/v1${path}`, { ...init, headers });
+  const signature = uris.join(',');
+  let st = await playlistInfo();
+
+  if (st) {
+    const check = await api(`/playlists/${st.id}?fields=id`);
+    if (check.status === 404) st = undefined;
+    else if (st.synced === signature) return st.id;
+  }
+  if (!st) {
+    if (!uris.length) return null; // no songs yet: don't make an empty playlist
+    const me = await api('/me');
+    if (!me.ok) return null;
+    const { id: userId } = (await me.json()) as { id: string };
+    const made = await api(`/users/${encodeURIComponent(userId)}/playlists`, {
+      method: 'POST',
+      body: JSON.stringify({ name: '我的天空', public: false, description: '每一次諮商的歌，照日期排。由「我的天空」自動整理。' })
+    });
+    if (!made.ok) return null;
+    st = { id: ((await made.json()) as { id: string }).id, synced: '' };
+  }
+
+  // replace everything with the first 100, then add the rest 100 at a time
+  const first = await api(`/playlists/${st.id}/tracks`, { method: 'PUT', body: JSON.stringify({ uris: uris.slice(0, 100) }) });
+  if (!first.ok) return null;
+  for (let i = 100; i < uris.length; i += 100) {
+    const more = await api(`/playlists/${st.id}/tracks`, { method: 'POST', body: JSON.stringify({ uris: uris.slice(i, i + 100) }) });
+    if (!more.ok) return null;
+  }
+  await setKV('spotify-playlist', { id: st.id, synced: signature });
+  return st.id;
 }
 
 /** open.spotify.com/track/<id>, spotify:track:<id>, or a share link with ?si= */

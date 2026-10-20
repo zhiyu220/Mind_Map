@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Song } from '../types';
-import { canRemote, embedUrl, isConnected, openUrl, pauseSpotify, playOnSpotify, searchTracks, songFromLink, trackIdFromLink, type RemoteResult } from '../lib/spotify';
+import { canRemote, embedUrl, isConnected, needsReconnect, openUrl, pauseSpotify, playOnSpotify, recentSongs, searchTracks, songFromLink, trackIdFromLink, type RemoteResult } from '../lib/spotify';
 import { useToast } from './Toast';
 
 const REMOTE_MSG: Record<Exclude<RemoteResult, 'playing'>, string> = {
@@ -64,9 +64,14 @@ export default function SongPicker({ value, onChange }: { value?: Song; onChange
   const [q, setQ] = useState('');
   const [results, setResults] = useState<Song[]>([]);
   const [state, setState] = useState<'idle' | 'loading' | 'none' | 'error'>('idle');
+  const [recent, setRecent] = useState<{ now?: Song; recent: Song[] } | null>(null);
+  const [reconnect, setReconnect] = useState(false);
 
   useEffect(() => {
     isConnected().then(setConnected);
+    needsReconnect().then(setReconnect);
+    // what you were just listening to, so the song is usually one tap away
+    recentSongs().then(setRecent).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -132,6 +137,35 @@ export default function SongPicker({ value, onChange }: { value?: Song; onChange
       {state === 'loading' && <p className="tiny">找找看…</p>}
       {state === 'none' && <p className="tiny">找不到，換個關鍵字試試。</p>}
       {state === 'error' && <p className="tiny">現在連不上 Spotify。可以先跳過，之後再補。</p>}
+      {connected && reconnect && !q.trim() && <p className="tiny">到「設定」重新連結 Spotify，這裡就會出現你剛剛聽的歌。</p>}
+      {!q.trim() && recent?.now && (
+        <>
+          <div className="label">正在聽</div>
+          <button className="song-row" type="button" onClick={() => onChange(recent.now)}>
+            <Cover song={recent.now} />
+            <div>
+              <b>{recent.now.name}</b>
+              <span>{recent.now.artists}</span>
+            </div>
+          </button>
+        </>
+      )}
+      {!q.trim() && !!recent?.recent.length && (
+        <>
+          <div className="label">最近聽過</div>
+          <div className="results">
+            {recent.recent.map(s => (
+              <button key={s.id} className="song-row" type="button" onClick={() => onChange(s)}>
+                <Cover song={s} />
+                <div>
+                  <b>{s.name}</b>
+                  <span>{s.artists}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       <div className="results">
         {results.map(s => (
           <button key={s.id} className="song-row" type="button" onClick={() => onChange(s)}>
