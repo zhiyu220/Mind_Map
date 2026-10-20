@@ -106,7 +106,7 @@
 1. Fork 這個 repo。
 2. 到 [Cloudflare](https://dash.cloudflare.com/) → **Workers & Pages** → **Create** → **Import a repository**，選你的 fork。
 3. **Settings → Build** 裡，Deploy command 用 `npx wrangler deploy`，Root directory 是 `/`。Build command 可以留空（[`wrangler.jsonc`](wrangler.jsonc) 會在部署前自己執行 `npm run build`）。
-4. 網址會是 `https://mindweb-mymap.<你的帳號>.workers.dev/`。
+4. 網址會是 `https://mind-map.<你的帳號>.workers.dev/`。
 
 之後推到 `main` 會自動更新；推到其他分支會產生預覽網址。
 
@@ -122,7 +122,7 @@
 ### 連結 Spotify
 
 1. 到 [Spotify for Developers](https://developer.spotify.com/dashboard) 建立一個 App（開發模式即可），API 勾選 **Web API**。
-2. **Redirect URI** 填 App 設定頁上顯示的網址（例如 `https://mindweb-mymap.<你的帳號>.workers.dev/`）。
+2. **Redirect URI** 填 App 設定頁上顯示的網址（例如 `https://mind-map.<你的帳號>.workers.dev/`）。
 3. 把 **Client ID** 貼到 App 的「設定 → Spotify」，按「連結 Spotify」。
 
 連結時會請求：控制播放、讀取播放狀態、讀取正在播放與最近播放、讀取與編輯私人歌單。
