@@ -1,0 +1,12 @@
+# Cloudflare Pages: always fetch the app shell and service worker fresh, so updates arrive;
+# hashed files under /assets/ never change and can be cached for good.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/sw.js
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

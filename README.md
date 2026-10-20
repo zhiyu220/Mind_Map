@@ -27,14 +27,18 @@ npm run icons      # 從 public/icons/favicon.svg 產生 PNG 圖示
 
 技術：Vite + React + TypeScript、Dexie（IndexedDB）、vite-plugin-pwa。風景是程式畫的 SVG，手繪的歪斜感直接畫進形狀裡（不用即時濾鏡），在 iPhone 上捲動才會順。
 
-## 部署
+## 部署（Cloudflare Pages）
 
-`main` 分支有新的 commit 時，`.github/workflows/deploy.yml` 會打包並發布到 GitHub Pages：
+1. 登入 [Cloudflare](https://dash.cloudflare.com/) → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**，授權 GitHub 並選這個 repo（私人 repo 也可以）。
+2. 設定：
+   - Production branch：`main`
+   - Framework preset：`Vite`（或 None）
+   - Build command：`npm run build`
+   - Build output directory：`dist`
+   - Environment variables：`NODE_VERSION` = `22`
+3. 按 **Save and Deploy**。網址會是 `https://<專案名稱>.pages.dev/`。
 
-1. 到 repo 的 **Settings → Pages**，把 **Source** 設成 **GitHub Actions**。
-2. 合併到 `main` 之後，網址會是 `https://<帳號>.github.io/mindweb_mymap/`。
-
-> 私人 repo 要用 GitHub Pages 需要付費方案。也可以把 repo 設成公開（日記內容只在手機裡，不在 repo 中），或改用 Vercel／Netlify／Cloudflare Pages 等免費服務連結這個 repo（打包指令 `npm run build`、輸出資料夾 `dist`）。
+之後每次推到 `main` 會自動更新；推到其他分支會產生一個預覽網址。`public/_headers` 讓 App 本體和 service worker 不被快取太久，更新才會送到手機上。
 
 ## 在 iPhone 上安裝
 
@@ -47,7 +51,7 @@ npm run icons      # 從 public/icons/favicon.svg 產生 PNG 圖示
 不連結也可以：記錄時貼上 Spotify 的歌曲連結即可。連結之後能直接用歌名搜尋：
 
 1. 到 [Spotify for Developers](https://developer.spotify.com/dashboard) 建立一個 App（給自己用的開發模式即可），API 勾選 **Web API**。
-2. **Redirect URI** 填 App 設定頁顯示的網址（例如 `https://<帳號>.github.io/mindweb_mymap/`）。
+2. **Redirect URI** 填 App 設定頁顯示的網址（例如 `https://<專案名稱>.pages.dev/`）。
 3. 把 **Client ID** 貼到 App 的「設定 → Spotify」，再按「連結 Spotify」。
 
 只用到搜尋，不需要任何特殊權限；播放使用 Spotify 官方嵌入播放器，沒登入時可能只能試聽片段，旁邊有「在 Spotify 打開」。
