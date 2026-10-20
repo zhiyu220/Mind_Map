@@ -1,6 +1,7 @@
 import type { RoadNote, Session, Song } from '../types';
 import { WEATHER_NAME } from '../types';
 import { daysBetween, short, weekday } from './dates';
+import { BENCH_AT, RIVER_AT, SEA_AT } from './scenery';
 
 export interface Line {
   /** "|" marks where the line breaks */
@@ -38,6 +39,10 @@ export function homeLines(sessions: Session[], notes: RoadNote[], today: string,
     if (onRoad.length) L.push({ text: `這幾天在路上，|記下了 ${onRoad.length} 件事。` });
   }
   L.push({ text: `這條路上，|有 ${sessions.length} 個點了。` });
+  // for a few sessions after a milestone, a word about what changed along the road
+  const sights: [number, string][] = [[SEA_AT, '看得到海了。'], [RIVER_AT, '經過一條小河。'], [BENCH_AT, '路邊多了一張長椅。']];
+  const sight = sights.find(([at]) => sessions.length >= at && sessions.length < at + 3);
+  if (sight) L.push({ text: `走到第 ${sight[0]} 個點，|${sight[1]}` });
   for (const s of sessions) if (s.quote.trim()) L.push({ text: `「${s.quote.trim()}」`, small: `${short(s.date)} 記下的` });
   for (const s of sessions) if (s.song) L.push({ text: `${short(s.date)} 那天聽的是|〈${s.song.name}〉。`, small: s.song.artists || undefined, song: s.song });
   return L;

@@ -5,6 +5,7 @@ import type { Session, Song } from './types';
 import { DEFS, SKY } from './drawings';
 import { countdown, daysBetween, headerDate, short, todayKey } from './lib/dates';
 import { homeLines, lineOfTheDay } from './lib/lines';
+import { followSky } from './lib/sky';
 import { addSession, byDate, updateSession } from './lib/store';
 import { playlistUris, syncPlaylist } from './lib/spotify';
 import Landscape from './components/Landscape';
@@ -67,6 +68,9 @@ function Main() {
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
+
+  // night sky after dark, and the meadow's season
+  useEffect(() => followSky(settings.sky ?? 'time'), [settings.sky]);
 
   // with no lock set, stay open (setting a PIN now locks from the next time on)
   useEffect(() => {

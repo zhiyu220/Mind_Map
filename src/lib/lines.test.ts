@@ -24,6 +24,15 @@ describe('dates', () => {
 });
 
 describe('homeLines', () => {
+  it('mentions a milestone for a few sessions after reaching it', () => {
+    const road = (n: number) => Array.from({ length: n }, (_, i) => s(`s${i}`, `2026-0${1 + Math.floor(i / 28)}-${String(1 + (i % 28)).padStart(2, '0')}`));
+    const texts = (n: number) => homeLines(road(n), [], '2026-12-01').map(l => l.text);
+    expect(texts(9).some(t => t.includes('長椅'))).toBe(false);
+    expect(texts(11)).toContain('走到第 10 個點，|路邊多了一張長椅。');
+    expect(texts(13).some(t => t.includes('長椅'))).toBe(false);
+    expect(texts(30)).toContain('走到第 30 個點，|看得到海了。');
+  });
+
   it('starts gently with no sessions', () => {
     expect(homeLines([], [], '2026-10-20')[0].text).toBe('這裡是起點。');
   });
