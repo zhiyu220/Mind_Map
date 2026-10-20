@@ -79,9 +79,9 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
 /* fixed to the whole screen: on the iPhone home screen, height: 100% falls short by the status bar */
 .page { position: fixed; inset: 0; overflow: hidden; }
 .back { position: absolute; inset: 0; width: 100%; height: 100%; display: block; will-change: transform; }
-.world { position: absolute; inset: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.world { position: absolute; inset: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: none; }
 .world::-webkit-scrollbar { display: none; }
-.world svg { display: block; height: 100%; width: auto; max-width: none; }
+.world svg { display: block; height: 100%; width: auto; max-width: none; overflow: visible; }
 .grain { position: absolute; inset: 0; pointer-events: none; opacity: var(--grain); background-size: 160px 160px; }
 
 .top {
