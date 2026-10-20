@@ -55,13 +55,12 @@ export function landMarkup(width: number, walkerX: number): { back: string; fron
     return d;
   };
   const band = (f: (x: number) => number) => wave(f) + ` L ${width + 20} ${H + 20} L -20 ${H + 20} Z`;
-  const sway = (p: number) => (rnd() < p ? `class="sway" style="animation-delay:${(-rnd() * 4).toFixed(2)}s"` : '');
 
   let hills = `<path d="${band(hillY)}" fill="var(--hill-far)"/><path d="${band(hillY)}" fill="url(#hatch)" stroke="none"/>`;
   for (let x = 60; x < width; x += 70 + rnd() * 90) {
-    const y = hillY(x) + 4, h = 26 + rnd() * 18, sw = sway(0.3);
-    if (rnd() < 0.5) hills += `<g ${sw}><path d="M${x} ${y} v-${h * 0.5}" stroke-width="3" fill="none" stroke="var(--trunk)"/><path d="${blob(x, y - h * 0.75, h * 0.38)}" fill="var(--tree)"/></g>`;
-    else hills += `<g ${sw}><path d="M${x} ${y - h * 1.1} L${x + h * 0.32} ${y - 4} L${x - h * 0.32} ${y - 4} Z" fill="var(--tree-2)"/><path d="M${x} ${y - 4} v4" stroke="var(--trunk)" stroke-width="3"/></g>`;
+    const y = hillY(x) + 4, h = 26 + rnd() * 18;
+    if (rnd() < 0.5) hills += `<g><path d="M${x} ${y} v-${h * 0.5}" stroke-width="3" fill="none" stroke="var(--trunk)"/><path d="${blob(x, y - h * 0.75, h * 0.38)}" fill="var(--tree)"/></g>`;
+    else hills += `<g><path d="M${x} ${y - h * 1.1} L${x + h * 0.32} ${y - 4} L${x - h * 0.32} ${y - 4} Z" fill="var(--tree-2)"/><path d="M${x} ${y - 4} v4" stroke="var(--trunk)" stroke-width="3"/></g>`;
   }
   const hx = 90, hy = hillY(90) + 6;
   hills += `<g><rect x="${hx - 20}" y="${hy - 30}" width="40" height="30" fill="var(--wall)"/><path d="M${hx - 26} ${hy - 28} L${hx} ${hy - 50} L${hx + 26} ${hy - 28} Z" fill="var(--roof)"/><rect x="${hx - 5}" y="${hy - 16}" width="10" height="16" fill="var(--trunk)"/><rect x="${hx + 8}" y="${hy - 24}" width="7" height="7" fill="var(--sky)"/></g>`;
@@ -95,7 +94,7 @@ export function landMarkup(width: number, walkerX: number): { back: string; fron
       const petals = [0, 72, 144, 216, 288]
         .map(a => `<circle cx="${(x + Math.cos((a * Math.PI) / 180) * r).toFixed(1)}" cy="${(y + Math.sin((a * Math.PI) / 180) * r).toFixed(1)}" r="${(r * 0.7).toFixed(1)}"/>`)
         .join('');
-      front += `<g ${sway(0.15)}><path d="M${x} ${y + 12} v-12" stroke="var(--tree)" stroke-width="2"/><g fill="var(${c})" stroke-width="1.5">${petals}</g><circle cx="${x}" cy="${y}" r="${(r * 0.45).toFixed(1)}" fill="var(--scarf)" stroke="none"/></g>`;
+      front += `<g><path d="M${x} ${y + 12} v-12" stroke="var(--tree)" stroke-width="2"/><g fill="var(${c})" stroke-width="1.5">${petals}</g><circle cx="${x}" cy="${y}" r="${(r * 0.45).toFixed(1)}" fill="var(--scarf)" stroke="none"/></g>`;
     } else {
       front += `<path d="M${x - 5} ${y + 8} l3 -10 l2 10 M${x} ${y + 8} l4 -14 l1 14 M${x + 4} ${y + 8} l5 -9" fill="none" stroke="var(--tree)" stroke-width="2"/>`;
     }

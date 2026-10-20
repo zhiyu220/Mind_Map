@@ -45,5 +45,12 @@ export async function addNote(n: { text: string; weather?: Weather; star: boolea
   return after;
 }
 
+/** Changing a road note; a new date may move it to another stretch of road. Returns that stretch. */
+export async function updateNote(id: string, patch: { text: string; weather?: Weather; star: boolean; date: string }) {
+  const after = stretchFor(patch.date, (await db.sessions.toArray()).sort(byDate));
+  await db.notes.update(id, { ...patch, after });
+  return after;
+}
+
 export const toggleStar = (n: RoadNote) => db.notes.update(n.id, { star: !n.star });
 export const deleteNote = (id: string) => db.notes.delete(id);
