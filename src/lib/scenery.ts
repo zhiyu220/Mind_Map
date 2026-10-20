@@ -5,6 +5,8 @@ export const H = 600;
 export const STEP = 100; // distance between two session dots
 export const X0 = 230; // first session dot
 export const AHEAD = 560; // land after the walker
+export const START = 125; // the road begins here, where the path from the house comes down
+export const SIGN_X = 55; // the 起點 sign, beside that path
 // hills, grass and road run on past both ends, so the edge never shows if the page bounces
 const BLEED = 400;
 
@@ -104,7 +106,10 @@ export function landMarkup(width: number, walkerX: number, n = 0): { back: strin
   hills += `<g class="s-winter"><circle cx="${sx}" cy="${sy - 10}" r="11" fill="var(--snow)"/><circle cx="${sx}" cy="${sy - 27}" r="8" fill="var(--snow)"/><path d="M${sx + 1} ${sy - 27} l7 2 l-7 1 Z" fill="var(--coat)" stroke-width="1.2"/><circle cx="${sx - 3}" cy="${sy - 30}" r="1.2" fill="var(--ink)" stroke="none"/><path d="M${sx - 8} ${sy - 21} h16" stroke="var(--scarf)" stroke-width="3"/></g>`;
 
   let ground = `<path d="${band(groundY)}" fill="var(--hill-near)"/><path d="${band(groundY)}" fill="url(#hatch)" stroke="none"/>`;
-  const fences: [number, number][] = [[X0 - 160, X0 + 60]];
+  // the path from the house's door down to where the road begins
+  const door = hillY(90) + 6;
+  ground += `<path d="M90 ${door.toFixed(1)} C 92 ${(door + 40).toFixed(1)}, 108 ${(pathY(START) - 34).toFixed(1)}, ${START + 12} ${pathY(START + 12).toFixed(1)}" fill="none" stroke="var(--sand)" stroke-width="16" stroke-linecap="round"/>`;
+  const fences: [number, number][] = [[-160, SIGN_X - 50]];
   for (let a = X0 + STEP * 2.4; a < width - 200; a += STEP * 6.5) fences.push([a, a + STEP * 1.5]);
   for (const [a, b] of fences) {
     let posts = '';
@@ -131,7 +136,9 @@ export function landMarkup(width: number, walkerX: number, n = 0): { back: strin
     return `<path d="${l}${r} Z" fill="var(--w-rain)" stroke="none"/>${bank(-1)}${bank(1)}`;
   };
   ground += river(Math.round(hillY(rx ?? 0)) + 6, H + 20);
-  ground += `<path d="${wave(pathY)}" fill="none" stroke="var(--sand)" stroke-width="40" stroke-linecap="round"/>`;
+  let road = `M ${START} ${pathY(START).toFixed(1)}`;
+  for (let x = START + 6; x <= width + BLEED; x += 12) road += ` L ${x} ${(pathY(x) + wob(x)).toFixed(1)}`;
+  ground += `<path d="${road}" fill="none" stroke="var(--sand)" stroke-width="40" stroke-linecap="round"/>`;
   if (rx !== null) {
     let planks = '';
     for (let x = rx - 34; x <= rx + 34; x += 9.7) planks += `<rect x="${x.toFixed(1)}" y="${(pathY(x) - 21).toFixed(1)}" width="8" height="42" rx="2"/>`;
@@ -144,6 +151,12 @@ export function landMarkup(width: number, walkerX: number, n = 0): { back: strin
     ground += `<g><path d="M${bx - 22} ${by + 12} v-10 M${bx + 22} ${by + 12} v-10 M${bx - 18} ${by - 10} v12 M${bx + 18} ${by - 10} v12" stroke="var(--trunk)" stroke-width="3.5" fill="none"/><rect x="${bx - 28}" y="${by - 2}" width="56" height="7" rx="2" fill="var(--fence)"/><rect x="${bx - 26}" y="${by - 18}" width="52" height="7" rx="2" fill="var(--fence)"/></g>`;
   }
 
+  // autumn: haystacks in the fields
+  for (let x = X0 + STEP * 0.8; x < width - 100; x += STEP * 5.6) {
+    const y = groundY(x) + 18;
+    ground += `<g class="s-autumn"><path d="M${x - 24} ${y} C ${x - 22} ${y - 34}, ${x + 22} ${y - 34}, ${x + 24} ${y} Z" fill="#ecc75e"/><path d="M${x - 12} ${y - 4} l3 -14 M${x} ${y - 4} l0 -18 M${x + 12} ${y - 4} l-3 -14" stroke="#b8902f" stroke-width="2" fill="none"/></g>`;
+  }
+
   let tufts = '';
   for (let x = 20; x < width; x += 40 + rnd() * 60) {
     const y = groundY(x) + 22 + rnd() * 20;
@@ -151,7 +164,7 @@ export function landMarkup(width: number, walkerX: number, n = 0): { back: strin
   }
 
   let prints = '';
-  for (let x = 30; x < walkerX - 10; x += 22) prints += `<ellipse cx="${x}" cy="${(pathY(x) + (Math.round(x / 22) % 2 ? 5 : -5)).toFixed(1)}" rx="4.5" ry="2.6" fill="var(--foot)"/>`;
+  for (let x = START + 14; x < walkerX - 10; x += 22) prints += `<ellipse cx="${x}" cy="${(pathY(x) + (Math.round(x / 22) % 2 ? 5 : -5)).toFixed(1)}" rx="4.5" ry="2.6" fill="var(--foot)"/>`;
   for (let x = walkerX + 140; x < width - 40; x += 26) prints += `<circle cx="${x}" cy="${pathY(x).toFixed(1)}" r="3" fill="var(--foot)" opacity=".7"/>`;
 
   let front = `<path d="${band(frontY)}" fill="var(--grass-front)"/>` + river(Math.round(frontY(rx ?? 0)) - 12, H + 20);
@@ -171,6 +184,20 @@ export function landMarkup(width: number, walkerX: number, n = 0): { back: strin
     } else {
       front += `<path class="no-winter" d="M${x - 5} ${y + 8} l3 -10 l2 10 M${x} ${y + 8} l4 -14 l1 14 M${x + 4} ${y + 8} l5 -9" fill="none" stroke="var(--tree)" stroke-width="2"/>`;
     }
+  }
+
+  // spring: tulips in little groups; autumn: pumpkins
+  const rt = seeded(53);
+  for (let x = 60; x < width; x += 170 + rt() * 150) {
+    if (rx !== null && Math.abs(x - rx) < 80) continue;
+    let tulips = '';
+    for (let k = 0; k < 3; k++) {
+      const tx = x + k * 13, ty = frontY(tx) + 22 + (k % 2) * 6, c = ['#ff6f91', '#ffcf4a', '#ff9a5a', '#e98fd8'][Math.floor(rt() * 4)];
+      tulips += `<path d="M${tx} ${ty + 14} V${ty}" stroke="var(--tree)" stroke-width="2.2"/><path d="M${tx - 5} ${ty - 9} l2.5 4 l2.5 -4 l2.5 4 l2.5 -4 V${ty - 2} C ${tx + 5} ${ty + 2}, ${tx - 5} ${ty + 2}, ${tx - 5} ${ty - 2} Z" fill="${c}" stroke-width="1.6"/>`;
+    }
+    front += `<g class="s-spring">${tulips}</g>`;
+    const py = frontY(x + 40) + 30;
+    front += `<g class="s-autumn"><ellipse cx="${x + 40}" cy="${py}" rx="13" ry="10" fill="#f08a2e" stroke-width="2"/><path d="M${x + 40} ${py - 10} v10 M${x + 33} ${py - 8} c -3 6 -3 12 0 16 M${x + 47} ${py - 8} c 3 6 3 12 0 16" fill="none" stroke-width="1.6"/><path d="M${x + 40} ${py - 10} l2 -6" stroke="var(--trunk)" stroke-width="3"/></g>`;
   }
 
   // summer: tall sunflowers here and there along the front

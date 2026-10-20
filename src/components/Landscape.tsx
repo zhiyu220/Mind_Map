@@ -3,7 +3,7 @@ import type { RoadNote, Session, Song } from '../types';
 import { WEATHER_NAME } from '../types';
 import { SongChip } from './SongPicker';
 import { long, short } from '../lib/dates';
-import { AHEAD, blob, groundY, H, landMarkup, pathY, STEP, X0 } from '../lib/scenery';
+import { AHEAD, blob, groundY, H, landMarkup, pathY, SIGN_X, STEP, X0 } from '../lib/scenery';
 
 interface Props {
   sessions: Session[];
@@ -128,7 +128,7 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
           </defs>
           <g dangerouslySetInnerHTML={{ __html: land.back }} />
 
-          {sign(X0 - 130, N ? `起點 ${short(sessions[0].date)}` : '起點', N ? 76 : 50)}
+          {sign(SIGN_X, N ? `起點 ${short(sessions[0].date)}` : '起點', N ? 76 : 50)}
           {sign(walkerX + 200, nextSession ? `下次 ${short(nextSession)}` : '下次？', nextSession ? 86 : 60, onNextSign)}
 
           {pastRoads.map(r => {
@@ -215,14 +215,37 @@ function Walker({ x }: { x: number }) {
           <rect x="-26" y="-74" width="16" height="30" rx="6" fill="var(--pack)" />
           <path d="M-16 -22 C -20 -60, -14 -78, 2 -78 C 18 -78, 24 -60, 20 -22 Z" fill="var(--coat)" />
           <path d="M2 -60 C 14 -56, 18 -46, 22 -40" fill="none" />
-          <circle cx="22" cy="-39" r="4" fill="var(--skin)" />
-          <path d="M-12 -78 C -6 -72, 12 -72, 16 -78 L14 -86 C 6 -82, -6 -82, -12 -86 Z" fill="var(--scarf)" />
-          <path d="M-10 -82 C -22 -80, -30 -74, -36 -70 L-32 -64 C -24 -70, -16 -72, -8 -76 Z" fill="var(--scarf)" />
+          <circle cx="22" cy="-39" r="4" fill="var(--hand)" />
+          {/* what the walker wears changes with the season (styles.css sets the colours) */}
+          <path className="s-summer" d="M-15 -30 h34" fill="none" strokeWidth="2" />
+          <path className="s-winter" d="M-17 -52 C -4 -49, 10 -49, 21 -52 M-18 -36 C -4 -33, 10 -33, 20 -36" fill="none" strokeWidth="2" />
+          <path className="s-autumn" d="M-15 -26 C -4 -23, 10 -23, 19 -26 M2 -76 v50" fill="none" strokeWidth="2" />
+          <g className="no-summer">
+            <path d="M-12 -78 C -6 -72, 12 -72, 16 -78 L14 -86 C 6 -82, -6 -82, -12 -86 Z" fill="var(--scarf)" />
+            <path className="s-winter" d="M-10 -82 C -22 -78, -26 -60, -30 -50 L-23 -48 C -20 -60, -14 -72, -8 -76 Z" fill="var(--scarf)" />
+            <path className="no-winter" d="M-10 -82 C -22 -80, -30 -74, -36 -70 L-32 -64 C -24 -70, -16 -72, -8 -76 Z" fill="var(--scarf)" />
+          </g>
+          <path className="s-summer" d="M-8 -78 C -2 -72, 10 -72, 14 -78" fill="none" strokeWidth="2" />
           <circle cx="2" cy="-102" r="20" fill="var(--skin)" />
           <path d="M-18 -104 C -18 -126, 20 -128, 22 -104 C 14 -112, -2 -114, -18 -104 Z" fill="var(--boot)" />
           <circle cx="12" cy="-100" r="2.2" fill="var(--ink)" stroke="none" />
           <circle cx="14" cy="-92" r="4" fill="var(--cheek)" stroke="none" opacity=".8" />
           <path d="M17 -88 q3 2 5 0" fill="none" strokeWidth="2" />
+          {/* summer: a straw hat; autumn: a beret; winter: a knitted hat with a pompom */}
+          <g className="s-summer">
+            <path d="M-14 -112 C -14 -134, 20 -134, 20 -112 Z" fill="#f3d58b" />
+            <path d="M-13 -116 h32" stroke="#e0664f" strokeWidth="4" />
+            <ellipse cx="3" cy="-112" rx="30" ry="6" fill="#f3d58b" />
+          </g>
+          <g className="s-autumn">
+            <path d="M-20 -110 C -22 -128, 18 -134, 26 -114 C 16 -110, -6 -108, -20 -110 Z" fill="#9b3d4a" />
+            <path d="M2 -126 l1 -6" />
+          </g>
+          <g className="s-winter">
+            <path d="M-18 -108 C -20 -134, 24 -134, 22 -108 Z" fill="var(--scarf)" />
+            <rect x="-21" y="-112" width="46" height="9" rx="4.5" fill="var(--paper)" />
+            <circle cx="2" cy="-132" r="6" fill="var(--paper)" />
+          </g>
         </g>
       </g>
     </g>
