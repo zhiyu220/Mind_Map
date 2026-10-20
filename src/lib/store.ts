@@ -1,5 +1,5 @@
 import { db, newId, getSettings, saveSettings } from '../db';
-import type { RoadNote, Session, Song, Weather } from '../types';
+import type { Practice, RoadNote, Session, Song, Weather } from '../types';
 import { todayKey } from './dates';
 import { notesToMove, stretchFor } from './stretch';
 
@@ -54,3 +54,12 @@ export async function updateNote(id: string, patch: { text: string; weather?: We
 
 export const toggleStar = (n: RoadNote) => db.notes.update(n.id, { star: !n.star });
 export const deleteNote = (id: string) => db.notes.delete(id);
+
+/** 想練習的事 */
+export const addPractice = (text: string) => db.practices.add({ id: newId(), text, tries: [], createdAt: Date.now() });
+export const renamePractice = (id: string, text: string) => db.practices.update(id, { text });
+export const archivePractice = (id: string, archived: boolean) => db.practices.update(id, { archived });
+export const deletePractice = (id: string) => db.practices.delete(id);
+/** "試過了" for a day; pressing it again the same day takes it back. */
+export const tryPractice = (p: Practice, day = todayKey()) =>
+  db.practices.update(p.id, { tries: p.tries.includes(day) ? p.tries.filter(d => d !== day) : [...p.tries, day].sort() });

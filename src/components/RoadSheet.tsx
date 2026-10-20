@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import type { RoadNote, Song, Weather } from '../types';
+import type { Practice, RoadNote, Song, Weather } from '../types';
 import { WEATHER_NAME } from '../types';
 import { short, todayKey } from '../lib/dates';
 import { addNote, deleteNote, toggleStar, updateNote } from '../lib/store';
 import { StarIcon, WeatherIcon, WeatherPicker } from './Weather';
 import { useToast } from './Toast';
 import SongPicker, { SongChip } from './SongPicker';
+import Practices from './Practices';
 
 interface Props {
   title: string;
@@ -13,12 +14,13 @@ interface Props {
   notes: RoadNote[];
   /** only the stretch you're walking now takes new notes */
   writable: boolean;
+  practices: Practice[];
   onPlay: (s: Song) => void;
   onClose: () => void;
 }
 
 /** The dashed dot: things that happened between two sessions. */
-export default function RoadSheet({ title, after, notes, writable, onPlay, onClose }: Props) {
+export default function RoadSheet({ title, after, notes, writable, practices, onPlay, onClose }: Props) {
   const say = useToast();
   const [text, setText] = useState('');
   const [w, setW] = useState<Weather | null>(null);
@@ -108,6 +110,7 @@ export default function RoadSheet({ title, after, notes, writable, onPlay, onClo
                 <button className="pill sm" type="button" onClick={save}>記下來</button>
               </div>
             </div>
+            <Practices practices={practices} />
           </>
         )}
         {starred.length > 0 && (
