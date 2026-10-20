@@ -102,8 +102,7 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
   padding-block: 0 calc(22px + env(safe-area-inset-bottom, 0px));
 }
 .bottom > * { pointer-events: auto; }
-.hint { font-size: 13px; color: var(--text); opacity: .8; margin-top: 10px; transition: opacity .6s; }
-.hint.gone { opacity: 0; }
+.hint { font-size: 13px; color: var(--text); opacity: .85; }
 .pill { border: 2.5px solid var(--ink); background: var(--paper); color: #2c3a4b; font-size: 19px; padding: 12px 34px; border-radius: 999px; box-shadow: 0 4px 0 var(--ink); transition: transform .12s, box-shadow .12s; }
 .pill:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 .pill:disabled { opacity: .45; cursor: default; }
@@ -292,10 +291,10 @@ textarea.field.tall { min-height: 260px; }
       <path d="M800 200 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5z"/>
     </g>
     <g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
-      <circle cx="700" cy="170" r="30" fill="var(--sun)"/>
-      <path style="opacity:var(--rays)" d="M700 124 v-12 M700 216 v12 M654 170 h-12 M746 170 h12 M668 138 l-8 -8 M732 202 l8 8 M668 202 l-8 8 M732 138 l8 -8" fill="none"/>
-      <path d="M0 330 L90 270 L150 300 L240 240 L330 305 L420 262 L520 316 L600 266 L690 312 L790 250 L880 300 L960 268 L1060 318 L1200 270 V600 H0 Z" fill="var(--mtn)"/>
-      <path d="M240 240 l-18 14 l10 -2 l8 8 l9 -9 l9 3z M790 250 l-18 14 l10 -2 l8 8 l9 -9 l9 3z" fill="var(--cloud)" stroke-width="1.8"/>
+      <circle cx="700" cy="150" r="30" fill="var(--sun)"/>
+      <path style="opacity:var(--rays)" d="M700 104 v-12 M700 196 v12 M654 150 h-12 M746 150 h12 M668 118 l-8 -8 M732 182 l8 8 M668 182 l-8 8 M732 118 l8 -8" fill="none"/>
+      <path d="M0 286 L90 226 L150 256 L240 196 L330 261 L420 218 L520 272 L600 222 L690 268 L790 206 L880 256 L960 224 L1060 274 L1200 226 V600 H0 Z" fill="var(--mtn)"/>
+      <path d="M240 196 l-18 14 l10 -2 l8 8 l9 -9 l9 3z M790 206 l-18 14 l10 -2 l8 8 l9 -9 l9 3z" fill="var(--cloud)" stroke-width="1.8"/>
     </g>
     <g fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round">
       <path class="bird" d="M560 200 q6 -6 12 0 q6 -6 12 0"/>
@@ -305,9 +304,9 @@ textarea.field.tall { min-height: 260px; }
 
   <svg class="clouds" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
     <g stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round">
-      <g class="drift"><use href="#cloud" fill="var(--cloud)" transform="translate(0 200) scale(1.1)"/></g>
-      <g class="drift b"><use href="#cloud" fill="var(--cloud)" transform="translate(0 255) scale(.75)"/></g>
-      <g class="drift c"><use href="#cloud" fill="var(--cloud)" transform="translate(0 150) scale(.6)"/></g>
+      <g class="drift"><use href="#cloud" fill="var(--cloud)" transform="translate(0 175) scale(1.1)"/></g>
+      <g class="drift b"><use href="#cloud" fill="var(--cloud)" transform="translate(0 225) scale(.75)"/></g>
+      <g class="drift c"><use href="#cloud" fill="var(--cloud)" transform="translate(0 120) scale(.6)"/></g>
     </g>
   </svg>
 
@@ -321,7 +320,6 @@ textarea.field.tall { min-height: 260px; }
     <div style="flex:1;min-width:0">
       <div class="date" id="today">10月20日 星期二</div>
       <button class="line" id="line" type="button" aria-label="首頁的話，點一下換一句"></button>
-      <div class="hint" id="hint">← 滑一滑，看看走過的路</div>
     </div>
     <button class="book" type="button" aria-label="全部紀錄" data-soon>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v14"/></svg>
@@ -329,6 +327,7 @@ textarea.field.tall { min-height: 260px; }
   </header>
 
   <div class="bottom">
+    <div class="hint">滑一滑，看看走過的路</div>
     <button class="pill" id="write" type="button">記下今天</button>
   </div>
 
@@ -380,10 +379,10 @@ textarea.field.tall { min-height: 260px; }
   const bubble = document.getElementById('bubble');
   const layer = document.getElementById('layer');
 
-  const pathY = x => 470 + 9 * Math.sin(x / 95);
-  const groundY = x => 412 + 12 * Math.sin(x / 140 + 1);
-  const hillY = x => 336 + 26 * Math.sin(x / 230) + 12 * Math.sin(x / 83 + 2);
-  const frontY = x => 548 + 8 * Math.sin(x / 60);
+  const pathY = x => 418 + 9 * Math.sin(x / 95);
+  const groundY = x => 360 + 12 * Math.sin(x / 140 + 1);
+  const hillY = x => 292 + 26 * Math.sin(x / 230) + 12 * Math.sin(x / 83 + 2);
+  const frontY = x => 492 + 8 * Math.sin(x / 60);
   const dotX = i => X0 + i * S;
 
   // stable pseudo-noise for the hand-drawn wobble
@@ -593,9 +592,6 @@ textarea.field.tall { min-height: 260px; }
   function closeBubble() { current = null; bubble.hidden = true; hits.forEach(el => el.classList.remove('on')); }
   svg.addEventListener('click', closeBubble);
   world.addEventListener('scroll', place, { passive: true });
-  // the hint leaves once you've tried scrolling
-  const hint = document.getElementById('hint');
-  world.addEventListener('scroll', () => { if (Math.abs(world.scrollLeft - homeLeft) > 40) hint.classList.add('gone'); }, { passive: true });
   window.addEventListener('resize', () => { home(); place(); });
 
   // ----- helpers -----
