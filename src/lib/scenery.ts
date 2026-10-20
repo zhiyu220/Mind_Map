@@ -88,11 +88,20 @@ export function landMarkup(width: number, walkerX: number, n = 0): { back: strin
   for (let x = 60; x < width; x += 70 + rnd() * 90) {
     const y = farY(x) + 4, h = 26 + rnd() * 18, round = rnd() < 0.5;
     if (x > seaX + 120) continue; // nothing grows on the far side of the hills by the sea
-    if (round) hills += `<g><path d="M${x} ${y} v-${h * 0.5}" stroke-width="3" fill="none" stroke="var(--trunk)"/><path d="${blob(x, y - h * 0.75, h * 0.38)}" fill="var(--canopy)"/></g>`;
-    else hills += `<g><path d="M${x} ${y - h * 1.1} L${x + h * 0.32} ${y - 4} L${x - h * 0.32} ${y - 4} Z" fill="var(--canopy-2)"/><path d="M${x} ${y - 4} v4" stroke="var(--trunk)" stroke-width="3"/></g>`;
+    const cy = y - h * 0.75, cr = h * 0.38;
+    // spring: blossoms on the round trees; winter: snow on every tree
+    if (round) hills += `<g><path d="M${x} ${y} v-${h * 0.5}" stroke-width="3" fill="none" stroke="var(--trunk)"/><path d="${blob(x, cy, cr)}" fill="var(--canopy)"/>`
+      + `<g class="s-spring" fill="var(--f1)" stroke-width="1.2"><circle cx="${(x - cr * 0.4).toFixed(1)}" cy="${(cy - cr * 0.2).toFixed(1)}" r="2.6"/><circle cx="${(x + cr * 0.35).toFixed(1)}" cy="${(cy - cr * 0.35).toFixed(1)}" r="2.6"/><circle cx="${(x + cr * 0.1).toFixed(1)}" cy="${(cy + cr * 0.35).toFixed(1)}" r="2.6"/></g>`
+      + `<path class="s-winter" d="M${(x - cr * 0.85).toFixed(1)} ${(cy - cr * 0.3).toFixed(1)} C ${(x - cr * 0.6).toFixed(1)} ${(cy - cr * 1.15).toFixed(1)}, ${(x + cr * 0.6).toFixed(1)} ${(cy - cr * 1.15).toFixed(1)}, ${(x + cr * 0.85).toFixed(1)} ${(cy - cr * 0.3).toFixed(1)} Q ${(x + cr * 0.4).toFixed(1)} ${(cy - cr * 0.05).toFixed(1)} ${x} ${(cy - cr * 0.35).toFixed(1)} Q ${(x - cr * 0.4).toFixed(1)} ${(cy - cr * 0.05).toFixed(1)} ${(x - cr * 0.85).toFixed(1)} ${(cy - cr * 0.3).toFixed(1)} Z" fill="var(--snow)"/></g>`;
+    else hills += `<g><path d="M${x} ${y - h * 1.1} L${x + h * 0.32} ${y - 4} L${x - h * 0.32} ${y - 4} Z" fill="var(--canopy-2)"/><path d="M${x} ${y - 4} v4" stroke="var(--trunk)" stroke-width="3"/>`
+      + `<path class="s-winter" d="M${x} ${y - h * 1.1} L${(x + h * 0.14).toFixed(1)} ${(y - h * 0.62).toFixed(1)} L${x} ${(y - h * 0.7).toFixed(1)} L${(x - h * 0.14).toFixed(1)} ${(y - h * 0.62).toFixed(1)} Z" fill="var(--snow)"/></g>`;
   }
   const hx = 90, hy = hillY(90) + 6;
-  hills += `<g><rect x="${hx - 20}" y="${hy - 30}" width="40" height="30" fill="var(--wall)"/><path d="M${hx - 26} ${hy - 28} L${hx} ${hy - 50} L${hx + 26} ${hy - 28} Z" fill="var(--roof)"/><rect x="${hx - 5}" y="${hy - 16}" width="10" height="16" fill="var(--trunk)"/><rect x="${hx + 8}" y="${hy - 24}" width="7" height="7" fill="var(--sky)"/></g>`;
+  hills += `<g><rect x="${hx - 20}" y="${hy - 30}" width="40" height="30" fill="var(--wall)"/><path d="M${hx - 26} ${hy - 28} L${hx} ${hy - 50} L${hx + 26} ${hy - 28} Z" fill="var(--roof)"/><rect x="${hx - 5}" y="${hy - 16}" width="10" height="16" fill="var(--trunk)"/><rect x="${hx + 8}" y="${hy - 24}" width="7" height="7" fill="var(--sky)"/>`
+    + `<path class="s-winter" d="M${hx - 27} ${hy - 28} L${hx} ${hy - 51} L${hx + 27} ${hy - 28} L${hx + 19} ${hy - 31} L${hx} ${hy - 44} L${hx - 19} ${hy - 31} Z" fill="var(--snow)"/></g>`;
+  // a snowman next to the house, only in winter
+  const sx = 150, sy = farY(150) + 8;
+  hills += `<g class="s-winter"><circle cx="${sx}" cy="${sy - 10}" r="11" fill="var(--snow)"/><circle cx="${sx}" cy="${sy - 27}" r="8" fill="var(--snow)"/><path d="M${sx + 1} ${sy - 27} l7 2 l-7 1 Z" fill="var(--coat)" stroke-width="1.2"/><circle cx="${sx - 3}" cy="${sy - 30}" r="1.2" fill="var(--ink)" stroke="none"/><path d="M${sx - 8} ${sy - 21} h16" stroke="var(--scarf)" stroke-width="3"/></g>`;
 
   let ground = `<path d="${band(groundY)}" fill="var(--hill-near)"/><path d="${band(groundY)}" fill="url(#hatch)" stroke="none"/>`;
   const fences: [number, number][] = [[X0 - 160, X0 + 60]];
@@ -149,19 +158,34 @@ export function landMarkup(width: number, walkerX: number, n = 0): { back: strin
   for (let x = 10; x < width; x += 18 + rnd() * 30) {
     const y = frontY(x) + 10 + rnd() * 30, flower = rnd() < 0.55, c = ['--f1', '--f2', '--f3', '--f4'][Math.floor(rnd() * 4)], r = 3 + rnd() * 2;
     if (rx !== null && Math.abs(x - rx + (y - 400) * 0.18) < 46) continue; // not in the river
+    if (rnd() < 0.18) {
+      // a few things lie in the grass: snow mounds in winter, fallen leaves in autumn
+      front += `<path class="s-winter" d="M${x - 16} ${y + 10} C ${x - 12} ${y - 2}, ${x + 12} ${y - 4}, ${x + 18} ${y + 10} Z" fill="var(--snow-shade)" stroke="none"/>`;
+      front += `<path class="s-autumn" d="M${x - 5} ${y + 6} c 0 -6 6 -9 11 -8 c 0 5 -5 9 -11 8 Z" fill="${['#e9873e', '#d8a63a', '#c9583a'][Math.floor(rnd() * 3)]}" stroke-width="1.5"/>`;
+    }
     if (flower) {
       const petals = [0, 72, 144, 216, 288]
         .map(a => `<circle cx="${(x + Math.cos((a * Math.PI) / 180) * r).toFixed(1)}" cy="${(y + Math.sin((a * Math.PI) / 180) * r).toFixed(1)}" r="${(r * 0.7).toFixed(1)}"/>`)
         .join('');
-      front += `<g><path d="M${x} ${y + 12} v-12" stroke="var(--tree)" stroke-width="2"/><g fill="var(${c})" stroke-width="1.5">${petals}</g><circle cx="${x}" cy="${y}" r="${(r * 0.45).toFixed(1)}" fill="var(--scarf)" stroke="none"/></g>`;
+      front += `<g class="no-winter"><path d="M${x} ${y + 12} v-12" stroke="var(--tree)" stroke-width="2"/><g fill="var(${c})" stroke-width="1.5">${petals}</g><circle cx="${x}" cy="${y}" r="${(r * 0.45).toFixed(1)}" fill="var(--scarf)" stroke="none"/></g>`;
     } else {
-      front += `<path d="M${x - 5} ${y + 8} l3 -10 l2 10 M${x} ${y + 8} l4 -14 l1 14 M${x + 4} ${y + 8} l5 -9" fill="none" stroke="var(--tree)" stroke-width="2"/>`;
+      front += `<path class="no-winter" d="M${x - 5} ${y + 8} l3 -10 l2 10 M${x} ${y + 8} l4 -14 l1 14 M${x + 4} ${y + 8} l5 -9" fill="none" stroke="var(--tree)" stroke-width="2"/>`;
     }
+  }
+
+  // summer: tall sunflowers here and there along the front
+  const rs = seeded(47);
+  for (let x = 90; x < width; x += 150 + rs() * 170) {
+    if (rx !== null && Math.abs(x - rx) < 80) continue;
+    const y = frontY(x) + 6, h = 26 + rs() * 8, top = y - h; // low enough to stay clear of the dates on the road
+    let petals = '';
+    for (let a = 0; a < 360; a += 30) petals += `<ellipse cx="${(x + Math.cos((a * Math.PI) / 180) * 9).toFixed(1)}" cy="${(top + Math.sin((a * Math.PI) / 180) * 9).toFixed(1)}" rx="4.5" ry="2.6" transform="rotate(${a} ${(x + Math.cos((a * Math.PI) / 180) * 9).toFixed(1)} ${(top + Math.sin((a * Math.PI) / 180) * 9).toFixed(1)})"/>`;
+    front += `<g class="s-summer"><path d="M${x} ${y + 20} V${top}" stroke="var(--tree)" stroke-width="3"/><path d="M${x} ${y - h * 0.4} q -14 -8 -18 2 q 10 4 18 -2 Z" fill="var(--tree)" stroke-width="1.6"/><g fill="#ffc93a" stroke-width="1.4">${petals}</g><circle cx="${x}" cy="${top}" r="6" fill="var(--trunk)"/></g>`;
   }
 
   const ink = 'stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"';
   return {
-    back: `<g ${ink}>${hills}${ground}${tufts}</g>${prints}`,
+    back: `<g ${ink}>${hills}${ground}<g class="no-winter">${tufts}</g></g>${prints}`,
     front: `<g ${ink}>${front}</g>`
   };
 }

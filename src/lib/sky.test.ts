@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNight, seasonOf, themeFor } from './sky';
+import { isNight, pickSeason, seasonOf, themeFor } from './sky';
 
 const at = (month: number, hour: number) => new Date(2026, month - 1, 15, hour, 30);
 
@@ -12,6 +12,11 @@ describe('sky', () => {
   });
   it('knows the season', () => {
     expect([3, 6, 9, 12, 1].map(m => seasonOf(at(m, 12)))).toEqual(['spring', 'summer', 'autumn', 'winter', 'winter']);
+  });
+  it('can stay on one season', () => {
+    expect(pickSeason(undefined, at(1, 12))).toBe('winter');
+    expect(pickSeason('auto', at(7, 12))).toBe('summer');
+    expect(pickSeason('autumn', at(1, 12))).toBe('autumn');
   });
   it('follows the clock, the phone, or stays day', () => {
     expect(themeFor('time', at(10, 21), false)).toBe('dark');

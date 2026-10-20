@@ -16,6 +16,7 @@ export const HELPLINES = [
 ];
 
 const SKY_MODES: [NonNullable<S['sky']>, string][] = [['time', '晚上變成夜空'], ['phone', '跟著手機的深色模式'], ['day', '一直是白天']];
+const SEASONS: [NonNullable<S['season']>, string][] = [['auto', '跟著日子'], ['spring', '春天'], ['summer', '夏天'], ['autumn', '秋天'], ['winter', '冬天']];
 
 export function NextSessionField({ value, onDone }: { value?: string; onDone?: () => void }) {
   const [v, setV] = useState(value ?? '');
@@ -108,7 +109,17 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
                 onClick={() => saveSettings({ sky: k })}>{name}</button>
             ))}
           </div>
-          <p className="tiny">花草和樹會跟著季節換顏色。</p>
+        </div>
+
+        <div className="group">
+          <h3>季節</h3>
+          <div className="chips small" role="radiogroup" aria-label="季節">
+            {SEASONS.map(([k, name]) => (
+              <button key={k} className="chip" type="button" role="radio" aria-checked={(settings.season ?? 'auto') === k} aria-pressed={(settings.season ?? 'auto') === k}
+                onClick={() => saveSettings({ season: k })}>{name}</button>
+            ))}
+          </div>
+          <p className="tiny">春天落櫻花，夏天有向日葵、晚上有螢火蟲，秋天掉葉子，冬天下雪、晚上有極光。</p>
         </div>
         <div className="group">
           <h3>Spotify</h3>

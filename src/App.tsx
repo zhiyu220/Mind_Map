@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, DEFAULT_SETTINGS, getSettings, saveSettings } from './db';
 import type { Session, Song } from './types';
-import { DEFS, SKY } from './drawings';
+import { DEFS, SEASON_FX, SKY } from './drawings';
 import { countdown, daysBetween, headerDate, short, todayKey } from './lib/dates';
 import { homeLines, lineOfTheDay } from './lib/lines';
 import { followSky } from './lib/sky';
@@ -70,7 +70,7 @@ function Main() {
   }, []);
 
   // night sky after dark, and the meadow's season
-  useEffect(() => followSky(settings.sky ?? 'time'), [settings.sky]);
+  useEffect(() => followSky(settings.sky ?? 'time', settings.season), [settings.sky, settings.season]);
 
   // with no lock set, stay open (setting a PIN now locks from the next time on)
   useEffect(() => {
@@ -269,6 +269,8 @@ function Main() {
         onOpenRoad={after => setView({ kind: 'road', after })}
         onNextSign={() => setView({ kind: 'next' })}
       />
+      {/* snow, petals, leaves or fireflies, in front of the land; they let taps through */}
+      <div dangerouslySetInnerHTML={{ __html: SEASON_FX }} style={{ display: 'contents' }} />
       <Grain />
 
       <header className="top">
