@@ -32,10 +32,7 @@ npm run icons      # 從 public/icons/favicon.svg 產生 PNG 圖示
 用 **Workers**（`wrangler.jsonc` 已設定好，只發布 `dist/` 的靜態檔案）：
 
 1. 登入 [Cloudflare](https://dash.cloudflare.com/) → **Workers & Pages** → **Create** → **Import a repository**，選這個 repo（私人 repo 也可以）。
-2. 在 Worker 的 **Settings → Build** 確認：
-   - Build command：`npm run build`
-   - Deploy command：`npx wrangler deploy`
-   - Root directory：`/`
+2. 在 Worker 的 **Settings → Build** 確認 Deploy command 是 `npx wrangler deploy`、Root directory 是 `/`。Build command 可以留空：`wrangler.jsonc` 會在部署前自己執行 `npm run build`。
 3. 網址會是 `https://mindweb-mymap.<帳號>.workers.dev/`。
 
 也可以改用 **Pages**：Build command `npm run build`、Build output directory `dist`、環境變數 `NODE_VERSION` = `22`，網址是 `https://<專案名稱>.pages.dev/`。
