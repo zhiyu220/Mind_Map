@@ -5,11 +5,23 @@ on:
   push:
     branches-ignore: [main]
 
+# the repo is public: the workflow only reads the code, it can't push, comment or touch releases
+permissions:
+  contents: read
+
+# a newer push to the same branch cancels the run that's still going
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
