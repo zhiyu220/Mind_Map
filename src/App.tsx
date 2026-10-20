@@ -6,6 +6,7 @@ import { DEFS, SKY } from './drawings';
 import { countdown, headerDate, short, todayKey } from './lib/dates';
 import { homeLines, lineOfTheDay } from './lib/lines';
 import { addSession, byDate, updateSession } from './lib/store';
+import { playlistUris, syncPlaylist } from './lib/spotify';
 import Landscape from './components/Landscape';
 import SessionFlow, { clearDraft, emptyDraft, loadDraft, type Draft } from './components/SessionFlow';
 import RoadSheet from './components/RoadSheet';
@@ -63,6 +64,14 @@ function Main() {
   useEffect(() => {
     if (loaded && !loaded.pinHash) setUnlocked(true);
   }, [loaded]);
+
+  // the 「我的天空」 playlist follows the road: any added, changed or removed song updates it
+  const songKey = useMemo(() => (sessions ? playlistUris(sessions).join(',') : null), [sessions]);
+  useEffect(() => {
+    if (songKey === null || loaded?.spotifyPlaylist === false) return;
+    const t = setTimeout(() => syncPlaylist(songKey ? songKey.split(',') : []).catch(() => {}), 1500);
+    return () => clearTimeout(t);
+  }, [songKey, loaded?.spotifyPlaylist]);
 
   const lines = useMemo(() => homeLines(sessions ?? [], notes ?? [], today, settings.nextSession), [sessions, notes, today, settings.nextSession]);
 
