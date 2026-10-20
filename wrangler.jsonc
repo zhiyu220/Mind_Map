@@ -1,7 +1,7 @@
 // Cloudflare Workers: serve the built app (dist/) as static assets. No server code.
 // Deploy command: npx wrangler deploy (it builds first, so no separate build command is needed)
 {
-  "name": "mindweb-mymap",
+  "name": "mind-map",
   "compatibility_date": "2025-09-01",
   "build": {
     "command": "npm run build"
