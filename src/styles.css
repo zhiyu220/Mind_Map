@@ -73,7 +73,10 @@
   --tree: #6cb25a; --tree-2: #92cc6a; --canopy: #f6b3c6; --canopy-2: #7cc16a;
   --f1: #ff9fb6; --f2: #ffffff; --f3: #ffe27a; --f4: #c6b2f5; --coat: #f49ab0; --scarf: #fff0a6;
 }
-:root[data-season="spring"][data-theme="dark"] { --canopy: #a86f86; --coat: #c97d91; --scarf: #d9cd8a; }
+:root[data-season="spring"][data-theme="dark"] {
+  --sky: #2b3c74; --sky-stroke: #36498c; --mtn: #35517a; --cloud: #58699d; --sun: #fbefd0;
+  --canopy: #a86f86; --coat: #c97d91; --scarf: #d9cd8a;
+}
 :root[data-season="summer"]:not([data-theme="dark"]) {
   --sky: #5fbcf0; --sky-stroke: #7ccaf4; --sun: #ffc933; --mtn: #79bda3; --hill-far: #8ccd4c; --hill-near: #5fb03a; --grass-front: #4b9e2e;
   --sand: #f7dd9c; --tree: #3d8c2d; --tree-2: #57a637; --canopy: #3c963a; --canopy-2: #2e7d39;
@@ -81,6 +84,7 @@
 }
 :root[data-season="summer"] { --shin: var(--skin); --forearm: var(--skin); --pants: #6f8fbf; }
 :root[data-season="summer"][data-theme="dark"] {
+  --sky: #2a2160; --sky-stroke: #372c77; --mtn: #343661; --cloud: #4f4890; --sun: #f6eebc;
   --hill-far: #2d5b33; --hill-near: #224b29; --grass-front: #1b3f22; --tree: #2a5a2f; --canopy: #285a30; --canopy-2: #224f2c; --coat: #cbb044;
 }
 :root[data-season="autumn"]:not([data-theme="dark"]) {
@@ -89,6 +93,7 @@
   --f1: #d9542f; --f2: #f3d9a0; --f3: #e9a23b; --f4: #a8573b; --coat: #d98a3d; --scarf: #9b3d4a;
 }
 :root[data-season="autumn"][data-theme="dark"] {
+  --sky: #1b2750; --sky-stroke: #233260; --cloud: #46517b;
   --mtn: #3d4560; --hill-far: #5e5531; --hill-near: #4f4628; --grass-front: #423a22; --sand: #7d6c4c; --tree: #5a4a2a;
   --canopy: #8a4a2c; --canopy-2: #7d6a32; --coat: #b0713a; --scarf: #7d3640;
 }
