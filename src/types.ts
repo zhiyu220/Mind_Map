@@ -49,6 +49,17 @@ export interface RoadNote {
   createdAt: number;
 }
 
+/** 想練習的事: a small thing to try between sessions. No checkbox, just a mark each day you tried. */
+export interface Practice {
+  id: string;
+  text: string;
+  /** YYYY-MM-DD of each day you tried it, oldest first */
+  tries: string[];
+  /** put away for now; kept so it can come back */
+  archived?: boolean;
+  createdAt: number;
+}
+
 export interface Settings {
   nextSession?: string; // YYYY-MM-DD
   customTopics: string[];
