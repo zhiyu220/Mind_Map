@@ -54,6 +54,6 @@ export interface Settings {
   customTopics: string[];
   pinHash?: string;
   spotifyClientId?: string;
-  /** keep a private 「我的天空」 playlist of every session's song; on unless turned off */
+  /** keep a private 「Mind Map」 playlist of every session's song; on unless turned off */
   spotifyPlaylist?: boolean;
 }

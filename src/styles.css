@@ -1,4 +1,4 @@
-/* 我的天空 — a side-view picture-book landscape. The sky layer stays still; the land scrolls sideways.
+/* Mind Map — a side-view picture-book landscape. The sky layer stays still; the land scrolls sideways.
    Solid dots are session days, a dashed dot is "on the road" between sessions. Recording opens a paper sheet, one question per page. */
 :root {
   --sky: #8fcff0;

@@ -67,7 +67,7 @@ function Main() {
     if (loaded && !loaded.pinHash) setUnlocked(true);
   }, [loaded]);
 
-  // the 「我的天空」 playlist follows the road: any added, changed or removed song updates it
+  // the 「Mind Map」 playlist follows the road: any added, changed or removed song updates it
   const songKey = useMemo(() => (sessions ? playlistUris(sessions).join(',') : null), [sessions]);
   useEffect(() => {
     if (songKey === null || loaded?.spotifyPlaylist === false) return;

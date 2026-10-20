@@ -90,7 +90,7 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
             <>
               <p className="tiny">
                 {reconnect
-                  ? '已連結，可以用歌名搜尋。重新連結一次，就能用你的 Spotify 播完整首（需要 Premium）、選剛剛聽的歌，並自動整理「我的天空」歌單。'
+                  ? '已連結，可以用歌名搜尋。重新連結一次，就能用你的 Spotify 播完整首（需要 Premium）、選剛剛聽的歌，並自動整理「Mind Map」歌單。'
                   : '已連結。記錄時可以用歌名搜尋，或直接選剛剛聽的歌；有 Premium 的話，紀錄裡可以按「用我的 Spotify 播完整首」。'}
               </p>
               <div className="row-buttons">
@@ -100,7 +100,7 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
               <label className="toggle">
                 <input type="checkbox" checked={settings.spotifyPlaylist !== false} onChange={e => saveSettings({ spotifyPlaylist: e.target.checked })} />
                 <span>
-                  自動整理成「我的天空」歌單
+                  自動整理成「Mind Map」歌單
                   <small>每次紀錄附上的歌，照諮商的日期排進你 Spotify 裡的一個私人歌單。</small>
                 </span>
               </label>
@@ -251,7 +251,7 @@ function BackupGroup() {
             if (b.locked) setLocked(b.sealed);
             else setRestore(b.data);
           } catch {
-            say('這個檔案不是「我的天空」的備份');
+            say('這個檔案不是「Mind Map」的備份');
           }
         }}
       />

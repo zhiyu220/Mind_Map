@@ -17,7 +17,7 @@ export async function makeBackup(password: string): Promise<File> {
   const { pinHash: _pin, ...settings } = await getSettings();
   const data: Backup = { app: 'my-sky', version: 1, exportedAt: new Date().toISOString(), sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), settings };
   const sealed = await seal(data, password);
-  return new File([JSON.stringify(sealed)], `我的天空-備份-${todayKey()}.json`, { type: 'application/json' });
+  return new File([JSON.stringify(sealed)], `MindMap-備份-${todayKey()}.json`, { type: 'application/json' });
 }
 
 /** On iPhone the share sheet lets you "儲存到檔案"; elsewhere it downloads. */
