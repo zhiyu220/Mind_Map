@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 import type { Session, Song, Weather } from '../types';
 import { MOODS, TOPICS } from '../types';
+import { headerDate, todayKey } from '../lib/dates';
 import { WeatherPicker } from './Weather';
 import SongPicker from './SongPicker';
 
-export type Draft = Pick<Session, 'moods' | 'topics' | 'quote' | 'notes'> & { weather: Weather | null; song?: Song };
+export type Draft = Pick<Session, 'moods' | 'topics' | 'quote' | 'notes'> & { weather: Weather | null; song?: Song; date?: string };
+
+/** today: a new record for today; past: filling in an earlier session; edit: changing one */
+export type FlowMode = 'today' | 'past' | 'edit';
 
 const STEPS = ['weather', 'mood', 'topic', 'quote', 'notes', 'song'] as const;
+const DATED_STEPS = ['date', ...STEPS] as const;
 const DRAFT_KEY = 'my-sky:draft';
 
 export const emptyDraft = (): Draft => ({ weather: null, moods: [], topics: [], quote: '', notes: '' });
@@ -30,7 +35,9 @@ export function clearDraft() {
 
 interface Props {
   initial: Draft;
-  editing: boolean;
+  mode: FlowMode;
+  /** dates that already have a session, to mention it when picking a day */
+  takenDates?: string[];
   customTopics: string[];
   onAddTopic: (t: string) => void;
   onSave: (d: Draft & { weather: Weather }, done: boolean) => void;
@@ -38,39 +45,45 @@ interface Props {
 }
 
 /** Recording a session day: one question per page; only the weather is needed. */
-export default function SessionFlow({ initial, editing, customTopics, onAddTopic, onSave, onClose }: Props) {
+export default function SessionFlow({ initial, mode, takenDates = [], customTopics, onAddTopic, onSave, onClose }: Props) {
+  const editing = mode === 'edit';
+  const past = mode === 'past' || (editing && !!initial.date && initial.date !== todayKey());
+  const steps: readonly string[] = mode === 'today' ? STEPS : DATED_STEPS;
   const [d, setD] = useState<Draft>(initial);
   const [step, setStep] = useState(0);
   const [adding, setAdding] = useState(false);
   const [newTopic, setNewTopic] = useState('');
-  const k = STEPS[step];
+  const k = steps[step];
+  const today = todayKey();
   const set = (patch: Partial<Draft>) => setD(cur => ({ ...cur, ...patch }));
   const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter(x => x !== v) : [...list, v]);
 
   useEffect(() => {
-    if (editing) return;
+    if (mode !== 'today') return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
     } catch {
       /* storage may be unavailable */
     }
-  }, [d, editing]);
+  }, [d, mode]);
 
   const save = (done: boolean) => {
-    if (!d.weather) return onClose();
+    if (!d.weather || (steps.includes('date') && !d.date)) return onClose();
     onSave({ ...d, weather: d.weather }, done);
   };
-  const next = () => (step === STEPS.length - 1 ? save(true) : setStep(step + 1));
+  const last = step === steps.length - 1;
+  const next = () => (last ? save(true) : setStep(step + 1));
+  const canGo = k === 'date' ? !!d.date && d.date <= today : k === 'weather' ? !!d.weather : true;
   const topics = [...TOPICS, ...customTopics, ...d.topics.filter(t => !TOPICS.includes(t) && !customTopics.includes(t))];
 
   return (
-    <section className="sheet" role="dialog" aria-label="記錄今天的諮商">
+    <section className="sheet" role="dialog" aria-label={mode === 'past' ? '補記以前的諮商' : editing ? '修改紀錄' : '記錄今天的諮商'}>
       <div className="sheet-head">
-        <button className="ghost" type="button" onClick={() => save(editing || step === STEPS.length - 1)}>
+        <button className="ghost" type="button" onClick={() => save(editing || last)}>
           {d.weather ? (editing ? '存起來' : '先存起來') : '關閉'}
         </button>
-        <div className="progress" aria-label={`第 ${step + 1} 題，共 ${STEPS.length} 題`}>
-          {STEPS.map((_, i) => (
+        <div className="progress" aria-label={`第 ${step + 1} 題，共 ${steps.length} 題`}>
+          {steps.map((_, i) => (
             <i key={i} className={i < step ? 'done' : i === step ? 'now' : ''} />
           ))}
         </div>
@@ -80,16 +93,24 @@ export default function SessionFlow({ initial, editing, customTopics, onAddTopic
       </div>
 
       <div className="sheet-body" key={k}>
+        {k === 'date' && (
+          <>
+            <h2 className="q">{editing ? '是哪一天？' : '是哪一天的諮商？'}</h2>
+            <p className="sub">{editing ? '記錯天的話可以改。' : '記不太清楚也沒關係，只有天氣要選，其他都能跳過。'}</p>
+            <input id="session-date" className="field" type="date" max={today} value={d.date ?? ''} onChange={e => set({ date: e.target.value || undefined })} />
+            {d.date && <p className="tiny">{headerDate(d.date)}{d.date !== initial.date && takenDates.includes(d.date) ? '：這天已經有一筆紀錄了，還是可以再記一筆。' : ''}</p>}
+          </>
+        )}
         {k === 'weather' && (
           <>
-            <h2 className="q">今天的天氣是？</h2>
+            <h2 className="q">{past ? '那天的天氣是？' : '今天的天氣是？'}</h2>
             <p className="sub">選一個最接近的就好。</p>
             <WeatherPicker value={d.weather} onChange={w => set({ weather: w })} />
           </>
         )}
         {k === 'mood' && (
           <>
-            <h2 className="q">現在的心情</h2>
+            <h2 className="q">{past ? '那時的心情' : '現在的心情'}</h2>
             <p className="sub">可以選很多個。</p>
             <div className="chips">
               {MOODS.map(m => (
@@ -102,7 +123,7 @@ export default function SessionFlow({ initial, editing, customTopics, onAddTopic
         )}
         {k === 'topic' && (
           <>
-            <h2 className="q">今天談了什麼？</h2>
+            <h2 className="q">{past ? '那天談了什麼？' : '今天談了什麼？'}</h2>
             <div className="chips">
               {topics.map(t => (
                 <button key={t} className="chip" type="button" aria-pressed={d.topics.includes(t)} onClick={() => set({ topics: toggle(d.topics, t) })}>
@@ -152,9 +173,9 @@ export default function SessionFlow({ initial, editing, customTopics, onAddTopic
       </div>
 
       <div className="sheet-foot">
-        {k === 'weather' ? <span /> : <button className="ghost" type="button" onClick={next}>跳過</button>}
-        <button className="pill" type="button" disabled={!d.weather} onClick={next}>
-          {step === STEPS.length - 1 ? '完成' : '下一題'}
+        {k === 'weather' || k === 'date' ? <span /> : <button className="ghost" type="button" onClick={next}>跳過</button>}
+        <button className="pill" type="button" disabled={!canGo} onClick={next}>
+          {last ? '完成' : '下一題'}
         </button>
       </div>
     </section>

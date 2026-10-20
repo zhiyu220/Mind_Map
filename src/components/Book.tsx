@@ -7,7 +7,16 @@ import { WeatherIcon } from './Weather';
 import { SongPlayer } from './SongPicker';
 
 /** 全部紀錄: every session, newest first. */
-export function Book({ sessions, onOpen, onSettings, onClose }: { sessions: Session[]; onOpen: (s: Session) => void; onSettings: () => void; onClose: () => void }) {
+interface BookProps {
+  sessions: Session[];
+  onOpen: (s: Session) => void;
+  onBackfill: () => void;
+  onBackfillRoad: () => void;
+  onSettings: () => void;
+  onClose: () => void;
+}
+
+export function Book({ sessions, onOpen, onBackfill, onBackfillRoad, onSettings, onClose }: BookProps) {
   const list = sessions.map((s, i) => ({ s, n: i + 1 })).reverse();
   return (
     <section className="sheet" role="dialog" aria-label="全部紀錄">
@@ -17,6 +26,10 @@ export function Book({ sessions, onOpen, onSettings, onClose }: { sessions: Sess
       </div>
       <div className="sheet-body">
         <h2 className="q">全部紀錄</h2>
+        <div className="row-buttons">
+          <button className="pill sm" type="button" onClick={onBackfill}>補記以前的諮商</button>
+          <button className="pill sm" type="button" onClick={onBackfillRoad}>補記路上的事</button>
+        </div>
         {!list.length && <p className="sub">還沒有紀錄。第一次諮商之後，按「記下今天」就會出現在這裡。</p>}
         <div className="book-list">
           {list.map(({ s, n }) => (
