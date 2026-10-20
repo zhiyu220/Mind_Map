@@ -38,7 +38,7 @@ export async function deleteSession(id: string) {
 }
 
 /** Adds a road note; its date decides which stretch of road it lands on. Returns that stretch. */
-export async function addNote(n: { text: string; weather?: Weather; star: boolean }, date = todayKey()) {
+export async function addNote(n: { text: string; weather?: Weather; star: boolean; song?: Song }, date = todayKey()) {
   const after = stretchFor(date, (await db.sessions.toArray()).sort(byDate));
   const note: RoadNote = { id: newId(), after, date, createdAt: Date.now(), ...n };
   await db.notes.add(note);
@@ -46,7 +46,7 @@ export async function addNote(n: { text: string; weather?: Weather; star: boolea
 }
 
 /** Changing a road note; a new date may move it to another stretch of road. Returns that stretch. */
-export async function updateNote(id: string, patch: { text: string; weather?: Weather; star: boolean; date: string }) {
+export async function updateNote(id: string, patch: { text: string; weather?: Weather; star: boolean; date: string; song?: Song }) {
   const after = stretchFor(patch.date, (await db.sessions.toArray()).sort(byDate));
   await db.notes.update(id, { ...patch, after });
   return after;

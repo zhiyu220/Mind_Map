@@ -1,4 +1,4 @@
-import type { RoadNote, Session } from '../types';
+import type { RoadNote, Session, Song } from '../types';
 import { WEATHER_NAME } from '../types';
 import { daysBetween, short, weekday } from './dates';
 
@@ -6,6 +6,8 @@ export interface Line {
   /** "|" marks where the line breaks */
   text: string;
   small?: string;
+  /** a line about a day's song can play it */
+  song?: Song;
 }
 
 /**
@@ -37,6 +39,7 @@ export function homeLines(sessions: Session[], notes: RoadNote[], today: string,
   }
   L.push({ text: `這條路上，|有 ${sessions.length} 個點了。` });
   for (const s of sessions) if (s.quote.trim()) L.push({ text: `「${s.quote.trim()}」`, small: `${short(s.date)} 記下的` });
+  for (const s of sessions) if (s.song) L.push({ text: `${short(s.date)} 那天聽的是|〈${s.song.name}〉。`, small: s.song.artists || undefined, song: s.song });
   return L;
 }
 

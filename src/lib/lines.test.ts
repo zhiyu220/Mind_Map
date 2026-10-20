@@ -47,6 +47,12 @@ describe('homeLines', () => {
     expect(lines.some(t => t.includes('記下了'))).toBe(false);
   });
 
+  it('now and then brings back the song of a day', () => {
+    const song = { id: 'x', name: '魚仔', artists: '盧廣仲' };
+    const line = homeLines([s('a', '2026-10-15', { song })], [], '2026-10-20').find(l => l.song);
+    expect(line).toEqual({ text: '10/15 那天聽的是|〈魚仔〉。', small: '盧廣仲', song });
+  });
+
   it('keeps one line for the whole day', () => {
     const lines = homeLines([s('a', '2026-10-15')], [], '2026-10-20');
     expect(lineOfTheDay(lines, '2026-10-20')).toBe(lineOfTheDay(lines, '2026-10-20'));

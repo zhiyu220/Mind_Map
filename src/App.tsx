@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, DEFAULT_SETTINGS, getSettings, saveSettings } from './db';
-import type { Session } from './types';
+import type { Session, Song } from './types';
 import { DEFS, SKY } from './drawings';
 import { countdown, headerDate, short, todayKey } from './lib/dates';
 import { homeLines, lineOfTheDay } from './lib/lines';
@@ -11,6 +11,7 @@ import Landscape from './components/Landscape';
 import SessionFlow, { clearDraft, emptyDraft, loadDraft, type Draft } from './components/SessionFlow';
 import RoadSheet from './components/RoadSheet';
 import { Book, Detail } from './components/Book';
+import { SongPlayer } from './components/SongPicker';
 import Settings, { NextSessionField } from './components/Settings';
 import Lock from './components/Lock';
 import { ToastProvider, useToast } from './components/Toast';
@@ -22,7 +23,8 @@ type View =
   | { kind: 'book' }
   | { kind: 'detail'; id: string }
   | { kind: 'settings' }
-  | { kind: 'next' };
+  | { kind: 'next' }
+  | { kind: 'song'; song: Song; back: View | null };
 
 const RELOCK_AFTER = 60_000;
 
@@ -82,6 +84,7 @@ function Main() {
   const roadOf = (after: string | null) => notes.filter(n => n.after === after);
   const line = lines[(lineIdx ?? lineOfTheDay(lines, today)) % Math.max(1, lines.length)];
   const close = () => setView(null);
+  const play = (song: Song) => setView({ kind: 'song', song, back: view });
   const todaySession = sessions.find(s => s.date === today);
 
   const saveFlow = async (d: Draft & { weather: NonNullable<Draft['weather']> }, done: boolean, edit?: Session, past?: boolean) => {
@@ -152,11 +155,13 @@ function Main() {
   } else if (view?.kind === 'road') {
     const i = sessions.findIndex(s => s.id === view.after);
     const title = view.after ? `路上 · ${short(sessions[i].date)} 之後` : sessions.length ? '路上 · 第一次之前' : '路上 · 出發之前';
-    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} onClose={close} />;
+    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} onPlay={play} onClose={close} />;
   } else if (view?.kind === 'book') {
     sheet = (
       <Book
         sessions={sessions}
+        notes={notes}
+        onPlay={play}
         onOpen={s => setView({ kind: 'detail', id: s.id })}
         onBackfill={() => setView({ kind: 'flow', past: true })}
         onBackfillRoad={() => setView({ kind: 'road', after: current })}
@@ -178,6 +183,19 @@ function Main() {
       );
   } else if (view?.kind === 'settings') {
     sheet = <Settings settings={settings} onClose={() => setView({ kind: 'book' })} />;
+  } else if (view?.kind === 'song') {
+    const { song, back } = view;
+    sheet = (
+      <>
+        <div className="scrim" onClick={() => setView(back)} />
+        <div className="ask" role="dialog" aria-label={`聽聽看：${song.name}`}>
+          <h3>{song.name}</h3>
+          {song.artists && <p className="sub center">{song.artists}</p>}
+          <SongPlayer song={song} />
+          <button className="ghost" type="button" onClick={() => setView(back)}>關閉</button>
+        </div>
+      </>
+    );
   } else if (view?.kind === 'next') {
     sheet = (
       <>
@@ -204,13 +222,14 @@ function Main() {
   return (
     <div className="page">
       {/* hidden and still under a full-page sheet, so typing doesn't compete with the landscape */}
-      <div className={`home${sheet && view?.kind !== 'ask' && view?.kind !== 'next' ? ' covered' : ''}`} inert={!!sheet}>
+      <div className={`home${sheet && view?.kind !== 'ask' && view?.kind !== 'next' && view?.kind !== 'song' ? ' covered' : ''}`} inert={!!sheet}>
       <div dangerouslySetInnerHTML={{ __html: SKY }} style={{ display: 'contents' }} />
       <Landscape
         sessions={sessions}
         notes={notes}
         nextSession={settings.nextSession}
         onOpenSession={s => setView({ kind: 'detail', id: s.id })}
+        onPlay={play}
         onOpenRoad={after => setView({ kind: 'road', after })}
         onNextSign={() => setView({ kind: 'next' })}
       />
@@ -229,6 +248,9 @@ function Main() {
               ))}
               {line.small && <small>{line.small}</small>}
             </button>
+          )}
+          {line?.song && (
+            <button className="listen" type="button" onClick={() => play(line.song!)}>♪ 聽聽看</button>
           )}
         </div>
         <button className="book" type="button" aria-label="全部紀錄" onClick={() => setView({ kind: 'book' })}>
