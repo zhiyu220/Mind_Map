@@ -64,6 +64,8 @@ export interface Settings {
   nextSession?: string; // YYYY-MM-DD
   customTopics: string[];
   pinHash?: string;
+  /** id of this phone's Face ID key (WebAuthn); never goes into a backup */
+  faceId?: string;
   spotifyClientId?: string;
   /** keep a private 「Mind Map」 playlist of every session's song; on unless turned off */
   spotifyPlaylist?: boolean;

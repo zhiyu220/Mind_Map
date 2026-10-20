@@ -88,7 +88,7 @@ function Main() {
   const lines = useMemo(() => homeLines(sessions ?? [], notes ?? [], today, settings.nextSession), [sessions, notes, today, settings.nextSession]);
 
   if (!sessions || !notes || !practices || !loaded) return <div className="page" />;
-  if (settings.pinHash && !unlocked) return <Lock pinHash={settings.pinHash} onUnlock={() => setUnlocked(true)} />;
+  if (settings.pinHash && !unlocked) return <Lock pinHash={settings.pinHash} faceId={settings.faceId} onUnlock={() => setUnlocked(true)} />;
 
   const current = sessions.length ? sessions[sessions.length - 1].id : null;
   const roadOf = (after: string | null) => notes.filter(n => n.after === after);
