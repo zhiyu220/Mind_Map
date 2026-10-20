@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import type { RoadNote, Weather } from '../types';
+import type { RoadNote, Song, Weather } from '../types';
 import { WEATHER_NAME } from '../types';
 import { short, todayKey } from '../lib/dates';
 import { addNote, deleteNote, toggleStar, updateNote } from '../lib/store';
 import { StarIcon, WeatherIcon, WeatherPicker } from './Weather';
 import { useToast } from './Toast';
+import SongPicker, { SongChip } from './SongPicker';
 
 interface Props {
   title: string;
@@ -12,16 +13,18 @@ interface Props {
   notes: RoadNote[];
   /** only the stretch you're walking now takes new notes */
   writable: boolean;
+  onPlay: (s: Song) => void;
   onClose: () => void;
 }
 
 /** The dashed dot: things that happened between two sessions. */
-export default function RoadSheet({ title, after, notes, writable, onClose }: Props) {
+export default function RoadSheet({ title, after, notes, writable, onPlay, onClose }: Props) {
   const say = useToast();
   const [text, setText] = useState('');
   const [w, setW] = useState<Weather | null>(null);
   const [star, setStar] = useState(false);
   const [date, setDate] = useState(todayKey);
+  const [song, setSong] = useState<Song | undefined>();
   const [confirm, setConfirm] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   // oldest first, so the newest note is at the bottom
@@ -31,11 +34,12 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
 
   const save = async () => {
     const t = text.trim();
-    if (!t && !w) return say('寫一句，或點一個天氣');
-    const landed = await addNote({ text: t, weather: w ?? undefined, star }, date);
+    if (!t && !w && !song) return say('寫一句、點一個天氣，或加一首歌');
+    const landed = await addNote({ text: t, weather: w ?? undefined, star, song }, date);
     setText('');
     setW(null);
     setStar(false);
+    setSong(undefined);
     say(landed === after ? '記下來了' : `記在 ${short(date)} 那段路上了`);
     setDate(todayKey());
   };
@@ -57,7 +61,8 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
       {n.weather ? <WeatherIcon w={n.weather} className="w" /> : <svg className="w" aria-hidden="true" />}
       <div className="txt">
         <span>{short(n.date)}</span>
-        {n.text ? n.text : <em>只記了天氣：{WEATHER_NAME[n.weather!]}</em>}
+        {n.text ? n.text : n.weather ? <em>只記了天氣：{WEATHER_NAME[n.weather]}</em> : null}
+        {n.song && <SongChip song={n.song} onPlay={() => onPlay(n.song!)} />}
         {confirm === n.id ? (
           <div className="confirm">
             要刪掉這一則嗎？
@@ -90,6 +95,7 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
             <div className="compose">
               <textarea id="road-text" className="field" placeholder="發生了什麼，或想到什麼" value={text} onChange={e => setText(e.target.value)} />
               <WeatherPicker small value={w} onChange={setW} />
+              <NoteSong value={song} onChange={setSong} />
               <label className="date-row">
                 <span>日期</span>
                 <input id="road-date" className="field" type="date" max={todayKey()} value={date} onChange={e => setDate(e.target.value || todayKey())} />
@@ -123,16 +129,18 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
 }
 
 /** Changing one road note: words, weather, date and star. */
-function NoteEditor({ note, onDone, onCancel }: { note: RoadNote; onDone: (p: { text: string; weather?: Weather; star: boolean; date: string }) => void; onCancel: () => void }) {
+function NoteEditor({ note, onDone, onCancel }: { note: RoadNote; onDone: (p: { text: string; weather?: Weather; star: boolean; date: string; song?: Song }) => void; onCancel: () => void }) {
   const say = useToast();
   const [text, setText] = useState(note.text);
   const [w, setW] = useState<Weather | null>(note.weather ?? null);
   const [date, setDate] = useState(note.date);
   const [star, setStar] = useState(note.star);
+  const [song, setSong] = useState<Song | undefined>(note.song);
   return (
     <div className="compose editing">
       <textarea id={`edit-${note.id}`} className="field" value={text} onChange={e => setText(e.target.value)} placeholder="發生了什麼，或想到什麼" />
       <WeatherPicker small value={w} onChange={setW} />
+      <NoteSong value={song} onChange={setSong} />
       <label className="date-row">
         <span>日期</span>
         <input className="field" type="date" max={todayKey()} value={date} onChange={e => setDate(e.target.value || note.date)} />
@@ -146,11 +154,31 @@ function NoteEditor({ note, onDone, onCancel }: { note: RoadNote; onDone: (p: { 
         <button
           className="pill sm"
           type="button"
-          onClick={() => (text.trim() || w ? onDone({ text: text.trim(), weather: w ?? undefined, star, date }) : say('寫一句，或點一個天氣'))}
+          onClick={() => (text.trim() || w || song ? onDone({ text: text.trim(), weather: w ?? undefined, star, date, song }) : say('寫一句、點一個天氣，或加一首歌'))}
         >
           存好
         </button>
       </div>
+    </div>
+  );
+}
+
+/** "♪ 加一首歌" on a road note: opens the same song picker as a session day. */
+function NoteSong({ value, onChange }: { value?: Song; onChange: (s: Song | undefined) => void }) {
+  const [open, setOpen] = useState(!!value);
+  if (!open) {
+    return (
+      <button className="linkish" type="button" onClick={() => setOpen(true)}>
+        ♪ 加一首歌
+      </button>
+    );
+  }
+  return (
+    <div className="note-song">
+      <SongPicker value={value} onChange={onChange} />
+      <button className="linkish small" type="button" onClick={() => (onChange(undefined), setOpen(false))}>
+        不加歌了
+      </button>
     </div>
   );
 }

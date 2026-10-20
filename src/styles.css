@@ -303,6 +303,34 @@ img.cover { object-fit: cover; }
 .home[inert] * { animation-play-state: paused !important; }
 .home.covered { visibility: hidden; }
 
+/* songs as small tappable rows */
+.cover.small { width: 36px; height: 36px; border-radius: 6px; border-width: 1.5px; }
+.cover.small svg { width: 18px; height: 18px; }
+.chip-song { padding: 6px 8px; background: var(--chip); border-radius: 12px; margin-top: 6px; gap: 10px; }
+.chip-song b { font-size: 15px; }
+.chip-song .play-mark { flex: none; font-size: 12px; color: var(--sheet-soft); padding-right: 4px; }
+.bubble button.chip-song { display: flex; background: rgba(0, 0, 0, .05); color: #2c3a4b; width: 100%; text-decoration: none; margin: 6px 0 2px; font-size: 14px; }
+.bubble .chip-song span { color: #5a6573; }
+.book-row .cover.small { align-self: center; }
+.note-song { display: grid; gap: 8px; }
+.listen { margin-top: 8px; border: 2px solid var(--ink); background: var(--paper); color: #2c3a4b; border-radius: 999px; padding: 4px 14px; font-size: 14px; }
+.sub.center { text-align: center; margin-top: -6px; }
+
+/* 全部紀錄 tabs and 每月回顧 */
+.tabs-row { display: flex; gap: 6px; background: var(--chip); border-radius: 999px; padding: 4px; align-self: flex-start; }
+.tabs-row button { border: 0; background: none; border-radius: 999px; padding: 6px 16px; font-size: 15px; color: var(--sheet-soft); }
+.tabs-row button[aria-selected="true"] { background: var(--paper); color: #2c3a4b; box-shadow: 0 1px 0 var(--sheet-line); }
+.months { display: grid; gap: 18px; }
+.month { display: grid; gap: 12px; padding-bottom: 18px; border-bottom: 1.5px dashed var(--sheet-line); }
+.month h3 { margin: 0; font-size: 22px; font-weight: 400; }
+.month .tiny { margin: -8px 0 0; }
+.month-weather { display: flex; flex-wrap: wrap; gap: 6px; }
+.month-weather button { border: 0; background: var(--chip); border-radius: 14px; padding: 6px 8px 4px; display: grid; justify-items: center; gap: 2px; color: var(--sheet-ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+.month-weather svg { width: 34px; height: 34px; }
+.month-song .tiny { display: block; margin-top: 6px; }
+.quote.small { font-size: 17px; margin-top: 8px; }
+.quote small { display: block; font-size: 12px; color: var(--sheet-soft); }
+
 @media (max-height: 500px) {
   .hint { display: none; }
   .bottom { justify-items: end; }

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { RoadNote, Session } from '../types';
+import type { RoadNote, Session, Song } from '../types';
 import { WEATHER_NAME } from '../types';
+import { SongChip } from './SongPicker';
 import { long, short } from '../lib/dates';
 import { AHEAD, blob, groundY, H, landMarkup, pathY, STEP, X0 } from '../lib/scenery';
 
@@ -11,13 +12,14 @@ interface Props {
   onOpenSession: (s: Session) => void;
   onOpenRoad: (after: string | null) => void;
   onNextSign: () => void;
+  onPlay: (s: Song) => void;
 }
 
 type Picked = { kind: 'session'; i: number } | { kind: 'road'; after: string | null; x: number };
 
 const dotX = (i: number) => X0 + i * STEP;
 
-export default function Landscape({ sessions, notes, nextSession, onOpenSession, onOpenRoad, onNextSign }: Props) {
+export default function Landscape({ sessions, notes, nextSession, onOpenSession, onOpenRoad, onNextSign, onPlay }: Props) {
   const N = sessions.length;
   const walkerX = N ? dotX(N - 1) : X0 - 50;
   // the land always reaches past the right edge of the screen, even with only a few dots
@@ -186,7 +188,7 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
               <b>第 {picked.kind === 'session' ? picked.i + 1 : ''} 次 · {long(sp.date)}</b>
               {WEATHER_NAME[sp.weather]}
               {!sp.done && '，還沒寫完'}
-              {sp.song && <span className="song">♪ {sp.song.name} · {sp.song.artists}</span>}
+              {sp.song && <SongChip song={sp.song} onPlay={() => (setPicked(null), onPlay(sp.song!))} />}
               <button type="button" onClick={() => (setPicked(null), onOpenSession(sp))}>{sp.done ? '看這一次的紀錄' : '看看，或補一點'}</button>
             </>
           ) : picked.kind === 'road' ? (

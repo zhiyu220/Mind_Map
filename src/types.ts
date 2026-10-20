@@ -45,6 +45,7 @@ export interface RoadNote {
   weather?: Weather;
   text: string;
   star: boolean;
+  song?: Song;
   createdAt: number;
 }
 

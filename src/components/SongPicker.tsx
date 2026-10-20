@@ -181,14 +181,29 @@ export default function SongPicker({ value, onChange }: { value?: Song; onChange
   );
 }
 
-function Cover({ song }: { song: Song }) {
+export function Cover({ song, small }: { song: Song; small?: boolean }) {
+  const cls = small ? 'cover small' : 'cover';
   return song.image ? (
-    <img className="cover" src={song.image} alt="" width="46" height="46" />
+    <img className={cls} src={song.image} alt="" width="46" height="46" />
   ) : (
-    <div className="cover" style={{ background: 'var(--w-rain)' }}>
+    <div className={cls} style={{ background: 'var(--w-rain)' }}>
       <svg aria-hidden="true">
         <use href="#i-note" />
       </svg>
     </div>
+  );
+}
+
+/** A song as a tappable row: cover, name and artist. */
+export function SongChip({ song, onPlay }: { song: Song; onPlay: () => void }) {
+  return (
+    <button className="song-row chip-song" type="button" onClick={onPlay} aria-label={`聽聽看：${song.name}`}>
+      <Cover song={song} small />
+      <div>
+        <b>{song.name}</b>
+        {song.artists && <span>{song.artists}</span>}
+      </div>
+      <span className="play-mark" aria-hidden="true">▶</span>
+    </button>
   );
 }
