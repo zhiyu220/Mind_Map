@@ -4,7 +4,7 @@ import { saveSettings } from '../db';
 import { todayKey } from '../lib/dates';
 import { hashPin } from '../lib/pin';
 import { makeBackup, readBackup, restoreBackup, shareOrDownload } from '../lib/backup';
-import { clientId, disconnect, isConnected, startSpotifyLogin } from '../lib/spotify';
+import { canRemote, clientId, disconnect, isConnected, startSpotifyLogin } from '../lib/spotify';
 import { useToast } from './Toast';
 
 export const HELPLINES = [
@@ -33,6 +33,7 @@ export function NextSessionField({ value, onDone }: { value?: string; onDone?: (
 export default function Settings({ settings, onClose }: { settings: S; onClose: () => void }) {
   const say = useToast();
   const [spotify, setSpotify] = useState<boolean | null>(null);
+  const [remote, setRemote] = useState(false);
   const [hasClientId, setHasClientId] = useState(false);
   const [cid, setCid] = useState(settings.spotifyClientId ?? '');
   const [pinStep, setPinStep] = useState<'idle' | 'set' | 'again'>('idle');
@@ -44,6 +45,7 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
 
   useEffect(() => {
     isConnected().then(setSpotify);
+    canRemote().then(setRemote);
     clientId().then(id => setHasClientId(!!id));
   }, [settings.spotifyClientId]);
 
@@ -85,12 +87,19 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
           <h3>Spotify</h3>
           {spotify ? (
             <>
-              <p className="tiny">已連結。記錄時可以直接用歌名搜尋。</p>
-              <button className="pill sm" type="button" onClick={() => disconnect().then(() => setSpotify(false))}>取消連結</button>
+              <p className="tiny">
+                {remote
+                  ? '已連結。記錄時可以用歌名搜尋；有 Premium 的話，紀錄裡可以按「用我的 Spotify 播完整首」，由手機上的 Spotify 播放。'
+                  : '已連結，可以用歌名搜尋。重新連結一次，就能用你的 Spotify 播完整首（需要 Premium）。'}
+              </p>
+              <div className="row-buttons">
+                {!remote && <button className="pill sm" type="button" onClick={() => disconnect().then(startSpotifyLogin)}>重新連結</button>}
+                <button className="pill sm" type="button" onClick={() => disconnect().then(() => { setSpotify(false); setRemote(false); })}>取消連結</button>
+              </div>
             </>
           ) : hasClientId ? (
             <>
-              <p className="tiny">連結之後，記錄時就能用歌名搜尋。會跳到 Spotify 登入，再回到這裡。</p>
+              <p className="tiny">連結之後，記錄時就能用歌名搜尋；有 Premium 還能用你的 Spotify 播完整首。會跳到 Spotify 登入，再回到這裡。</p>
               <button className="pill sm" type="button" onClick={() => startSpotifyLogin()}>連結 Spotify</button>
             </>
           ) : (

@@ -53,4 +53,11 @@ npm run icons      # 從 public/icons/favicon.svg 產生 PNG 圖示
 2. **Redirect URI** 填 App 設定頁顯示的網址（例如 `https://mindweb-mymap.<帳號>.workers.dev/`）。
 3. 把 **Client ID** 貼到 App 的「設定 → Spotify」，再按「連結 Spotify」。
 
-只用到搜尋，不需要任何特殊權限；播放使用 Spotify 官方嵌入播放器，沒登入時可能只能試聽片段，旁邊有「在 Spotify 打開」。
+建立 App 時只要勾 **Web API**（Web Playback SDK 不支援手機瀏覽器，用不到）。
+
+播放有三種：
+- **Spotify 官方嵌入播放器**：在 iPhone 上通常只能試聽片段。
+- **用我的 Spotify 播完整首**（需要 Premium）：App 遙控你手機上的 Spotify 播這首歌，可以繼續留在 App 裡。Spotify 要最近打開過才找得到；找不到時先打開 Spotify 一下再按。
+- **在 Spotify 打開**：直接跳到 Spotify。
+
+連結時會請求「控制播放」與「讀取播放狀態」兩個權限。在這個功能加入之前連結過的，要到設定裡按「重新連結」。

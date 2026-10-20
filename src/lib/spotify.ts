@@ -1,5 +1,7 @@
 // Spotify, signed in with your own account (Authorization Code + PKCE: no server, no secret).
-// Used to search songs by name. Playback is Spotify's own embedded player.
+// Used to search songs by name, and (with Premium) to start a song on your own Spotify app.
+// In-page full playback (Web Playback SDK) does not work in mobile browsers, so we use the
+// embedded player plus remote control of the Spotify app instead.
 
 import { getKV, getSettings, setKV } from '../db';
 import type { Song } from '../types';
@@ -8,7 +10,11 @@ interface Tokens {
   access: string;
   refresh: string;
   expires: number;
+  /** what this sign-in allowed; older sign-ins had none */
+  scope?: string;
 }
+
+const SCOPES = 'user-modify-playback-state user-read-playback-state';
 
 const VERIFIER = 'my-sky:spotify-verifier';
 const redirectUri = () => location.origin + location.pathname;
@@ -32,7 +38,7 @@ export async function startSpotifyLogin() {
     redirect_uri: redirectUri(),
     code_challenge_method: 'S256',
     code_challenge: challenge,
-    scope: ''
+    scope: SCOPES
   });
   location.assign(`https://accounts.spotify.com/authorize?${q}`);
 }
@@ -58,9 +64,19 @@ export async function finishSpotifyLogin() {
   }
 }
 
-async function keep(j: { access_token: string; refresh_token?: string; expires_in: number }) {
+async function keep(j: { access_token: string; refresh_token?: string; expires_in: number; scope?: string }) {
   const old = await getKV<Tokens>('spotify');
-  await setKV('spotify', { access: j.access_token, refresh: j.refresh_token ?? old?.refresh ?? '', expires: Date.now() + (j.expires_in - 60) * 1000 });
+  await setKV('spotify', {
+    access: j.access_token,
+    refresh: j.refresh_token ?? old?.refresh ?? '',
+    expires: Date.now() + (j.expires_in - 60) * 1000,
+    scope: j.scope ?? old?.scope ?? ''
+  });
+}
+
+/** Signed in with permission to start songs on the Spotify app (needs a fresh sign-in after this feature arrived). */
+export async function canRemote() {
+  return !!(await getKV<Tokens>('spotify'))?.scope?.includes('user-modify-playback-state');
 }
 
 export async function isConnected() {
@@ -135,3 +151,48 @@ export async function songFromLink(id: string): Promise<Song> {
 
 export const embedUrl = (id: string) => `https://open.spotify.com/embed/track/${id}?utm_source=generator`;
 export const openUrl = (id: string) => `https://open.spotify.com/track/${id}`;
+
+export type RemoteResult = 'playing' | 'no-device' | 'premium' | 'not-connected' | 'error';
+
+interface Device {
+  id: string;
+  is_active: boolean;
+  type: string;
+}
+
+/**
+ * Plays a song on one of your Spotify apps (the one already playing, else this phone).
+ * Spotify must have been opened recently, or it won't show up as a device.
+ */
+export async function playOnSpotify(trackId: string): Promise<RemoteResult> {
+  const t = await token();
+  if (!t) return 'not-connected';
+  const auth = { Authorization: `Bearer ${t}` };
+  try {
+    const dres = await fetch('https://api.spotify.com/v1/me/player/devices', { headers: auth });
+    if (dres.status === 401) return 'not-connected';
+    const { devices = [] } = dres.ok ? ((await dres.json()) as { devices?: Device[] }) : {};
+    const usable = devices.filter(d => d.id);
+    const device = usable.find(d => d.is_active) ?? usable.find(d => d.type === 'Smartphone') ?? usable[0];
+    if (!device) return 'no-device';
+    const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${encodeURIComponent(device.id)}`, {
+      method: 'PUT',
+      headers: { ...auth, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uris: [`spotify:track:${trackId}`] })
+    });
+    if (res.ok) return 'playing';
+    if (res.status === 404) return 'no-device';
+    if (res.status === 403) return 'premium';
+    if (res.status === 401) return 'not-connected';
+    return 'error';
+  } catch {
+    return 'error';
+  }
+}
+
+export async function pauseSpotify(): Promise<boolean> {
+  const t = await token();
+  if (!t) return false;
+  const res = await fetch('https://api.spotify.com/v1/me/player/pause', { method: 'PUT', headers: { Authorization: `Bearer ${t}` } }).catch(() => null);
+  return !!res?.ok;
+}
