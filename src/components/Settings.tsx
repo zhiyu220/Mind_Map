@@ -230,6 +230,8 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
           </ul>
           <p className="tiny">如果有立即的危險，請打 119 或 110。</p>
         </div>
+
+        <p className="tiny version">Mind Map {__APP_VERSION__}{__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}</p>
       </div>
     </section>
   );
