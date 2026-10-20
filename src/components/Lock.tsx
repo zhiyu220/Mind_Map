@@ -17,10 +17,6 @@ export default function Lock({ pinHash, faceId, onUnlock }: { pinHash: string; f
       onUnlock();
     }
   };
-  // ask for Face ID right away; if the phone wants a tap first, the button below does it
-  useEffect(() => {
-    face();
-  }, []);
 
   // tick while you have to wait
   useEffect(() => {
