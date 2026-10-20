@@ -127,3 +127,7 @@ npm run icons      # 從 public/icons/favicon.svg 產生 PNG 圖示
 - **風景**是程式畫的 SVG（[`src/lib/scenery.ts`](src/lib/scenery.ts)）。手繪的歪斜感直接畫進形狀裡，不用即時濾鏡；會動的雲和蝴蝶只用 transform，在 iPhone 上捲動才會順、不發燙。
 - **資料**：[`src/lib/store.ts`](src/lib/store.ts) 處理新增、修改和補記；一則「路上」屬於它日期之前的最後一次諮商，補記一次諮商時，會把那段路上之後的事分過去（[`src/lib/stretch.ts`](src/lib/stretch.ts)）。
 - 產品構想與製作過程：[`docs/ROADMAP.md`](docs/ROADMAP.md)；最早的樣稿：[`mockup/home.html`](mockup/home.html)。
+
+## 授權
+
+[MIT](LICENSE)。可以自由使用、修改、分享，保留授權聲明即可。
