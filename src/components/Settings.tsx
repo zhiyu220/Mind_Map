@@ -69,9 +69,11 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
   };
 
   const pinInput = async (v: string) => {
+    if (pin.length === 4) return; // four digits in: moving on
     const digits = v.replace(/\D/g, '').slice(0, 4);
     setPin(digits);
     if (digits.length < 4) return;
+    await new Promise(r => setTimeout(r, 200)); // let the fourth dot show before moving on
     if (pinStep === 'set') {
       setFirst(digits);
       setPin('');
