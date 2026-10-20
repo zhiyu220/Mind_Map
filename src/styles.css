@@ -199,7 +199,7 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
 .countdown { display: grid; justify-items: center; gap: 2px; text-align: center; }
 .countdown b { font-weight: 400; font-size: 34px; line-height: 1.2; }
 .countdown span { font-size: 16px; color: var(--sheet-soft); }
-.countdown small { font-size: 13px; color: var(--sheet-soft); margin-top: 12px; justify-self: start; }
+.change-date { font-size: 13px; color: var(--sheet-soft); margin: 6px 0 -4px; }
 .ask h3 { margin: 0 0 4px; font-size: 22px; font-weight: 400; text-align: center; }
 .big { display: flex; align-items: center; gap: 14px; width: 100%; max-width: 480px; margin: 0 auto; border: 2.5px solid var(--ink); background: var(--chip); border-radius: 20px; padding: 14px 18px; text-align: left; font-size: 18px; color: var(--sheet-ink); }
 .big svg { width: 40px; height: 40px; flex: none; }
@@ -294,10 +294,11 @@ input, textarea { user-select: text; -webkit-user-select: text; }
 .song-row.static:hover { background: none; }
 img.cover { object-fit: cover; }
 .song-chosen, .song-search { display: grid; gap: 12px; }
-.song-player { display: grid; gap: 8px; }
+/* the compact Spotify player, with a little room from the line above so it doesn't crowd the page */
+.song-player { display: grid; gap: 10px; margin-top: 12px; }
 .song-player iframe { border: 0; border-radius: 14px; display: block; }
 .remote { display: flex; }
-.remote .pill { display: inline-flex; align-items: center; gap: 8px; }
+.remote .pill { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; padding: 6px 16px; box-shadow: 0 2px 0 var(--ink); }
 .spotify-dot { width: 10px; height: 10px; border-radius: 50%; background: #1db954; }
 .linkish.small { font-size: 12px; margin-top: 4px; display: block; }
 .row-links { display: flex; gap: 16px; }
