@@ -1,5 +1,6 @@
 // Static drawings shared by the whole app: weather icons, the still sky and drifting clouds.
-// Kept as markup so they are drawn once and never re-rendered.
+// Kept as markup so they are drawn once and never re-rendered. Nothing inside an SVG animates:
+// on iPhone that repaints the whole drawing every frame. The clouds move as separate HTML layers instead.
 
 export const DEFS = `<svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -38,15 +39,11 @@ export const SKY = `<svg class="back" viewBox="0 0 1200 600" preserveAspectRatio
       <path d="M240 196 l-18 14 l10 -2 l8 8 l9 -9 l9 3z M790 206 l-18 14 l10 -2 l8 8 l9 -9 l9 3z" fill="var(--cloud)" stroke-width="1.8"/>
     </g>
     <g fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round">
-      <path class="bird" d="M560 200 q6 -6 12 0 q6 -6 12 0"/>
-      <path class="bird" style="animation-delay:-.5s" d="M592 186 q4 -4 8 0 q4 -4 8 0"/>
+      <path d="M560 200 q6 -6 12 0 q6 -6 12 0"/>
+      <path d="M592 186 q4 -4 8 0 q4 -4 8 0"/>
     </g>
   </svg>
 
-  <svg class="clouds" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-    <g stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round">
-      <g class="drift"><use href="#cloud" fill="var(--cloud)" transform="translate(0 175) scale(1.1)"/></g>
-      <g class="drift b"><use href="#cloud" fill="var(--cloud)" transform="translate(0 225) scale(.75)"/></g>
-      <g class="drift c"><use href="#cloud" fill="var(--cloud)" transform="translate(0 120) scale(.6)"/></g>
-    </g>
-  </svg>`;
+  <div class="drift-cloud a" aria-hidden="true"><svg viewBox="-4 0 114 56"><use href="#cloud" fill="var(--cloud)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/></svg></div>
+  <div class="drift-cloud b" aria-hidden="true"><svg viewBox="-4 0 114 56"><use href="#cloud" fill="var(--cloud)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/></svg></div>
+  <div class="drift-cloud c" aria-hidden="true"><svg viewBox="-4 0 114 56"><use href="#cloud" fill="var(--cloud)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/></svg></div>`;

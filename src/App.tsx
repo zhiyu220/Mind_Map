@@ -183,7 +183,8 @@ function Main() {
 
   return (
     <div className="page">
-      <div className="home" inert={!!sheet}>
+      {/* hidden and still under a full-page sheet, so typing doesn't compete with the landscape */}
+      <div className={`home${sheet && view?.kind !== 'ask' && view?.kind !== 'next' ? ' covered' : ''}`} inert={!!sheet}>
       <div dangerouslySetInnerHTML={{ __html: SKY }} style={{ display: 'contents' }} />
       <Landscape
         sessions={sessions}

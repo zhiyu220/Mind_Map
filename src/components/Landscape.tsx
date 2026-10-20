@@ -143,9 +143,7 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
           <g className="hit" tabIndex={0} role="button" aria-label={`現在這段路上，記了 ${curCount} 件事，點一下打開`}
             onClick={tap({ kind: 'road', after: current, x: rx })} onKeyDown={keys({ kind: 'road', after: current, x: rx })}>
             <circle cx={rx} cy={ry} r="30" fill="transparent" />
-            <g className="pulse">
-              <circle className="dot" cx={rx} cy={ry} r="13" fill="var(--paper)" fillOpacity=".75" stroke="var(--ink)" strokeWidth="2.5" strokeDasharray="5 5" />
-            </g>
+            <circle className="dot" cx={rx} cy={ry} r="13" fill="var(--paper)" fillOpacity=".75" stroke="var(--ink)" strokeWidth="2.5" strokeDasharray="5 5" />
             {curCount ? (
               <text className="lbl" x={rx} y={ry + 5} textAnchor="middle" style={{ fill: '#2c3a4b' }}>{curCount}</text>
             ) : (
@@ -169,14 +167,16 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
 
           <Walker x={walkerX} />
 
-          <g transform={`translate(${walkerX + 160} ${pathY(walkerX) - 130})`}>
-            <g className="fly">
-              <path className="wing" d="M0 0 C -10 -12, -16 -2, -8 4 Z" fill="var(--f1)" stroke="var(--ink)" strokeWidth="1.6" />
-              <path className="wing r" d="M0 0 C 10 -12, 16 -2, 8 4 Z" fill="var(--f1)" stroke="var(--ink)" strokeWidth="1.6" />
-            </g>
-          </g>
           <g dangerouslySetInnerHTML={{ __html: land.front }} />
         </svg>
+        {/* the butterfly is its own little layer, so its flight never repaints the land */}
+        <div className="butterfly" aria-hidden="true"
+          style={{ left: (walkerX + 160) * (screen.h / H), top: (pathY(walkerX) - 130) * (screen.h / H) }}>
+          <svg viewBox="-18 -14 36 20">
+            <path d="M0 0 C -10 -12, -16 -2, -8 4 Z" fill="var(--f1)" stroke="var(--ink)" strokeWidth="1.6" />
+            <path d="M0 0 C 10 -12, 16 -2, 8 4 Z" fill="var(--f1)" stroke="var(--ink)" strokeWidth="1.6" />
+          </svg>
+        </div>
       </div>
 
       {picked && (
@@ -207,7 +207,7 @@ function Walker({ x }: { x: number }) {
     <g className="walker" style={{ transform: `translate(${x - 4}px, ${pathY(x) - 18}px)` }}>
       <g stroke="var(--ink)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <ellipse cx="2" cy="4" rx="22" ry="5" fill="var(--foot)" stroke="none" opacity=".6" />
-        <g className="breathe">
+        <g>
           <path d="M-8 -22 L-10 0 h9 L0 -22 Z" fill="var(--boot)" />
           <path d="M4 -22 L6 0 h9 L12 -22 Z" fill="var(--boot)" />
           <rect x="-26" y="-74" width="16" height="30" rx="6" fill="var(--pack)" />
@@ -215,7 +215,7 @@ function Walker({ x }: { x: number }) {
           <path d="M2 -60 C 14 -56, 18 -46, 22 -40" fill="none" />
           <circle cx="22" cy="-39" r="4" fill="var(--skin)" />
           <path d="M-12 -78 C -6 -72, 12 -72, 16 -78 L14 -86 C 6 -82, -6 -82, -12 -86 Z" fill="var(--scarf)" />
-          <path className="scarf-tail" d="M-10 -82 C -22 -80, -30 -74, -36 -70 L-32 -64 C -24 -70, -16 -72, -8 -76 Z" fill="var(--scarf)" />
+          <path d="M-10 -82 C -22 -80, -30 -74, -36 -70 L-32 -64 C -24 -70, -16 -72, -8 -76 Z" fill="var(--scarf)" />
           <circle cx="2" cy="-102" r="20" fill="var(--skin)" />
           <path d="M-18 -104 C -18 -126, 20 -128, 22 -104 C 14 -112, -2 -114, -18 -104 Z" fill="var(--boot)" />
           <circle cx="12" cy="-100" r="2.2" fill="var(--ink)" stroke="none" />

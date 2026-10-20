@@ -80,7 +80,6 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
 .world::-webkit-scrollbar { display: none; }
 .world svg { display: block; height: 100%; width: auto; max-width: none; }
 .grain { position: absolute; inset: 0; pointer-events: none; opacity: var(--grain); background-size: 160px 160px; }
-.clouds { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
 
 .top {
   position: absolute; top: 0; left: 0; right: 0; z-index: 2; pointer-events: none;
@@ -221,25 +220,6 @@ textarea.field.tall { min-height: 260px; }
 .pill.sm { font-size: 16px; padding: 8px 22px; box-shadow: 0 3px 0 var(--ink); flex: none; }
 
 /* ambient motion */
-.drift { animation: drift 120s linear infinite; }
-.drift.b { animation-duration: 160s; animation-delay: -70s; }
-.drift.c { animation-duration: 140s; animation-delay: -30s; }
-@keyframes drift { from { transform: translateX(-300px); } to { transform: translateX(1300px); } }
-.bird { animation: flap 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes flap { 50% { transform: scaleY(.55); } }
-.breathe { animation: breathe 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
-@keyframes breathe { 50% { transform: scaleY(1.015); } }
-.scarf-tail { animation: flutter 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 0 0; }
-@keyframes flutter { 50% { transform: rotate(-12deg); } }
-.sway { animation: sway 4.5s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
-@keyframes sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(4deg); } }
-.fly { animation: butterfly 9s ease-in-out infinite; }
-@keyframes butterfly { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(18px, -14px); } 50% { transform: translate(34px, 2px); } 75% { transform: translate(14px, 10px); } }
-.wing { animation: wing .35s ease-in-out infinite; transform-box: fill-box; transform-origin: 100% 50%; }
-.wing.r { transform-origin: 0 50%; }
-@keyframes wing { 50% { transform: scaleX(.3); } }
-.pulse { animation: pulse 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes pulse { 50% { transform: scale(1.12); } }
 
 /* inputs stay selectable */
 input, textarea { user-select: text; -webkit-user-select: text; }
@@ -253,6 +233,8 @@ img.cover { object-fit: cover; }
 .remote .pill { display: inline-flex; align-items: center; gap: 8px; }
 .spotify-dot { width: 10px; height: 10px; border-radius: 50%; background: #1db954; }
 .linkish.small { font-size: 12px; margin-top: 4px; display: block; }
+.row-links { display: flex; gap: 16px; }
+.compose.editing { margin-bottom: 4px; }
 .bubble button { display: block; }
 .settings .group > .pill { justify-self: start; }
 .confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 14px; color: var(--sheet-ink); background: var(--chip); border-radius: 14px; padding: 10px 14px; margin-top: 6px; }
@@ -296,6 +278,23 @@ img.cover { object-fit: cover; }
 .keypad button { width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--paper); color: #2c3a4b; font-size: 26px; }
 .keypad button:disabled { visibility: hidden; }
 .keypad button:active { transform: scale(.94); }
+
+/* ambient motion: only on separate HTML layers (transform only), so the phone's compositor
+   moves them without repainting the landscape */
+.drift-cloud { position: absolute; left: 0; pointer-events: none; will-change: transform; animation: drift 120s linear infinite; }
+.drift-cloud svg { display: block; width: 100%; height: auto; overflow: visible; }
+.drift-cloud.a { top: 29%; width: 19vh; }
+.drift-cloud.b { top: 37%; width: 13vh; animation-duration: 160s; animation-delay: -70s; }
+.drift-cloud.c { top: 20%; width: 10vh; animation-duration: 140s; animation-delay: -30s; }
+@keyframes drift { from { transform: translateX(-30vh); } to { transform: translateX(calc(100vw + 10vh)); } }
+.butterfly { position: absolute; width: 4.5vh; margin: -2vh 0 0 -2vh; pointer-events: none; will-change: transform; animation: butterfly 9s ease-in-out infinite; }
+.butterfly svg { display: block; width: 100%; height: auto; overflow: visible; animation: flap .35s ease-in-out infinite; }
+@keyframes butterfly { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(3vh, -2.5vh); } 50% { transform: translate(6vh, .4vh); } 75% { transform: translate(2.5vh, 1.8vh); } }
+@keyframes flap { 50% { transform: scaleX(.45); } }
+
+/* under a full-page sheet the landscape is hidden and stops moving */
+.home[inert] * { animation-play-state: paused !important; }
+.home.covered { visibility: hidden; }
 
 @media (max-height: 500px) {
   .hint { display: none; }

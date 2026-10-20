@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { RoadNote, Weather } from '../types';
 import { WEATHER_NAME } from '../types';
 import { short, todayKey } from '../lib/dates';
-import { addNote, deleteNote, toggleStar } from '../lib/store';
+import { addNote, deleteNote, toggleStar, updateNote } from '../lib/store';
 import { StarIcon, WeatherIcon, WeatherPicker } from './Weather';
 import { useToast } from './Toast';
 
@@ -23,6 +23,7 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
   const [star, setStar] = useState(false);
   const [date, setDate] = useState(todayKey);
   const [confirm, setConfirm] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const list = [...notes].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
   const starred = list.filter(n => n.star);
   const rest = list.filter(n => !n.star);
@@ -38,7 +39,19 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
     setDate(todayKey());
   };
 
-  const row = (n: RoadNote) => (
+  const row = (n: RoadNote) =>
+    editing === n.id ? (
+      <NoteEditor
+        key={n.id}
+        note={n}
+        onDone={async patch => {
+          const landed = await updateNote(n.id, patch);
+          setEditing(null);
+          say(landed === n.after ? '改好了' : `改好了，移到 ${short(patch.date)} 那段路上`);
+        }}
+        onCancel={() => setEditing(null)}
+      />
+    ) : (
     <div className="entry" key={n.id}>
       {n.weather ? <WeatherIcon w={n.weather} className="w" /> : <svg className="w" aria-hidden="true" />}
       <div className="txt">
@@ -51,7 +64,10 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
             <button type="button" onClick={() => setConfirm(null)}>不要</button>
           </div>
         ) : (
-          <button className="linkish small" type="button" onClick={() => setConfirm(n.id)}>刪除</button>
+          <div className="row-links">
+            <button className="linkish small" type="button" onClick={() => setEditing(n.id)}>修改</button>
+            <button className="linkish small" type="button" onClick={() => setConfirm(n.id)}>刪除</button>
+          </div>
         )}
       </div>
       <button className="star" type="button" aria-pressed={n.star} aria-label="想帶去說" onClick={() => toggleStar(n)}>
@@ -102,5 +118,38 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
         {!list.length && <p className="sub">這段路上還沒有記東西。</p>}
       </div>
     </section>
+  );
+}
+
+/** Changing one road note: words, weather, date and star. */
+function NoteEditor({ note, onDone, onCancel }: { note: RoadNote; onDone: (p: { text: string; weather?: Weather; star: boolean; date: string }) => void; onCancel: () => void }) {
+  const say = useToast();
+  const [text, setText] = useState(note.text);
+  const [w, setW] = useState<Weather | null>(note.weather ?? null);
+  const [date, setDate] = useState(note.date);
+  const [star, setStar] = useState(note.star);
+  return (
+    <div className="compose editing">
+      <textarea id={`edit-${note.id}`} className="field" value={text} onChange={e => setText(e.target.value)} placeholder="發生了什麼，或想到什麼" />
+      <WeatherPicker small value={w} onChange={setW} />
+      <label className="date-row">
+        <span>日期</span>
+        <input className="field" type="date" max={todayKey()} value={date} onChange={e => setDate(e.target.value || note.date)} />
+      </label>
+      <div className="compose-row">
+        <button className="star" type="button" aria-pressed={star} aria-label="想帶去說" onClick={() => setStar(!star)}>
+          <StarIcon />
+        </button>
+        <span style={{ flex: 1 }} />
+        <button className="ghost" type="button" onClick={onCancel}>取消</button>
+        <button
+          className="pill sm"
+          type="button"
+          onClick={() => (text.trim() || w ? onDone({ text: text.trim(), weather: w ?? undefined, star, date }) : say('寫一句，或點一個天氣'))}
+        >
+          存好
+        </button>
+      </div>
+    </div>
   );
 }
