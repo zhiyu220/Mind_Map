@@ -3,7 +3,8 @@ import type { Settings as S } from '../types';
 import { saveSettings } from '../db';
 import { todayKey } from '../lib/dates';
 import { hashPin } from '../lib/pin';
-import { makeBackup, readBackup, restoreBackup, shareOrDownload } from '../lib/backup';
+import { makeBackup, openBackup, readBackup, restoreBackup, shareOrDownload, type Backup } from '../lib/backup';
+import type { Sealed } from '../lib/crypto';
 import { clientId, disconnect, isConnected, needsReconnect, playlistInfo, playlistUrl, startSpotifyLogin } from '../lib/spotify';
 import { useToast } from './Toast';
 
@@ -40,8 +41,6 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
   const [pinStep, setPinStep] = useState<'idle' | 'set' | 'again'>('idle');
   const [pin, setPin] = useState('');
   const [first, setFirst] = useState('');
-  const [restore, setRestore] = useState<Awaited<ReturnType<typeof readBackup>> | null>(null);
-  const file = useRef<HTMLInputElement>(null);
   const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone;
 
   useEffect(() => {
@@ -152,37 +151,7 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
           <p className="tiny">忘記密碼就打不開了（資料只在這支手機裡），記得也做備份。</p>
         </div>
 
-        <div className="group">
-          <h3>備份</h3>
-          <p className="tiny">資料只存在這支手機。換手機、或怕被清掉時，存一份備份檔到「檔案」。</p>
-          <div className="row-buttons">
-            <button className="pill sm" type="button" onClick={async () => shareOrDownload(await makeBackup())}>匯出備份</button>
-            <button className="pill sm" type="button" onClick={() => file.current?.click()}>從備份還原</button>
-          </div>
-          <input
-            ref={file}
-            type="file"
-            accept="application/json,.json"
-            hidden
-            onChange={async e => {
-              const f = e.target.files?.[0];
-              e.target.value = '';
-              if (!f) return;
-              try {
-                setRestore(await readBackup(f));
-              } catch {
-                say('這個檔案不是「我的天空」的備份');
-              }
-            }}
-          />
-          {restore && (
-            <div className="confirm">
-              用這份備份（{restore.sessions.length} 次諮商、{restore.notes.length} 則路上的事）取代手機上現在的紀錄？
-              <button type="button" onClick={async () => { await restoreBackup(restore); setRestore(null); say('還原好了'); }}>取代</button>
-              <button type="button" onClick={() => setRestore(null)}>不要</button>
-            </div>
-          )}
-        </div>
+        <BackupGroup />
 
         {!standalone && (
           <div className="group">
@@ -205,5 +174,103 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
         </div>
       </div>
     </section>
+  );
+}
+
+/** 備份: always locked with a password you choose; old unlocked backups still open. */
+function BackupGroup() {
+  const say = useToast();
+  const file = useRef<HTMLInputElement>(null);
+  const [making, setMaking] = useState(false);
+  const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [locked, setLocked] = useState<Sealed | null>(null);
+  const [openPw, setOpenPw] = useState('');
+  const [restore, setRestore] = useState<Backup | null>(null);
+
+  const doExport = async () => {
+    if (pw.length < 6) return say('密碼至少 6 個字');
+    if (pw !== pw2) return say('兩次輸入的密碼不一樣');
+    setBusy(true);
+    try {
+      await shareOrDownload(await makeBackup(pw));
+      setMaking(false);
+      setPw('');
+      setPw2('');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doOpen = async () => {
+    if (!locked) return;
+    setBusy(true);
+    try {
+      setRestore(await openBackup(locked, openPw));
+      setLocked(null);
+      setOpenPw('');
+    } catch {
+      say('密碼不對，打不開這份備份');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="group">
+      <h3>備份</h3>
+      <p className="tiny">資料只存在這支手機。換手機、或怕被清掉時，存一份備份檔到「檔案」。備份檔會用你設的密碼鎖起來，別人拿到檔案也看不到內容。</p>
+      {making ? (
+        <div className="backup-form">
+          <input id="backup-pw" className="field" type="password" autoComplete="new-password" placeholder="備份密碼（至少 6 個字）" value={pw} onChange={e => setPw(e.target.value)} />
+          <input id="backup-pw2" className="field" type="password" autoComplete="new-password" placeholder="再輸入一次" value={pw2} onChange={e => setPw2(e.target.value)} />
+          <p className="tiny">忘記這組密碼，這份備份就打不開了。它跟開 App 的 4 位數密碼是分開的。</p>
+          <div className="row-buttons">
+            <button className="pill sm" type="button" disabled={busy} onClick={doExport}>{busy ? '加密中…' : '匯出'}</button>
+            <button className="ghost" type="button" onClick={() => (setMaking(false), setPw(''), setPw2(''))}>算了</button>
+          </div>
+        </div>
+      ) : (
+        <div className="row-buttons">
+          <button className="pill sm" type="button" onClick={() => setMaking(true)}>匯出備份</button>
+          <button className="pill sm" type="button" onClick={() => file.current?.click()}>從備份還原</button>
+        </div>
+      )}
+      <input
+        ref={file}
+        type="file"
+        accept="application/json,.json"
+        hidden
+        onChange={async e => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (!f) return;
+          try {
+            const b = await readBackup(f);
+            if (b.locked) setLocked(b.sealed);
+            else setRestore(b.data);
+          } catch {
+            say('這個檔案不是「我的天空」的備份');
+          }
+        }}
+      />
+      {locked && (
+        <div className="backup-form">
+          <input id="backup-open" className="field" type="password" autoComplete="current-password" placeholder="這份備份的密碼" value={openPw} onChange={e => setOpenPw(e.target.value)} />
+          <div className="row-buttons">
+            <button className="pill sm" type="button" disabled={busy} onClick={doOpen}>{busy ? '解開中…' : '打開'}</button>
+            <button className="ghost" type="button" onClick={() => (setLocked(null), setOpenPw(''))}>算了</button>
+          </div>
+        </div>
+      )}
+      {restore && (
+        <div className="confirm">
+          用這份備份（{restore.sessions.length} 次諮商、{restore.notes.length} 則路上的事）取代手機上現在的紀錄？
+          <button type="button" onClick={async () => { await restoreBackup(restore); setRestore(null); say('還原好了'); }}>取代</button>
+          <button type="button" onClick={() => setRestore(null)}>不要</button>
+        </div>
+      )}
+    </div>
   );
 }

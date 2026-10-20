@@ -266,6 +266,7 @@ img.cover { object-fit: cover; }
 .settings .tiny { margin: 0; line-height: 1.6; }
 .settings code { font-size: 12px; word-break: break-all; user-select: text; -webkit-user-select: text; }
 .row-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.backup-form { display: grid; gap: 8px; }
 .toggle { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
 .toggle input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--chip-on); flex: none; }
 .toggle small { display: block; font-size: 12px; color: var(--sheet-soft); line-height: 1.5; }
@@ -283,7 +284,8 @@ img.cover { object-fit: cover; }
 .pin-dots i.on { background: var(--ink); opacity: 1; }
 .keypad { display: grid; grid-template-columns: repeat(3, 72px); gap: 16px; }
 .keypad button { width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--paper); color: #2c3a4b; font-size: 26px; }
-.keypad button:disabled { visibility: hidden; }
+.keypad button:disabled:empty { visibility: hidden; }
+.keypad button:disabled { opacity: .4; }
 .keypad button:active { transform: scale(.94); }
 
 /* ambient motion: only on separate HTML layers (transform only), so the phone's compositor
@@ -330,6 +332,9 @@ img.cover { object-fit: cover; }
 .month-song .tiny { display: block; margin-top: 6px; }
 .quote.small { font-size: 17px; margin-top: 8px; }
 .quote small { display: block; font-size: 12px; color: var(--sheet-soft); }
+
+/* a plain sky over everything while the app is in the background (see lib/privacy.ts) */
+html.covered-up body::after { content: ""; position: fixed; inset: 0; z-index: 9999; background: var(--sky); }
 
 @media (max-height: 500px) {
   .hint { display: none; }

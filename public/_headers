@@ -1,4 +1,14 @@
-# Cloudflare Pages: always fetch the app shell and service worker fresh, so updates arrive;
+# Cloudflare: headers for every response.
+# Security: only this site's own code runs; it talks only to Spotify; nobody can frame the app.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.scdn.co https://*.spotifycdn.com; font-src 'self' data:; connect-src 'self' https://api.spotify.com https://accounts.spotify.com https://open.spotify.com; frame-src https://open.spotify.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# Always fetch the app shell and service worker fresh, so updates arrive;
 # hashed files under /assets/ never change and can be cached for good.
 /
   Cache-Control: no-cache

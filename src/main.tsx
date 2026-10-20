@@ -6,9 +6,11 @@ import App from './App';
 import { askPersist } from './db';
 import { finishSpotifyLogin } from './lib/spotify';
 import { keepUpToDate } from './lib/update';
+import { coverWhenHidden } from './lib/privacy';
 
 askPersist();
 keepUpToDate();
+coverWhenHidden();
 
 // coming back from the Spotify login page: finish it before the app draws
 finishSpotifyLogin().finally(() => {

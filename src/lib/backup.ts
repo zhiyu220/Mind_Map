@@ -1,8 +1,9 @@
 import { db, getSettings } from '../db';
 import type { RoadNote, Session, Settings } from '../types';
 import { todayKey } from './dates';
+import { isSealed, seal, unseal, type Sealed } from './crypto';
 
-interface Backup {
+export interface Backup {
   app: 'my-sky';
   version: 1;
   exportedAt: string;
@@ -11,10 +12,12 @@ interface Backup {
   settings: Omit<Settings, 'pinHash'>;
 }
 
-export async function makeBackup(): Promise<File> {
+/** A backup file locked with a password of your choosing. */
+export async function makeBackup(password: string): Promise<File> {
   const { pinHash: _pin, ...settings } = await getSettings();
   const data: Backup = { app: 'my-sky', version: 1, exportedAt: new Date().toISOString(), sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), settings };
-  return new File([JSON.stringify(data, null, 2)], `我的天空-備份-${todayKey()}.json`, { type: 'application/json' });
+  const sealed = await seal(data, password);
+  return new File([JSON.stringify(sealed)], `我的天空-備份-${todayKey()}.json`, { type: 'application/json' });
 }
 
 /** On iPhone the share sheet lets you "儲存到檔案"; elsewhere it downloads. */
@@ -33,9 +36,23 @@ export async function shareOrDownload(file: File) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export async function readBackup(file: File): Promise<Backup> {
-  const data = JSON.parse(await file.text()) as Backup;
-  if (data.app !== 'my-sky' || !Array.isArray(data.sessions) || !Array.isArray(data.notes)) throw new Error('not a backup');
+/** A backup file: locked ones need their password; older unlocked ones open as they are. */
+export type BackupFile = { locked: false; data: Backup } | { locked: true; sealed: Sealed };
+
+export async function readBackup(file: File): Promise<BackupFile> {
+  const raw = JSON.parse(await file.text()) as unknown;
+  if (isSealed(raw)) return { locked: true, sealed: raw };
+  return { locked: false, data: checkBackup(raw) };
+}
+
+/** Throws when the password is wrong. */
+export async function openBackup(sealed: Sealed, password: string): Promise<Backup> {
+  return checkBackup(await unseal(sealed, password));
+}
+
+function checkBackup(raw: unknown): Backup {
+  const data = raw as Backup;
+  if (!data || data.app !== 'my-sky' || !Array.isArray(data.sessions) || !Array.isArray(data.notes)) throw new Error('not a backup');
   return data;
 }
 
