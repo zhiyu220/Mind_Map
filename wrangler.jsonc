@@ -6,6 +6,8 @@
   "build": {
     "command": "npm run build"
   },
+  // needed by `wrangler preview`, which Cloudflare runs for branches other than main; empty is fine
+  "previews": {},
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
