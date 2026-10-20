@@ -11,6 +11,13 @@ const BLEED = 400;
 export const pathY = (x: number) => 418 + 9 * Math.sin(x / 95);
 export const groundY = (x: number) => 360 + 12 * Math.sin(x / 140 + 1);
 const hillY = (x: number) => 292 + 26 * Math.sin(x / 230) + 12 * Math.sin(x / 83 + 2);
+
+// Milestones: the road changes as you go. Not rewards, just how far you've come.
+export const BENCH_AT = 10; // a bench by the road
+export const RIVER_AT = 20; // a little river, with a bridge
+export const SEA_AT = 30; // the sea, from here on
+const HORIZON = 262;
+const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 const frontY = (x: number) => 492 + 8 * Math.sin(x / 60);
 
 const hash = (n: number) => {
@@ -49,8 +56,12 @@ function seeded(seed: number) {
 }
 
 /** Hills, trees, house, fences, the road and its footprints: everything behind the dots. */
-export function landMarkup(width: number, walkerX: number): { back: string; front: string } {
+export function landMarkup(width: number, walkerX: number, n = 0): { back: string; front: string } {
   const rnd = seeded(11); // the meadow looks the same every visit
+  const dot = (i: number) => X0 + i * STEP;
+  // from the 30th session on, the far hills sink and the sea shows behind them
+  const seaX = n >= SEA_AT ? dot(SEA_AT - 1) - STEP * 1.5 : Infinity;
+  const farY = (x: number) => hillY(x) + 46 * smooth((x - seaX) / 240);
   const wave = (f: (x: number) => number, step = 12) => {
     let d = `M ${-BLEED} ${f(-BLEED).toFixed(1)}`;
     for (let x = -BLEED; x <= width + BLEED; x += step) d += ` L ${x} ${(f(x) + wob(x)).toFixed(1)}`;
@@ -58,11 +69,27 @@ export function landMarkup(width: number, walkerX: number): { back: string; fron
   };
   const band = (f: (x: number) => number) => wave(f) + ` L ${width + BLEED} ${H + 20} L ${-BLEED} ${H + 20} Z`;
 
-  let hills = `<path d="${band(hillY)}" fill="var(--hill-far)"/><path d="${band(hillY)}" fill="url(#hatch)" stroke="none"/>`;
+  let sea = '';
+  if (seaX < Infinity) {
+    const r2 = seeded(29), a = seaX + 40;
+    // the coast curves in from behind the hills, so the sea opens up rather than starting as a box
+    sea = `<path d="M${a + 150} ${HORIZON} L${width + BLEED} ${HORIZON} L${width + BLEED} ${H} L${a - 40} ${H} C${a - 10} ${HORIZON + 60}, ${a + 50} ${HORIZON + 6}, ${a + 150} ${HORIZON} Z" fill="var(--sea)"/>`;
+    let waves = '';
+    for (let x = a + 190; x < width; x += 60 + r2() * 50) {
+      const y = HORIZON + 14 + r2() * 34;
+      waves += `<path d="M${x.toFixed(0)} ${y.toFixed(0)} q6 -5 12 0 q6 -5 12 0"/>`;
+    }
+    const bx = Math.min(width - 120, a + 260), by = HORIZON + 22;
+    sea += `<g fill="none" stroke="var(--sea-line)" stroke-width="2">${waves}</g>`;
+    sea += `<g><path d="M${bx - 16} ${by} h32 l-6 8 h-20 Z" fill="var(--roof)"/><path d="M${bx} ${by} v-26 l14 22 Z" fill="var(--paper)"/></g>`;
+  }
+
+  let hills = `${sea}<path d="${band(farY)}" fill="var(--hill-far)"/><path d="${band(farY)}" fill="url(#hatch)" stroke="none"/>`;
   for (let x = 60; x < width; x += 70 + rnd() * 90) {
-    const y = hillY(x) + 4, h = 26 + rnd() * 18;
-    if (rnd() < 0.5) hills += `<g><path d="M${x} ${y} v-${h * 0.5}" stroke-width="3" fill="none" stroke="var(--trunk)"/><path d="${blob(x, y - h * 0.75, h * 0.38)}" fill="var(--tree)"/></g>`;
-    else hills += `<g><path d="M${x} ${y - h * 1.1} L${x + h * 0.32} ${y - 4} L${x - h * 0.32} ${y - 4} Z" fill="var(--tree-2)"/><path d="M${x} ${y - 4} v4" stroke="var(--trunk)" stroke-width="3"/></g>`;
+    const y = farY(x) + 4, h = 26 + rnd() * 18, round = rnd() < 0.5;
+    if (x > seaX + 120) continue; // nothing grows on the far side of the hills by the sea
+    if (round) hills += `<g><path d="M${x} ${y} v-${h * 0.5}" stroke-width="3" fill="none" stroke="var(--trunk)"/><path d="${blob(x, y - h * 0.75, h * 0.38)}" fill="var(--canopy)"/></g>`;
+    else hills += `<g><path d="M${x} ${y - h * 1.1} L${x + h * 0.32} ${y - 4} L${x - h * 0.32} ${y - 4} Z" fill="var(--canopy-2)"/><path d="M${x} ${y - 4} v4" stroke="var(--trunk)" stroke-width="3"/></g>`;
   }
   const hx = 90, hy = hillY(90) + 6;
   hills += `<g><rect x="${hx - 20}" y="${hy - 30}" width="40" height="30" fill="var(--wall)"/><path d="M${hx - 26} ${hy - 28} L${hx} ${hy - 50} L${hx + 26} ${hy - 28} Z" fill="var(--roof)"/><rect x="${hx - 5}" y="${hy - 16}" width="10" height="16" fill="var(--trunk)"/><rect x="${hx + 8}" y="${hy - 24}" width="7" height="7" fill="var(--sky)"/></g>`;
@@ -75,7 +102,38 @@ export function landMarkup(width: number, walkerX: number): { back: string; fron
     for (let x = a; x <= b; x += 34) posts += `<path d="M${x} ${groundY(x) + 30} v-30"/>`;
     ground += `<g stroke="var(--fence)" stroke-width="4" fill="none">${posts}<path d="M${a} ${groundY(a) + 10} L${b} ${groundY(b) + 10} M${a} ${groundY(a) + 20} L${b} ${groundY(b) + 20}" stroke-width="3"/></g>`;
   }
+  // the river runs from the hills down past the front of the picture, under a little bridge
+  const rx = n >= RIVER_AT ? dot(RIVER_AT - 1) + STEP / 2 : null;
+  const river = (y0: number, y1: number) => {
+    if (rx === null) return '';
+    const cx = (y: number) => rx + 22 * Math.sin(y / 38) - (y - 400) * 0.18;
+    const hw = (y: number) => 5 + 20 * smooth((y - 300) / 260);
+    let l = '', r = '';
+    for (let y = y0; y <= y1; y += 8) {
+      l += `${l ? ' L' : 'M'}${(cx(y) - hw(y)).toFixed(1)} ${y}`;
+      r = ` L${(cx(y) + hw(y)).toFixed(1)} ${y}` + r;
+    }
+    // filled without an outline, then only its two banks inked, so a piece of it has no seam at the top
+    const bank = (side: number) => {
+      let d = '';
+      for (let y = y0; y <= y1; y += 8) d += `${d ? ' L' : 'M'}${(cx(y) + side * hw(y)).toFixed(1)} ${y}`;
+      return `<path d="${d}" fill="none"/>`;
+    };
+    return `<path d="${l}${r} Z" fill="var(--w-rain)" stroke="none"/>${bank(-1)}${bank(1)}`;
+  };
+  ground += river(Math.round(hillY(rx ?? 0)) + 6, H + 20);
   ground += `<path d="${wave(pathY)}" fill="none" stroke="var(--sand)" stroke-width="40" stroke-linecap="round"/>`;
+  if (rx !== null) {
+    let planks = '';
+    for (let x = rx - 34; x <= rx + 34; x += 9.7) planks += `<rect x="${x.toFixed(1)}" y="${(pathY(x) - 21).toFixed(1)}" width="8" height="42" rx="2"/>`;
+    ground += `<g fill="var(--fence)" stroke-width="1.8">${planks}</g>`;
+    ground += `<path d="M${rx - 38} ${pathY(rx - 38) - 22} L${rx + 38} ${pathY(rx + 38) - 22}" stroke="var(--trunk)" stroke-width="4" fill="none"/>`;
+  }
+  // a bench by the road, to sit for a while
+  if (n >= BENCH_AT) {
+    const bx = dot(BENCH_AT - 1) + 40, by = pathY(bx) - 26;
+    ground += `<g><path d="M${bx - 22} ${by + 12} v-10 M${bx + 22} ${by + 12} v-10 M${bx - 18} ${by - 10} v12 M${bx + 18} ${by - 10} v12" stroke="var(--trunk)" stroke-width="3.5" fill="none"/><rect x="${bx - 28}" y="${by - 2}" width="56" height="7" rx="2" fill="var(--fence)"/><rect x="${bx - 26}" y="${by - 18}" width="52" height="7" rx="2" fill="var(--fence)"/></g>`;
+  }
 
   let tufts = '';
   for (let x = 20; x < width; x += 40 + rnd() * 60) {
@@ -87,12 +145,11 @@ export function landMarkup(width: number, walkerX: number): { back: string; fron
   for (let x = 30; x < walkerX - 10; x += 22) prints += `<ellipse cx="${x}" cy="${(pathY(x) + (Math.round(x / 22) % 2 ? 5 : -5)).toFixed(1)}" rx="4.5" ry="2.6" fill="var(--foot)"/>`;
   for (let x = walkerX + 140; x < width - 40; x += 26) prints += `<circle cx="${x}" cy="${pathY(x).toFixed(1)}" r="3" fill="var(--foot)" opacity=".7"/>`;
 
-  let front = `<path d="${band(frontY)}" fill="var(--grass-front)"/>`;
+  let front = `<path d="${band(frontY)}" fill="var(--grass-front)"/>` + river(Math.round(frontY(rx ?? 0)) - 12, H + 20);
   for (let x = 10; x < width; x += 18 + rnd() * 30) {
-    const y = frontY(x) + 10 + rnd() * 30;
-    if (rnd() < 0.55) {
-      const c = ['--f1', '--f2', '--f3', '--f4'][Math.floor(rnd() * 4)];
-      const r = 3 + rnd() * 2;
+    const y = frontY(x) + 10 + rnd() * 30, flower = rnd() < 0.55, c = ['--f1', '--f2', '--f3', '--f4'][Math.floor(rnd() * 4)], r = 3 + rnd() * 2;
+    if (rx !== null && Math.abs(x - rx + (y - 400) * 0.18) < 46) continue; // not in the river
+    if (flower) {
       const petals = [0, 72, 144, 216, 288]
         .map(a => `<circle cx="${(x + Math.cos((a * Math.PI) / 180) * r).toFixed(1)}" cy="${(y + Math.sin((a * Math.PI) / 180) * r).toFixed(1)}" r="${(r * 0.7).toFixed(1)}"/>`)
         .join('');

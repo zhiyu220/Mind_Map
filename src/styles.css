@@ -34,6 +34,8 @@
   --boot: #6b4a3a;
   --f1: #ff9fb0; --f2: #ffffff; --f3: #ffd45c; --f4: #b9a3f0;
   --w-sun: #ffc23d; --w-partly: #ffe796; --w-cloud: #d8dee5; --w-rain: #7fb2e5; --w-storm: #9192bd;
+  --canopy: var(--tree); --canopy-2: var(--tree-2);
+  --sea: #6fc0e6; --sea-line: #e9f7ff;
   --grain: .2;
   --stars: 0;
   --rays: 1;
@@ -48,7 +50,7 @@
     --sheet: #1c2a4a; --sheet-ink: #f1ecdd; --sheet-soft: #a3aec2; --sheet-line: #33456b; --chip: #283a60; --chip-on: #4f78b8;
     --skin: #f1d6ba; --cheek: #e39a8c; --boot: #4e372b;
     --f1: #d98a99; --f2: #d9d6cc; --f3: #d9bb5c; --f4: #9b8acb; --w-cloud: #b6becb;
-    --grain: .3; --stars: 1; --rays: 0; color-scheme: dark;
+    --grain: .3; --stars: 1; --rays: 0; color-scheme: dark; --sea: #2a4d7e; --sea-line: #5d7fae;
   }
 }
 :root[data-theme="dark"] {
@@ -59,8 +61,24 @@
   --sheet: #1c2a4a; --sheet-ink: #f1ecdd; --sheet-soft: #a3aec2; --sheet-line: #33456b; --chip: #283a60; --chip-on: #4f78b8;
   --skin: #f1d6ba; --cheek: #e39a8c; --boot: #4e372b;
   --f1: #d98a99; --f2: #d9d6cc; --f3: #d9bb5c; --f4: #9b8acb; --w-cloud: #b6becb;
-  --grain: .3; --stars: 1; --rays: 0; color-scheme: dark;
+  --grain: .3; --stars: 1; --rays: 0; color-scheme: dark; --sea: #2a4d7e; --sea-line: #5d7fae;
 }
+
+/* The meadow follows the seasons (lib/sky.ts sets data-season). Spring is the default above. */
+:root[data-season="summer"]:not([data-theme="dark"]) {
+  --hill-far: #a9d86a; --hill-near: #84c255; --grass-front: #6fb04a; --tree: #5aa047; --tree-2: #7cbd52;
+  --f1: #ff8a5c; --f2: #ffffff; --f3: #ffcf33; --f4: #ff9fb0;
+}
+:root[data-season="autumn"]:not([data-theme="dark"]) {
+  --hill-far: #cfd27c; --hill-near: #aac35e; --grass-front: #93b24f; --tree: #6f9e4a;
+  --canopy: #e39a45; --canopy-2: #d9b34a;
+  --f1: #e86a4a; --f2: #f7e3b0; --f3: #f2b03d; --f4: #c79bd9;
+}
+:root[data-season="winter"]:not([data-theme="dark"]) {
+  --sky: #a3d4ee; --hill-far: #c6dbaa; --hill-near: #aecb8e; --grass-front: #9cbf7f; --tree: #6f9c6a; --tree-2: #96bb86;
+  --f1: #ffffff; --f2: #f4d2dc; --f3: #fff3c4; --f4: #d6e4f5;
+}
+:root[data-season="autumn"][data-theme="dark"] { --canopy: #8a5a2c; --canopy-2: #7d6a32; }
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }

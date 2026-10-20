@@ -67,4 +67,6 @@ export interface Settings {
   spotifyClientId?: string;
   /** keep a private 「Mind Map」 playlist of every session's song; on unless turned off */
   spotifyPlaylist?: boolean;
+  /** night sky after dark ('time', the default), with the phone's dark mode, or always day */
+  sky?: 'time' | 'phone' | 'day';
 }

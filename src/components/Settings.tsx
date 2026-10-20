@@ -14,6 +14,8 @@ export const HELPLINES = [
   { name: '張老師專線', number: '1980', note: '' }
 ];
 
+const SKY_MODES: [NonNullable<S['sky']>, string][] = [['time', '晚上變成夜空'], ['phone', '跟著手機的深色模式'], ['day', '一直是白天']];
+
 export function NextSessionField({ value, onDone }: { value?: string; onDone?: () => void }) {
   const [v, setV] = useState(value ?? '');
   return (
@@ -84,6 +86,16 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
           <NextSessionField value={settings.nextSession} onDone={() => say('記住了')} />
         </div>
 
+        <div className="group">
+          <h3>天空</h3>
+          <div className="chips small" role="radiogroup" aria-label="天空">
+            {SKY_MODES.map(([k, name]) => (
+              <button key={k} className="chip" type="button" role="radio" aria-checked={(settings.sky ?? 'time') === k} aria-pressed={(settings.sky ?? 'time') === k}
+                onClick={() => saveSettings({ sky: k })}>{name}</button>
+            ))}
+          </div>
+          <p className="tiny">花草和樹會跟著季節換顏色。</p>
+        </div>
         <div className="group">
           <h3>Spotify</h3>
           {spotify ? (

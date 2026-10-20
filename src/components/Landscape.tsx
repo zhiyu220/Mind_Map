@@ -25,7 +25,7 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
   // the land always reaches past the right edge of the screen, even with only a few dots
   const [screen, setScreen] = useState({ w: innerWidth, h: innerHeight });
   const width = Math.max(walkerX + AHEAD, Math.ceil((screen.w * H) / Math.max(1, screen.h)) + 40);
-  const land = useMemo(() => landMarkup(width, walkerX), [width, walkerX]);
+  const land = useMemo(() => landMarkup(width, walkerX, N), [width, walkerX, N]);
 
   const world = useRef<HTMLDivElement>(null);
   const svg = useRef<SVGSVGElement>(null);
