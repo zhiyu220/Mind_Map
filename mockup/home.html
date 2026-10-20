@@ -102,7 +102,8 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
   padding-block: 0 calc(22px + env(safe-area-inset-bottom, 0px));
 }
 .bottom > * { pointer-events: auto; }
-.hint { font-size: 13px; color: var(--text); opacity: .85; }
+.hint { font-size: 13px; color: var(--text); opacity: .8; margin-top: 10px; transition: opacity .6s; }
+.hint.gone { opacity: 0; }
 .pill { border: 2.5px solid var(--ink); background: var(--paper); color: #2c3a4b; font-size: 19px; padding: 12px 34px; border-radius: 999px; box-shadow: 0 4px 0 var(--ink); transition: transform .12s, box-shadow .12s; }
 .pill:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 .pill:disabled { opacity: .45; cursor: default; }
@@ -287,7 +288,7 @@ textarea.field.tall { min-height: 260px; }
       <path d="M470 150 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/>
       <path d="M560 240 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
       <path d="M640 120 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
-      <path d="M520 90 l2 4 4 2 -4 2 -2 4 -2 -4 -4 -2 4 -2z"/>
+      <path d="M745 300 l2 4 4 2 -4 2 -2 4 -2 -4 -4 -2 4 -2z"/>
       <path d="M800 200 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5z"/>
     </g>
     <g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
@@ -320,6 +321,7 @@ textarea.field.tall { min-height: 260px; }
     <div style="flex:1;min-width:0">
       <div class="date" id="today">10月20日 星期二</div>
       <button class="line" id="line" type="button" aria-label="首頁的話，點一下換一句"></button>
+      <div class="hint" id="hint">← 滑一滑，看看走過的路</div>
     </div>
     <button class="book" type="button" aria-label="全部紀錄" data-soon>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v14"/></svg>
@@ -327,7 +329,6 @@ textarea.field.tall { min-height: 260px; }
   </header>
 
   <div class="bottom">
-    <div class="hint">滑一滑，看看走過的路</div>
     <button class="pill" id="write" type="button">記下今天</button>
   </div>
 
@@ -529,7 +530,8 @@ textarea.field.tall { min-height: 260px; }
 
   const scale = () => svg.getBoundingClientRect().height / H;
   const lastX = () => dotX(state.sessions.length - 1);
-  function home(smooth) { world.scrollTo({ left: lastX() * scale() - world.clientWidth * 0.55, behavior: smooth ? 'smooth' : 'auto' }); }
+  let homeLeft = 0;
+  function home(smooth) { homeLeft = lastX() * scale() - world.clientWidth * 0.55; world.scrollTo({ left: homeLeft, behavior: smooth ? 'smooth' : 'auto' }); }
 
   // ----- the line on top: facts first, said gently; sometimes one of your own quotes -----
   let lineIdx = 0;
@@ -591,6 +593,9 @@ textarea.field.tall { min-height: 260px; }
   function closeBubble() { current = null; bubble.hidden = true; hits.forEach(el => el.classList.remove('on')); }
   svg.addEventListener('click', closeBubble);
   world.addEventListener('scroll', place, { passive: true });
+  // the hint leaves once you've tried scrolling
+  const hint = document.getElementById('hint');
+  world.addEventListener('scroll', () => { if (Math.abs(world.scrollLeft - homeLeft) > 40) hint.classList.add('gone'); }, { passive: true });
   window.addEventListener('resize', () => { home(); place(); });
 
   // ----- helpers -----
