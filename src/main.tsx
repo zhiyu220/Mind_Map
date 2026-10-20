@@ -5,8 +5,10 @@ import './styles.css';
 import App from './App';
 import { askPersist } from './db';
 import { finishSpotifyLogin } from './lib/spotify';
+import { keepUpToDate } from './lib/update';
 
 askPersist();
+keepUpToDate();
 
 // coming back from the Spotify login page: finish it before the app draws
 finishSpotifyLogin().finally(() => {
