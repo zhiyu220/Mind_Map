@@ -202,7 +202,7 @@ textarea.field.tall { min-height: 260px; }
 .entries { display: grid; gap: 10px; }
 .entry { display: flex; gap: 12px; align-items: flex-start; border-bottom: 1.5px dashed var(--sheet-line); padding-bottom: 12px; }
 .entry svg.w { width: 34px; height: 34px; flex: none; }
-.entry .txt { flex: 1; min-width: 0; font-size: 16px; line-height: 1.6; }
+.entry .txt { flex: 1; min-width: 0; font-size: 16px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
 .entry .txt span { display: block; font-size: 12px; color: var(--sheet-soft); }
 .entry .txt em { font-style: normal; color: var(--sheet-soft); }
 .star { border: 0; background: none; padding: 4px; flex: none; color: var(--sheet-soft); }
@@ -246,12 +246,12 @@ img.cover { object-fit: cover; }
 .book-row svg.w { width: 44px; height: 44px; flex: none; }
 .book-row .txt { min-width: 0; flex: 1; display: grid; gap: 2px; }
 .book-row span, .book-row small { font-size: 12px; color: var(--sheet-soft); }
-.book-row b { font-weight: 400; font-size: 17px; line-height: 1.5; }
+.book-row b { font-weight: 400; font-size: 17px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .detail-weather { display: flex; align-items: center; gap: 12px; font-size: 20px; }
 .detail-weather svg { width: 64px; height: 64px; }
 .chips.static { margin-top: 8px; }
 .chips.static .chip { cursor: default; font-size: 15px; padding: 4px 13px; }
-.quote { margin: 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--w-sun); font-size: 20px; line-height: 1.6; }
+.quote { margin: 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--w-sun); font-size: 20px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
 .notes { margin: 0; white-space: pre-wrap; font-size: 16px; line-height: 1.8; user-select: text; -webkit-user-select: text; }
 .brought { margin: 8px 0 0; padding-left: 0; list-style: none; display: grid; gap: 6px; font-size: 15px; }
 .danger { margin-top: 12px; padding-top: 12px; border-top: 1.5px dashed var(--sheet-line); }
