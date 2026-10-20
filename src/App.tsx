@@ -307,7 +307,7 @@ function Main() {
       </header>
 
       <div className="bottom">
-        <div className="hint">滑一滑，看看走過的路</div>
+        <Hint />
         <button className="pill" type="button" onClick={() => setView({ kind: 'ask' })}>記下今天</button>
       </div>
       </div>
@@ -315,6 +315,23 @@ function Main() {
       {sheet}
     </div>
   );
+}
+
+/** 「滑一滑」 shows when the app opens, then fades: after a few seconds, or as soon as you swipe. */
+function Hint() {
+  const [gone, setGone] = useState(false);
+  useEffect(() => {
+    const hide = () => setGone(true);
+    const t = setTimeout(hide, 5000);
+    window.addEventListener('touchmove', hide, { once: true, passive: true });
+    window.addEventListener('wheel', hide, { once: true, passive: true });
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('touchmove', hide);
+      window.removeEventListener('wheel', hide);
+    };
+  }, []);
+  return <div className={`hint${gone ? ' gone' : ''}`} aria-hidden={gone}>滑一滑，看看走過的路</div>;
 }
 
 /** Paper grain: a small noise tile drawn once, not a live filter. */

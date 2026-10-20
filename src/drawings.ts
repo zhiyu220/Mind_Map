@@ -1,5 +1,6 @@
 // Static drawings shared by the whole app: weather icons, the still sky and drifting clouds.
 // The sky is two layers, so the aurora can hang between the sky and the moon and mountains.
+// At night each season has its own sky: a thin spring moon, summer's milky way, autumn's big harvest moon.
 // Kept as markup so they are drawn once and never re-rendered. Nothing inside an SVG animates:
 // on iPhone that repaints the whole drawing every frame. The clouds move as separate HTML layers instead.
 
@@ -35,6 +36,16 @@ export const SKY = `<svg class="back" viewBox="0 0 1200 600" preserveAspectRatio
     <g stroke="var(--sky-stroke)" stroke-width="5" stroke-linecap="round" fill="none" filter="url(#crayon)">
       <path d="M380 120 q40 -6 80 0 M520 210 q50 -6 100 0 M760 260 q40 -5 80 0 M430 300 q30 -4 60 0 M840 110 q30 -4 60 0"/>
     </g>
+    <g class="s-summer" style="opacity:var(--stars)">
+      <path d="M200 520 C 380 420, 470 330, 560 230 C 650 130, 760 50, 900 -20 L1040 -20 C 880 80, 760 170, 680 270 C 590 380, 460 470, 300 560 Z" fill="#7a6bc4" opacity=".55"/>
+      <path d="M300 520 C 430 430, 510 340, 590 250 C 670 160, 770 80, 920 -10 L980 -10 C 840 90, 740 175, 650 270 C 570 360, 470 450, 360 540 Z" fill="#b9acee" opacity=".5"/>
+      <g fill="#fbf6d6">${Array.from({ length: 70 }, (_, i) => {
+        const t = (i * 0.618) % 1, x = 300 + t * 640, y = 540 - t * 560 + Math.sin(i * 12.9) * 46;
+        return `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${i % 4 ? 1.1 : 1.8}"/>`;
+      }).join('')}</g>
+      <g fill="#f6eebc">${[[120, 90], [210, 170], [300, 60], [350, 250], [420, 120], [510, 70], [600, 180], [660, 60], [820, 90], [880, 230], [950, 140], [1030, 80], [1100, 200], [1160, 110], [260, 320], [560, 300], [980, 300], [740, 330], [455, 210], [480, 330], [530, 140], [575, 235], [625, 95], [690, 250], [770, 100], [790, 280], [705, 40], [470, 40]]
+        .map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 3 ? 1.8 : 2.8}"/>`).join('')}</g>
+    </g>
     <g style="opacity:var(--stars)" fill="var(--sun)">
       <path d="M470 150 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/>
       <path d="M560 240 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
@@ -47,6 +58,11 @@ export const SKY = `<svg class="back" viewBox="0 0 1200 600" preserveAspectRatio
   <svg class="back" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
     <g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
       <circle cx="700" cy="150" r="30" fill="var(--sun)"/>
+      <circle class="s-spring" style="opacity:var(--stars)" cx="714" cy="140" r="26" fill="var(--sky)" stroke="none"/>
+      <g class="s-autumn" style="opacity:var(--stars)">
+        <circle cx="700" cy="150" r="68" fill="var(--sky-stroke)" stroke="none"/>
+        <circle cx="700" cy="150" r="46" fill="#ffd98a"/>
+      </g>
       <path style="opacity:var(--rays)" d="M700 104 v-12 M700 196 v12 M654 150 h-12 M746 150 h12 M668 118 l-8 -8 M732 182 l8 8 M668 182 l-8 8 M732 118 l8 -8" fill="none"/>
       <path d="M0 286 L90 226 L150 256 L240 196 L330 261 L420 218 L520 272 L600 222 L690 268 L790 206 L880 256 L960 224 L1060 274 L1200 226 V600 H0 Z" fill="var(--mtn)"/>
       <path d="M240 196 l-18 14 l10 -2 l8 8 l9 -9 l9 3z M790 206 l-18 14 l10 -2 l8 8 l9 -9 l9 3z" fill="var(--cloud)" stroke-width="1.8"/>
