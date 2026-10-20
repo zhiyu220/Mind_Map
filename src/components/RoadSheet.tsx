@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { RoadNote, Weather } from '../types';
 import { WEATHER_NAME } from '../types';
-import { short } from '../lib/dates';
+import { short, todayKey } from '../lib/dates';
 import { addNote, deleteNote, toggleStar } from '../lib/store';
 import { StarIcon, WeatherIcon, WeatherPicker } from './Weather';
 import { useToast } from './Toast';
@@ -21,19 +21,21 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
   const [text, setText] = useState('');
   const [w, setW] = useState<Weather | null>(null);
   const [star, setStar] = useState(false);
+  const [date, setDate] = useState(todayKey);
   const [confirm, setConfirm] = useState<string | null>(null);
-  const list = [...notes].sort((a, b) => b.createdAt - a.createdAt);
+  const list = [...notes].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
   const starred = list.filter(n => n.star);
   const rest = list.filter(n => !n.star);
 
   const save = async () => {
     const t = text.trim();
     if (!t && !w) return say('寫一句，或點一個天氣');
-    await addNote(after, { text: t, weather: w ?? undefined, star });
+    const landed = await addNote({ text: t, weather: w ?? undefined, star }, date);
     setText('');
     setW(null);
     setStar(false);
-    say('記下來了');
+    say(landed === after ? '記下來了' : `記在 ${short(date)} 那段路上了`);
+    setDate(todayKey());
   };
 
   const row = (n: RoadNote) => (
@@ -67,10 +69,14 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
         <h2 className="q">{title}</h2>
         {writable && (
           <>
-            <p className="sub">兩次諮商之間的事。一句話、只點天氣，都可以。</p>
+            <p className="sub">兩次諮商之間的事。一句話、只點天氣，都可以。以前的事也能補記，選那天的日期，就會放到那段路上。</p>
             <div className="compose">
               <textarea id="road-text" className="field" placeholder="發生了什麼，或想到什麼" value={text} onChange={e => setText(e.target.value)} />
               <WeatherPicker small value={w} onChange={setW} />
+              <label className="date-row">
+                <span>日期</span>
+                <input id="road-date" className="field" type="date" max={todayKey()} value={date} onChange={e => setDate(e.target.value || todayKey())} />
+              </label>
               <div className="compose-row">
                 <button className="star" type="button" aria-pressed={star} aria-label="想帶去說" onClick={() => setStar(!star)}>
                   <StarIcon />

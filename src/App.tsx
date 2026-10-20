@@ -16,7 +16,7 @@ import { ToastProvider, useToast } from './components/Toast';
 
 type View =
   | { kind: 'ask' }
-  | { kind: 'flow'; edit?: Session }
+  | { kind: 'flow'; edit?: Session; past?: boolean }
   | { kind: 'road'; after: string | null }
   | { kind: 'book' }
   | { kind: 'detail'; id: string }
@@ -75,12 +75,17 @@ function Main() {
   const close = () => setView(null);
   const todaySession = sessions.find(s => s.date === today);
 
-  const saveFlow = async (d: Draft & { weather: NonNullable<Draft['weather']> }, done: boolean, edit?: Session) => {
-    const { weather, moods, topics, quote, notes: text, song } = d;
+  const saveFlow = async (d: Draft & { weather: NonNullable<Draft['weather']> }, done: boolean, edit?: Session, past?: boolean) => {
+    const { weather, moods, topics, quote, notes: text, song, date } = d;
     if (edit) {
-      await updateSession(edit.id, { weather, moods, topics, quote, notes: text, song, done: edit.done || done });
+      await updateSession(edit.id, { weather, moods, topics, quote, notes: text, song, date: date ?? edit.date, done: edit.done || done });
       setView({ kind: 'detail', id: edit.id });
       say('改好了');
+    } else if (past && date) {
+      const s = await addSession({ weather, moods, topics, quote, notes: text, song }, done, date);
+      setLineIdx(null);
+      setView({ kind: 'detail', id: s.id });
+      say(`補記好了，放在 ${short(date)} 的位置`);
     } else {
       await addSession({ weather, moods, topics, quote, notes: text, song }, done);
       clearDraft();
@@ -117,15 +122,22 @@ function Main() {
       </>
     );
   } else if (view?.kind === 'flow') {
-    const e = view.edit;
+    const { edit: e, past } = view;
     sheet = (
       <SessionFlow
-        initial={e ? { weather: e.weather, moods: e.moods, topics: e.topics, quote: e.quote, notes: e.notes, song: e.song } : loadDraft() ?? emptyDraft()}
-        editing={!!e}
+        initial={
+          e
+            ? { weather: e.weather, moods: e.moods, topics: e.topics, quote: e.quote, notes: e.notes, song: e.song, date: e.date }
+            : past
+              ? emptyDraft()
+              : (loadDraft() ?? emptyDraft())
+        }
+        mode={e ? 'edit' : past ? 'past' : 'today'}
+        takenDates={sessions.map(s => s.date)}
         customTopics={settings.customTopics}
         onAddTopic={t => saveSettings({ customTopics: [...settings.customTopics, t] })}
-        onSave={(d, done) => saveFlow(d, done, e)}
-        onClose={() => (e ? setView({ kind: 'detail', id: e.id }) : (clearDraft(), close()))}
+        onSave={(d, done) => saveFlow(d, done, e, past)}
+        onClose={() => (e ? setView({ kind: 'detail', id: e.id }) : past ? setView({ kind: 'book' }) : (clearDraft(), close()))}
       />
     );
   } else if (view?.kind === 'road') {
@@ -133,7 +145,16 @@ function Main() {
     const title = view.after ? `路上 · ${short(sessions[i].date)} 之後` : sessions.length ? '路上 · 第一次之前' : '路上 · 出發之前';
     sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} onClose={close} />;
   } else if (view?.kind === 'book') {
-    sheet = <Book sessions={sessions} onOpen={s => setView({ kind: 'detail', id: s.id })} onSettings={() => setView({ kind: 'settings' })} onClose={close} />;
+    sheet = (
+      <Book
+        sessions={sessions}
+        onOpen={s => setView({ kind: 'detail', id: s.id })}
+        onBackfill={() => setView({ kind: 'flow', past: true })}
+        onBackfillRoad={() => setView({ kind: 'road', after: current })}
+        onSettings={() => setView({ kind: 'settings' })}
+        onClose={close}
+      />
+    );
   } else if (view?.kind === 'detail') {
     const i = sessions.findIndex(s => s.id === view.id);
     if (i >= 0)
