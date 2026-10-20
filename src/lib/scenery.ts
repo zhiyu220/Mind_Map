@@ -5,6 +5,8 @@ export const H = 600;
 export const STEP = 100; // distance between two session dots
 export const X0 = 230; // first session dot
 export const AHEAD = 560; // land after the walker
+// hills, grass and road run on past both ends, so the edge never shows if the page bounces
+const BLEED = 400;
 
 export const pathY = (x: number) => 418 + 9 * Math.sin(x / 95);
 export const groundY = (x: number) => 360 + 12 * Math.sin(x / 140 + 1);
@@ -50,11 +52,11 @@ function seeded(seed: number) {
 export function landMarkup(width: number, walkerX: number): { back: string; front: string } {
   const rnd = seeded(11); // the meadow looks the same every visit
   const wave = (f: (x: number) => number, step = 12) => {
-    let d = `M -20 ${f(-20).toFixed(1)}`;
-    for (let x = -20; x <= width + 20; x += step) d += ` L ${x} ${(f(x) + wob(x)).toFixed(1)}`;
+    let d = `M ${-BLEED} ${f(-BLEED).toFixed(1)}`;
+    for (let x = -BLEED; x <= width + BLEED; x += step) d += ` L ${x} ${(f(x) + wob(x)).toFixed(1)}`;
     return d;
   };
-  const band = (f: (x: number) => number) => wave(f) + ` L ${width + 20} ${H + 20} L -20 ${H + 20} Z`;
+  const band = (f: (x: number) => number) => wave(f) + ` L ${width + BLEED} ${H + 20} L ${-BLEED} ${H + 20} Z`;
 
   let hills = `<path d="${band(hillY)}" fill="var(--hill-far)"/><path d="${band(hillY)}" fill="url(#hatch)" stroke="none"/>`;
   for (let x = 60; x < width; x += 70 + rnd() * 90) {
