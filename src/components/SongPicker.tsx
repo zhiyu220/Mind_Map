@@ -40,7 +40,7 @@ export function SongPlayer({ song }: { song: Song }) {
         title={`Spotify：${song.name}`}
         src={embedUrl(song.id)}
         width="100%"
-        height="152"
+        height="80"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
         loading="lazy"
       />

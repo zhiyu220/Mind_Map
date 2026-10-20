@@ -294,10 +294,11 @@ input, textarea { user-select: text; -webkit-user-select: text; }
 .song-row.static:hover { background: none; }
 img.cover { object-fit: cover; }
 .song-chosen, .song-search { display: grid; gap: 12px; }
-.song-player { display: grid; gap: 8px; }
+/* the compact Spotify player, with a little room from the line above so it doesn't crowd the page */
+.song-player { display: grid; gap: 10px; margin-top: 12px; }
 .song-player iframe { border: 0; border-radius: 14px; display: block; }
 .remote { display: flex; }
-.remote .pill { display: inline-flex; align-items: center; gap: 8px; }
+.remote .pill { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; padding: 6px 16px; box-shadow: 0 2px 0 var(--ink); }
 .spotify-dot { width: 10px; height: 10px; border-radius: 50%; background: #1db954; }
 .linkish.small { font-size: 12px; margin-top: 4px; display: block; }
 .row-links { display: flex; gap: 16px; }
