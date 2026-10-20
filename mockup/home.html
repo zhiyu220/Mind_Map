@@ -2,333 +2,262 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <style>
-/* Layout: one phone-width column; a hand-drawn sky scene on top, the meadow-side notes below, a soft tab bar fixed at the bottom. */
+/* Layout: one still picture-book page. Flat crayon sky and hills fill the screen, a dotted path climbs toward the horizon (one dot per session), the date sits top-left, one button sits on the grass. */
 :root {
-  --sky-top: #3f8ede;
-  --sky-mid: #7dbcf0;
-  --sky-low: #cfeaff;
-  --bg: #eef6fc;
-  --paper: #fdfeff;
-  --ink: #1f3b57;
-  --ink-soft: #5a7591;
-  --line: #d6e5f2;
-  --cloud: #ffffff;
-  --cloud-shade: #d9e7f4;
-  --cloud-grey: #e6ecf2;
-  --cloud-dark: #b9c6d4;
-  --rain: #6f9fd1;
-  --sun: #ffd46e;
-  --sun-glow: rgba(255, 216, 120, .55);
-  --grass-back: #8fcf74;
-  --grass-front: #6db85d;
-  --grass-blade: #4f9a46;
-  --flower: #fff6c8;
-  --accent: #2f6db5;
-  --accent-ink: #ffffff;
-  --warm: #ffcf73;
-  --warm-ink: #4a3410;
+  --sky: #8fcff0;
+  --cloud: #fffaf0;
+  --sun: #ffd45c;
+  --hill-far: #b8dd7c;
+  --hill-near: #8dc761;
+  --trail: #fff4d8;
+  --ink: #3b4757;
+  --text: #2c3a4b;
+  --paper: #fffaf0;
+  --coat: #ee7a5f;
+  --skin: #ffe1c4;
+  --w-sun: #ffc23d;
+  --w-partly: #ffe796;
+  --w-cloud: #d8dee5;
+  --w-rain: #7fb2e5;
+  --w-storm: #9192bd;
+  --grain: .22;
   --stars: 0;
-  --font-display: "LXGW WenKai TC", "Kaiti TC", "STKaiti", serif;
-  --font-body: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-  --r: 22px;
+  --font: "Huninn", "PingFang TC", "Noto Sans TC", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --sky-top: #0b1733; --sky-mid: #1c3566; --sky-low: #3a5a8c;
-    --bg: #0e1a33; --paper: #152645; --ink: #e8f0fa; --ink-soft: #a5b9d2; --line: #24395e;
-    --cloud: #cdd9ea; --cloud-shade: #8fa2c0; --cloud-grey: #aebcd2; --cloud-dark: #7d8ea9; --rain: #8fb6e6;
-    --sun: #f3efcf; --sun-glow: rgba(243, 239, 207, .28);
-    --grass-back: #2c5a3c; --grass-front: #234a31; --grass-blade: #1b3c27; --flower: #d9dcae;
-    --accent: #8cbcf2; --accent-ink: #0b1733; --warm: #f0d38a; --warm-ink: #2e2108;
-    --stars: 1; color-scheme: dark;
+    --sky: #23396a; --cloud: #4d6190; --sun: #f6e8a6; --hill-far: #3f6a46; --hill-near: #2e5536;
+    --trail: #d8cda9; --ink: #0f182c; --text: #f4efe0; --paper: #f4efe0; --coat: #e5866c; --skin: #f1d6ba;
+    --w-cloud: #b6becb; --grain: .3; --stars: 1; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --sky-top: #0b1733; --sky-mid: #1c3566; --sky-low: #3a5a8c;
-  --bg: #0e1a33; --paper: #152645; --ink: #e8f0fa; --ink-soft: #a5b9d2; --line: #24395e;
-  --cloud: #cdd9ea; --cloud-shade: #8fa2c0; --cloud-grey: #aebcd2; --cloud-dark: #7d8ea9; --rain: #8fb6e6;
-  --sun: #f3efcf; --sun-glow: rgba(243, 239, 207, .28);
-  --grass-back: #2c5a3c; --grass-front: #234a31; --grass-blade: #1b3c27; --flower: #d9dcae;
-  --accent: #8cbcf2; --accent-ink: #0b1733; --warm: #f0d38a; --warm-ink: #2e2108;
-  --stars: 1; color-scheme: dark;
+  --sky: #23396a; --cloud: #4d6190; --sun: #f6e8a6; --hill-far: #3f6a46; --hill-near: #2e5536;
+  --trail: #d8cda9; --ink: #0f182c; --text: #f4efe0; --paper: #f4efe0; --coat: #e5866c; --skin: #f1d6ba;
+  --w-cloud: #b6becb; --grain: .3; --stars: 1; color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
-html, body { background: var(--bg); }
-body { color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { background: var(--sky); color: var(--text); font-family: var(--font); overflow: hidden; -webkit-tap-highlight-color: transparent; }
 button { font: inherit; color: inherit; cursor: pointer; }
-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+button:focus-visible, .hit:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 
-.app { max-width: 440px; margin: 0 auto; padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); overflow-x: hidden; }
+.page { position: relative; height: 100%; max-width: 520px; margin: 0 auto; overflow: hidden; }
+.scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
-/* ---------- Sky scene ---------- */
-.sky {
-  position: relative; height: 430px; overflow: hidden;
-  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 48%, var(--sky-low) 100%);
-}
 .top {
-  position: relative; z-index: 5;
-  padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px));
-  padding-block: 22px 0; color: #fff;
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
 }
-.top .greet { font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1.2; text-shadow: 0 2px 10px rgba(20, 60, 110, .25); text-wrap: balance; }
-.top .date { font-size: 14px; opacity: .92; margin-top: 4px; letter-spacing: .04em; }
-.top .next { display: inline-flex; gap: 6px; align-items: center; margin-top: 10px; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,.22); font-size: 13px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.date { font-size: 15px; letter-spacing: .06em; }
+.steps { font-size: 26px; line-height: 1.3; margin-top: 6px; text-wrap: balance; }
+.book { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--paper); display: grid; place-items: center; color: #3b4757; }
+.book svg { width: 22px; height: 22px; }
 
-.sun { position: absolute; top: 26px; right: 26px; width: 64px; height: 64px; border-radius: 50%; background: var(--sun); box-shadow: 0 0 0 14px var(--sun-glow), 0 0 60px 30px var(--sun-glow); z-index: 1; }
-.stars { position: absolute; inset: 0; opacity: var(--stars); transition: opacity .6s; z-index: 0; }
-.stars i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; animation: twinkle 3s ease-in-out infinite; }
-
-.drift { position: absolute; z-index: 1; opacity: .75; animation: drift linear infinite; }
-.drift svg { display: block; width: 100%; height: auto; }
-@keyframes drift { from { transform: translateX(-160px); } to { transform: translateX(560px); } }
-@keyframes twinkle { 50% { opacity: .3; } }
-
-/* session clouds */
-.sc { position: absolute; z-index: 3; border: 0; background: none; padding: 0; text-align: center; animation: bob 6s ease-in-out infinite; }
-.sc svg.cl { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 10px rgba(30, 80, 140, .18)); transition: transform .3s; }
-.sc:hover svg.cl, .sc.on svg.cl { transform: scale(1.06); }
-.sc .lbl { display: inline-flex; align-items: center; gap: 4px; margin-top: -4px; padding: 1px 9px; border-radius: 999px; font-size: 12px; color: var(--ink); background: color-mix(in srgb, var(--paper) 82%, transparent); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.sc.on .lbl { background: var(--paper); box-shadow: 0 0 0 2px var(--accent); }
-.sc .lbl svg { width: 16px; height: 16px; }
-.sc .unf { position: absolute; top: -6px; right: 4px; font-size: 11px; padding: 0 7px; border-radius: 999px; background: var(--warm); color: var(--warm-ink); }
-.sc .drops line { stroke: var(--rain); stroke-width: 3; stroke-linecap: round; animation: rain 1.2s linear infinite; }
-@keyframes bob { 50% { transform: translateY(-6px); } }
-@keyframes rain { from { transform: translateY(-6px); opacity: 0; } 30% { opacity: 1; } to { transform: translateY(10px); opacity: 0; } }
-
-.plane { position: absolute; z-index: 4; width: 34px; left: 0; top: 0; offset-path: path("M -40 300 C 80 240, 160 330, 260 220 S 420 140, 520 90"); offset-rotate: auto; animation: fly 16s ease-in-out infinite; }
-.plane.launch { animation: fly 3.2s ease-in-out 1; }
-@keyframes fly { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 1; } 55% { offset-distance: 100%; opacity: 1; } 56%, 100% { offset-distance: 100%; opacity: 0; } }
-.plane.launch { animation-name: flyfast; }
-@keyframes flyfast { 0% { offset-distance: 0%; opacity: 0; } 10% { opacity: 1; } 95% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
-
-.hills { position: absolute; left: 0; right: 0; bottom: -1px; z-index: 2; height: 120px; }
-.hills svg { width: 100%; height: 100%; display: block; }
-.tuft { transform-box: fill-box; transform-origin: 50% 100%; animation: sway 4s ease-in-out infinite; }
-@keyframes sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
-
-/* ---------- Below the sky ---------- */
-.content {
-  position: relative; z-index: 3; margin-top: -26px; display: grid; gap: 14px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+.bottom {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: grid; justify-items: center; gap: 10px;
+  padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px));
+  padding-block: 0 calc(26px + env(safe-area-inset-bottom, 0px));
 }
-.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border: 0; border-radius: var(--r); padding: 14px 16px; text-align: left; box-shadow: 0 8px 22px rgba(30, 70, 120, .16); transition: transform .15s; }
-.btn:active { transform: scale(.97); }
-.btn svg { width: 28px; height: 28px; margin-bottom: 4px; }
-.btn b { font-family: var(--font-display); font-size: 19px; line-height: 1.25; }
-.btn small { font-size: 12px; opacity: .85; }
-.btn.go { background: var(--accent); color: var(--accent-ink); }
-.btn.done { background: var(--warm); color: var(--warm-ink); }
+.hint { font-size: 13px; color: var(--text); opacity: .8; }
+.write { border: 2.5px solid var(--ink); background: var(--paper); color: #2c3a4b; font-size: 19px; padding: 12px 34px; border-radius: 999px; box-shadow: 0 4px 0 var(--ink); transition: transform .12s, box-shadow .12s; }
+.write:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 
-.card { background: var(--paper); border-radius: var(--r); padding: 18px; border: 1px solid var(--line); }
-.eyebrow { font-size: 12px; letter-spacing: .12em; color: var(--ink-soft); }
-.card h2 { margin: 2px 0 12px; font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.3; }
-.wx { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 12px; border-radius: 16px; background: var(--bg); }
-.wx div { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.wx div:last-child { justify-content: flex-end; }
-.wx svg { width: 34px; height: 34px; flex: none; }
-.wx span { font-size: 12px; color: var(--ink-soft); line-height: 1.3; }
-.wx strong { display: block; font-size: 15px; color: var(--ink); }
-.wx .arrow { color: var(--ink-soft); font-size: 18px; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.chip { font-size: 13px; padding: 2px 11px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--ink); }
-.quote { margin: 14px 0 0; padding: 4px 0 0 14px; border-left: 3px solid var(--warm); font-family: var(--font-display); font-size: 19px; line-height: 1.55; }
-.quote small { display: block; font-family: var(--font-body); font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
-.later { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); font-size: 14px; color: var(--ink-soft); }
-.later button { flex: none; border: 1px solid var(--line); background: var(--bg); padding: 6px 14px; border-radius: 999px; font-size: 14px; color: var(--ink); }
+.hit { cursor: pointer; outline: none; }
+.dot { transition: transform .2s; transform-box: fill-box; transform-origin: center; }
+.hit.on .dot { transform: scale(1.25); }
 
-.plane-note { display: flex; align-items: center; gap: 12px; border: 1px dashed var(--line); background: transparent; border-radius: var(--r); padding: 14px 16px; text-align: left; width: 100%; color: var(--ink-soft); font-size: 14px; }
-.plane-note svg { width: 30px; flex: none; }
-.plane-note b { display: block; color: var(--ink); font-weight: 600; font-size: 15px; }
-
-.note { text-align: center; font-size: 12px; color: var(--ink-soft); padding: 6px 0 4px; }
-
-/* ---------- Tab bar ---------- */
-.tabs {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px));
-  padding-block: 8px calc(8px + env(safe-area-inset-bottom, 0px));
-  background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  border-top: 1px solid var(--line);
+.bubble {
+  position: absolute; z-index: 3; min-width: 150px; max-width: 220px; padding: 10px 14px 12px;
+  background: var(--paper); color: #2c3a4b; border: 2.5px solid var(--ink); border-radius: 18px;
+  font-size: 14px; line-height: 1.5; transform: translate(-50%, calc(-100% - 18px)); pointer-events: auto;
 }
-.tabs nav { max-width: 440px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
-.tabs button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--ink-soft); padding: 4px 0; }
-.tabs button svg { width: 24px; height: 24px; }
-.tabs button[aria-current] { color: var(--accent); font-weight: 600; }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -9px; width: 14px; height: 14px; background: var(--paper); border-right: 2.5px solid var(--ink); border-bottom: 2.5px solid var(--ink); transform: translateX(-50%) rotate(45deg); }
+.bubble b { display: block; font-size: 16px; font-weight: 400; }
+.bubble .song { display: block; margin-top: 4px; font-size: 13px; opacity: .8; }
+.bubble button { margin-top: 6px; border: 0; background: none; padding: 0; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 
-.toast { position: fixed; left: 50%; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; transition: .3s; z-index: 30; background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-size: 14px; max-width: calc(100% - 32px); text-align: center; pointer-events: none; }
+.toast { position: absolute; left: 50%; top: calc(110px + env(safe-area-inset-top, 0px)); transform: translate(-50%, -8px); opacity: 0; transition: .3s; z-index: 4; background: var(--paper); color: #2c3a4b; border: 2px solid var(--ink); padding: 8px 16px; border-radius: 999px; font-size: 14px; width: max-content; max-width: calc(100% - 40px); text-align: center; pointer-events: none; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+.drift { animation: drift 60s linear infinite; }
+.drift.slow { animation-duration: 90s; animation-delay: -40s; }
+@keyframes drift { from { transform: translateX(-140px); } to { transform: translateX(520px); } }
+.walker { animation: step .9s ease-in-out infinite; }
+@keyframes step { 50% { transform: translateY(-2px); } }
+.leg-a { animation: leg .9s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 0; }
+.leg-b { animation: leg .9s ease-in-out infinite reverse; transform-box: fill-box; transform-origin: 50% 0; }
+@keyframes leg { 0%, 100% { transform: rotate(14deg); } 50% { transform: rotate(-14deg); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
-  .plane { offset-distance: 62%; opacity: 1; }
 }
 </style>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <g id="cloud-shape">
-      <circle cx="34" cy="46" r="20"/><circle cx="58" cy="32" r="26"/><circle cx="86" cy="40" r="22"/><circle cx="104" cy="52" r="14"/>
-      <rect x="20" y="44" width="92" height="22" rx="11"/>
+<div class="page" id="page">
+  <svg class="scene" id="scene" viewBox="0 0 390 760" preserveAspectRatio="xMidYMid slice" role="img" aria-label="繪本風的藍天和草地，一條小路上有七個圓點，小人站在第七個圓點上">
+    <defs>
+      <filter id="crayon" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7"/>
+        <feDisplacementMap in="SourceGraphic" scale="5"/>
+      </filter>
+      <filter id="grain">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="2" stitchTiles="stitch"/>
+        <feColorMatrix values="0 0 0 0 0.2  0 0 0 0 0.2  0 0 0 0 0.25  0 0 0 1.2 -0.45"/>
+      </filter>
+      <g id="cloud">
+        <path d="M10 46 C -4 44, 0 22, 20 26 C 22 8, 50 4, 58 20 C 66 8, 92 12, 90 30 C 106 30, 108 48, 94 50 Z"/>
+      </g>
+    </defs>
+
+    <rect width="390" height="760" fill="var(--sky)"/>
+
+    <g id="stars" style="opacity:var(--stars)" fill="var(--sun)">
+      <path d="M60 170 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/>
+      <path d="M150 230 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
+      <path d="M230 160 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
+      <path d="M340 260 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5z"/>
+      <path d="M100 300 l2 4 4 2 -4 2 -2 4 -2 -4 -4 -2 4 -2z"/>
     </g>
-    <symbol id="w-sun" viewBox="0 0 40 40"><g stroke="var(--sun)" stroke-width="3" stroke-linecap="round"><path d="M20 3v5M20 32v5M3 20h5M32 20h5M8 8l3.5 3.5M28.5 28.5L32 32M8 32l3.5-3.5M28.5 11.5L32 8"/></g><circle cx="20" cy="20" r="8" fill="var(--sun)"/></symbol>
-    <symbol id="w-partly" viewBox="0 0 40 40"><circle cx="15" cy="14" r="8" fill="var(--sun)"/><g fill="var(--cloud-grey)" stroke="var(--cloud-dark)" stroke-width="1.2"><path d="M11 32a6 6 0 0 1 1-12 8 8 0 0 1 15-2 7 7 0 0 1 3 14z"/></g></symbol>
-    <symbol id="w-cloud" viewBox="0 0 40 40"><path d="M9 31a7 7 0 0 1 1-14 9 9 0 0 1 17-2 8 8 0 0 1 4 16z" fill="var(--cloud-grey)" stroke="var(--cloud-dark)" stroke-width="1.4"/></symbol>
-    <symbol id="w-rain" viewBox="0 0 40 40"><path d="M9 25a7 7 0 0 1 1-14 9 9 0 0 1 17-2 8 8 0 0 1 4 16z" fill="var(--cloud-grey)" stroke="var(--cloud-dark)" stroke-width="1.4"/><g stroke="var(--rain)" stroke-width="2.4" stroke-linecap="round"><path d="M13 29l-2 5M20 29l-2 5M27 29l-2 5"/></g></symbol>
-    <symbol id="w-storm" viewBox="0 0 40 40"><path d="M9 24a7 7 0 0 1 1-14 9 9 0 0 1 17-2 8 8 0 0 1 4 16z" fill="var(--cloud-dark)" stroke="var(--cloud-dark)" stroke-width="1.4"/><path d="M21 24l-5 8h5l-3 7 8-10h-5l3-5z" fill="var(--warm)"/></symbol>
-    <symbol id="plane" viewBox="0 0 40 30"><path d="M2 14L38 2 26 28 19 18z" fill="var(--paper)" stroke="var(--ink-soft)" stroke-width="1.2" stroke-linejoin="round"/><path d="M38 2L19 18l-2 9 4-7" fill="var(--cloud-shade)" stroke="var(--ink-soft)" stroke-width="1.2" stroke-linejoin="round"/></symbol>
-  </defs>
-</svg>
 
-<main class="app">
-  <section class="sky" aria-label="我的天空">
-    <div class="stars" id="stars" aria-hidden="true"></div>
-    <div class="sun" aria-hidden="true"></div>
+    <g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+      <circle cx="312" cy="196" r="32" fill="var(--sun)"/>
+      <g fill="none" class="rays">
+        <path d="M312 148 v-12 M312 244 v12 M264 196 h-12 M360 196 h12 M278 162 l-8 -8 M346 230 l8 8 M278 230 l-8 8 M346 162 l8 -8"/>
+      </g>
 
-    <div class="drift" style="top:120px;width:150px;animation-duration:70s;animation-delay:-20s" aria-hidden="true"><svg viewBox="0 0 130 72"><use href="#cloud-shape" fill="var(--cloud)" opacity=".7"/></svg></div>
-    <div class="drift" style="top:300px;width:110px;animation-duration:90s;animation-delay:-60s" aria-hidden="true"><svg viewBox="0 0 130 72"><use href="#cloud-shape" fill="var(--cloud)" opacity=".6"/></svg></div>
+      <g class="drift"><use href="#cloud" fill="var(--cloud)" transform="translate(40 250) scale(1.15)"/></g>
+      <g class="drift slow"><use href="#cloud" fill="var(--cloud)" transform="translate(170 320) scale(.8)"/></g>
 
-    <header class="top">
-      <div class="greet" id="greet">午安，今天的天空如何？</div>
+      <path d="M-10 432 C 60 392, 140 394, 214 414 S 340 382, 400 398 V780 H-10 Z" fill="var(--hill-far)"/>
+      <g fill="var(--hill-near)">
+        <path d="M335 404 v-24" fill="none"/>
+        <circle cx="335" cy="368" r="16"/>
+      </g>
+      <path d="M-10 478 C 90 444, 196 452, 262 474 S 362 462, 400 452 V780 H-10 Z" fill="var(--hill-near)"/>
+      <g fill="none" stroke-width="2">
+        <path d="M40 560 l5 -8 l5 8 M60 640 l4 -7 l4 7 M320 560 l5 -8 l5 8 M300 700 l4 -7 l4 7 M180 610 l4 -6 l4 6 M110 690 l4 -7 l4 7"/>
+      </g>
+    </g>
+
+    <path id="trail" d="M 64 760 C 150 712, 340 700, 300 632 S 84 586, 128 534 S 300 496, 258 458 S 186 432, 214 410" fill="none" stroke="var(--trail)" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 13"/>
+    <g id="dots"></g>
+    <g id="walker-wrap"></g>
+
+    <rect width="390" height="760" filter="url(#grain)" style="opacity:var(--grain);mix-blend-mode:multiply" pointer-events="none"/>
+  </svg>
+
+  <header class="top">
+    <div>
       <div class="date" id="today">10月20日 星期二</div>
-      <div class="next">下次諮商 · 10月22日 週四</div>
-    </header>
-
-    <div id="clouds"></div>
-
-    <svg class="plane" id="plane" viewBox="0 0 40 30" aria-hidden="true"><use href="#plane"/></svg>
-
-    <div class="hills" aria-hidden="true">
-      <svg viewBox="0 0 400 120" preserveAspectRatio="none">
-        <path d="M0 70 C 80 30, 170 40, 240 62 S 360 50, 400 40 V120 H0z" fill="var(--grass-back)"/>
-        <path d="M0 96 C 90 66, 200 70, 280 88 S 370 84, 400 76 V120 H0z" fill="var(--grass-front)"/>
-        <g fill="var(--grass-blade)">
-          <path class="tuft" d="M40 94 l3 -16 l2 16z M46 93 l5 -13 l0 14z M36 95 l-2 -12 l5 12z"/>
-          <path class="tuft" style="animation-delay:-1.3s" d="M150 78 l3 -15 l2 15z M156 78 l5 -12 l0 13z M146 79 l-3 -11 l5 11z"/>
-          <path class="tuft" style="animation-delay:-2.1s" d="M300 86 l3 -15 l2 15z M306 86 l5 -12 l0 13z M296 87 l-3 -11 l5 11z"/>
-          <path class="tuft" style="animation-delay:-.6s" d="M360 78 l2 -12 l2 12z M365 78 l4 -10 l0 11z"/>
-        </g>
-        <g fill="var(--flower)"><circle cx="90" cy="88" r="2.6"/><circle cx="210" cy="80" r="2.2"/><circle cx="250" cy="90" r="2.6"/><circle cx="335" cy="84" r="2.2"/><circle cx="120" cy="96" r="2"/></g>
-      </svg>
+      <div class="steps">你已經走了 7 次</div>
     </div>
-  </section>
-
-  <div class="content">
-    <div class="actions">
-      <button class="btn go" id="btn-go" type="button">
-        <svg viewBox="0 0 40 30" aria-hidden="true"><use href="#plane"/></svg>
-        <b>我要去諮商了</b><small>記下出發前的心情</small>
-      </button>
-      <button class="btn done" id="btn-done" type="button">
-        <svg viewBox="0 0 40 40" aria-hidden="true"><use href="#w-partly"/></svg>
-        <b>剛諮商完</b><small>點一下天氣就能存</small>
-      </button>
-    </div>
-
-    <article class="card" id="detail" aria-live="polite"></article>
-
-    <button class="plane-note" type="button" id="btn-note">
-      <svg viewBox="0 0 40 30" aria-hidden="true"><use href="#plane"/></svg>
-      <span><b>摺一架紙飛機</b>想到下次想說的事，先寫一句放著（可以不用）</span>
+    <button class="book" type="button" aria-label="全部紀錄" data-soon>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v14"/></svg>
     </button>
+  </header>
 
-    <p class="note">這是首頁樣稿，雲朵和文字都是範例。點天上的雲可以看每一次的紀錄。</p>
+  <div class="bottom">
+    <div class="hint">點路上的圓點，看那一次的你</div>
+    <button class="write" id="write" type="button">記下今天</button>
   </div>
-</main>
 
-<div class="tabs">
-  <nav aria-label="主選單">
-    <button type="button" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18a4 4 0 0 1 .5-8 6 6 0 0 1 11.3-1.5A4.5 4.5 0 0 1 18 18z"/></svg>天空</button>
-    <button type="button" data-soon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg>紀錄</button>
-    <button type="button" data-soon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-6 6-6 9-2s6 4 9-3"/><circle cx="7" cy="7" r="2"/><circle cx="16" cy="6" r="1.5"/></svg>心情地圖</button>
-    <button type="button" data-soon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>我</button>
-  </nav>
+  <div class="bubble" id="bubble" hidden></div>
+  <div class="toast" id="toast" role="status"></div>
 </div>
-
-<div class="toast" id="toast" role="status"></div>
 
 <script>
 (function () {
   const W = { sun: '晴朗', partly: '有點雲', cloud: '陰天', rain: '下雨', storm: '雷雨' };
+  // example sessions, oldest first
   const sessions = [
-    { n: 4, date: '9月24日 週四', short: '9/24', before: 'rain', after: 'cloud', topics: ['家庭'], quote: '那時候的你，已經用盡全力了。', who: '諮商師說的' },
-    { n: 5, date: '10月1日 週四', short: '10/1', before: 'storm', after: 'rain', topics: ['工作', '睡不好'], quote: '累的時候，先照顧身體就好。', who: '諮商師說的' },
-    { n: 6, date: '10月8日 週四', short: '10/8', before: 'cloud', after: 'partly', topics: ['關係', '生氣'], quote: '原來我生氣，是因為我很在乎。', who: '我自己說出口的' },
-    { n: 7, date: '10月15日 週四', short: '10/15', before: 'cloud', after: 'partly', topics: ['家庭', '自我價值'], quote: '你不需要一次就把所有事情想清楚。', who: '諮商師說的', unfinished: true }
+    { n: 1, date: '9月3日', before: 'storm', after: 'rain' },
+    { n: 2, date: '9月10日', before: 'rain', after: 'rain' },
+    { n: 3, date: '9月17日', before: 'rain', after: 'cloud' },
+    { n: 4, date: '9月24日', before: 'cloud', after: 'cloud' },
+    { n: 5, date: '10月1日', before: 'storm', after: 'rain' },
+    { n: 6, date: '10月8日', before: 'cloud', after: 'partly' },
+    { n: 7, date: '10月15日', before: 'cloud', after: 'partly', song: '回家路上聽的歌（範例）' }
   ];
-  // position, size and fade by recency: older clouds sit farther away
-  const spots = [
-    { left: 4, top: 150, w: 92, o: .7 },
-    { left: 54, top: 128, w: 104, o: .8 },
-    { left: 10, top: 232, w: 120, o: .9 },
-    { left: 52, top: 226, w: 150, o: 1 }
-  ];
-  const fills = { sun: 'var(--cloud)', partly: 'var(--cloud)', cloud: 'var(--cloud-grey)', rain: 'var(--cloud-grey)', storm: 'var(--cloud-dark)' };
+  const NS = 'http://www.w3.org/2000/svg';
+  const trail = document.getElementById('trail');
+  const total = trail.getTotalLength();
+  const dotsG = document.getElementById('dots');
+  const reach = 0.78; // the rest of the path is the road ahead
 
-  const host = document.getElementById('clouds');
-  sessions.forEach((s, i) => {
-    const p = spots[i];
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'sc';
-    b.style.cssText = `left:${p.left}%;top:${p.top}px;width:${p.w}px;opacity:${p.o};animation-delay:${-i * 1.5}s`;
-    b.setAttribute('aria-label', `第 ${s.n} 次諮商，${s.date}，諮商後${W[s.after]}`);
-    const drops = (s.after === 'rain' || s.after === 'storm')
-      ? `<g class="drops"><line x1="44" y1="74" x2="41" y2="82"/><line x1="64" y1="74" x2="61" y2="82" style="animation-delay:-.4s"/><line x1="84" y1="74" x2="81" y2="82" style="animation-delay:-.8s"/></g>` : '';
-    const dash = s.unfinished ? ' stroke="var(--warm)" stroke-width="3" stroke-dasharray="6 5"' : '';
-    b.innerHTML = `
-      <svg class="cl" viewBox="0 0 130 90" aria-hidden="true">
-        <use href="#cloud-shape" fill="var(--cloud-shade)" transform="translate(0 5)"/>
-        <use href="#cloud-shape" fill="${fills[s.after]}"${dash}/>
-        <use href="#cloud-shape" fill="${fills[s.after]}"/>
-        ${drops}
-      </svg>
-      ${s.unfinished ? '<span class="unf">還沒寫完</span>' : ''}
-      <span class="lbl"><svg viewBox="0 0 40 40"><use href="#w-${s.after}"/></svg>第 ${s.n} 次 · ${s.short}</span>`;
-    b.addEventListener('click', () => select(i));
-    host.appendChild(b);
+  const pts = sessions.map((s, i) => {
+    const t = (i + 0.4) / (sessions.length - 0.6) * reach;
+    const p = trail.getPointAtLength(t * total);
+    return { x: p.x, y: p.y, r: 14 - t * 8 };
   });
 
-  const detail = document.getElementById('detail');
-  function select(i) {
+  sessions.forEach((s, i) => {
+    const p = pts[i];
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'hit');
+    g.setAttribute('tabindex', '0');
+    g.setAttribute('role', 'button');
+    g.setAttribute('aria-label', `第 ${s.n} 次諮商，${s.date}，諮商後${W[s.after]}`);
+    g.innerHTML = `<circle cx="${p.x}" cy="${p.y}" r="${p.r + 12}" fill="transparent"/>
+      <circle class="dot" cx="${p.x}" cy="${p.y}" r="${p.r}" fill="var(--w-${s.after})" stroke="var(--ink)" stroke-width="2.5" filter="url(#crayon)"/>`;
+    g.addEventListener('click', e => { e.stopPropagation(); open(i); });
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(i); } });
+    dotsG.appendChild(g);
+  });
+
+  // the little walker stands on the latest dot
+  const last = pts[pts.length - 1];
+  const k = 0.75;
+  document.getElementById('walker-wrap').innerHTML = `
+    <g transform="translate(${last.x + 4} ${last.y - 6}) scale(${k})" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <g class="walker">
+        <path class="leg-a" d="M-4 6 v12" fill="none"/>
+        <path class="leg-b" d="M4 6 v12" fill="none"/>
+        <path d="M-10 8 C -10 -10, 10 -10, 10 8 Z" fill="var(--coat)"/>
+        <circle cx="0" cy="-18" r="9" fill="var(--skin)"/>
+        <path d="M-9 -20 C -8 -30, 8 -30, 9 -20 C 4 -24, -4 -24, -9 -20 Z" fill="var(--ink)"/>
+      </g>
+    </g>`;
+
+  const bubble = document.getElementById('bubble');
+  const page = document.getElementById('page');
+  let current = -1;
+  function open(i) {
+    if (current === i) { close(); return; }
+    current = i;
     const s = sessions[i];
-    [...host.children].forEach((el, j) => el.classList.toggle('on', j === i));
-    const isLast = i === sessions.length - 1;
-    detail.innerHTML = `
-      <div class="eyebrow">${isLast ? '上一次的天空' : '那一次的天空'}</div>
-      <h2>第 ${s.n} 次 · ${s.date}</h2>
-      <div class="wx">
-        <div><svg viewBox="0 0 40 40" aria-hidden="true"><use href="#w-${s.before}"/></svg><span>諮商前<strong>${W[s.before]}</strong></span></div>
-        <div class="arrow" aria-hidden="true">→</div>
-        <div><span style="text-align:right">諮商後<strong>${W[s.after]}</strong></span><svg viewBox="0 0 40 40" aria-hidden="true"><use href="#w-${s.after}"/></svg></div>
-      </div>
-      <div class="chips">${s.topics.map(t => `<span class="chip">${t}</span>`).join('')}</div>
-      <blockquote class="quote">「${s.quote}」<small>${s.who}</small></blockquote>
-      ${s.unfinished ? `<div class="later"><span>筆記還空著。想補的時候再補，一個詞也可以。</span><button type="button" data-soon>補一點</button></div>` : ''}`;
+    [...dotsG.children].forEach((el, j) => el.classList.toggle('on', j === i));
+    bubble.innerHTML = `<b>第 ${s.n} 次 · ${s.date}</b>${W[s.before]} → ${W[s.after]}
+      ${s.song ? `<span class="song">♪ ${s.song}</span>` : ''}
+      <button type="button" data-soon>看這一次的紀錄</button>`;
+    bubble.hidden = false;
+    place();
   }
-  select(sessions.length - 1);
+  function place() {
+    if (current < 0) return;
+    const c = dotsG.children[current].querySelector('.dot').getBoundingClientRect();
+    const box = page.getBoundingClientRect();
+    const half = bubble.offsetWidth / 2;
+    let x = c.left + c.width / 2 - box.left;
+    x = Math.max(half + 12, Math.min(box.width - half - 12, x));
+    bubble.style.left = x + 'px';
+    bubble.style.top = (c.top - box.top) + 'px';
+  }
+  function close() {
+    current = -1;
+    bubble.hidden = true;
+    [...dotsG.children].forEach(el => el.classList.remove('on'));
+  }
+  window.addEventListener('resize', place);
+  document.getElementById('scene').addEventListener('click', close);
 
-  // greeting + date
-  const now = new Date();
-  const h = now.getHours();
-  const hello = h < 5 ? '夜深了' : h < 11 ? '早安' : h < 18 ? '午安' : '晚安';
-  document.getElementById('greet').textContent = `${hello}，今天的天空如何？`;
   try {
-    document.getElementById('today').textContent = now.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' });
+    document.getElementById('today').textContent = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' });
   } catch (e) {}
-
-  // stars for the night sky
-  const st = document.getElementById('stars');
-  for (let k = 0; k < 26; k++) {
-    const i = document.createElement('i');
-    i.style.left = (Math.random() * 100) + '%';
-    i.style.top = (Math.random() * 230) + 'px';
-    i.style.animationDelay = (-Math.random() * 3) + 's';
-    st.appendChild(i);
-  }
 
   const toast = document.getElementById('toast');
   let tt;
@@ -338,16 +267,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     clearTimeout(tt);
     tt = setTimeout(() => toast.classList.remove('show'), 2400);
   }
-  const plane = document.getElementById('plane');
-  function launch() {
-    plane.classList.remove('launch');
-    void plane.offsetWidth;
-    plane.classList.add('launch');
-    plane.addEventListener('animationend', () => plane.classList.remove('launch'), { once: true });
-  }
-  document.getElementById('btn-go').addEventListener('click', () => { launch(); say('出發囉！正式版會在這裡打開「諮商前」的心情紀錄'); });
-  document.getElementById('btn-done').addEventListener('click', () => say('辛苦了。正式版會在這裡先問你：現在的天氣是？'));
-  document.getElementById('btn-note').addEventListener('click', () => { launch(); say('正式版可以在這裡寫一句想帶去說的事'); });
-  document.addEventListener('click', e => { if (e.target.closest('[data-soon]')) say('這個頁面還在樣稿階段，之後會做'); });
+  document.getElementById('write').addEventListener('click', () => say('正式版會在這裡問你：諮商前，還是諮商後？'));
+  document.addEventListener('click', e => { if (e.target.closest('[data-soon]')) { e.stopPropagation(); say('這一頁還在樣稿階段，之後會做'); } });
 })();
 </script>
