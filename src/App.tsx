@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, DEFAULT_SETTINGS, getSettings, saveSettings } from './db';
 import type { Session } from './types';
 import { DEFS, SKY } from './drawings';
-import { headerDate, short, todayKey } from './lib/dates';
+import { countdown, headerDate, short, todayKey } from './lib/dates';
 import { homeLines, lineOfTheDay } from './lib/lines';
 import { addSession, byDate, updateSession } from './lib/store';
 import Landscape from './components/Landscape';
@@ -174,7 +174,18 @@ function Main() {
       <>
         <div className="scrim" onClick={close} />
         <div className="ask" role="dialog" aria-label="下次諮商">
-          <h3>下次諮商是哪一天？</h3>
+          {(() => {
+            const c = countdown(today, settings.nextSession);
+            return c ? (
+              <div className="countdown">
+                <b>{c.big}</b>
+                <span>{c.small}</span>
+                <small>要改日期的話：</small>
+              </div>
+            ) : (
+              <h3>下次諮商是哪一天？</h3>
+            );
+          })()}
           <NextSessionField value={settings.nextSession} onDone={close} />
         </div>
       </>

@@ -24,7 +24,8 @@ export default function RoadSheet({ title, after, notes, writable, onClose }: Pr
   const [date, setDate] = useState(todayKey);
   const [confirm, setConfirm] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
-  const list = [...notes].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+  // oldest first, so the newest note is at the bottom
+  const list = [...notes].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
   const starred = list.filter(n => n.star);
   const rest = list.filter(n => !n.star);
 
