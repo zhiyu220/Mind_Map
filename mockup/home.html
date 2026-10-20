@@ -77,11 +77,12 @@ button { cursor: pointer; }
 button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 
 .page { position: relative; height: 100%; overflow: hidden; }
-.back { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.back { position: absolute; inset: 0; width: 100%; height: 100%; display: block; will-change: transform; }
 .world { position: absolute; inset: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .world::-webkit-scrollbar { display: none; }
 .world svg { display: block; height: 100%; width: auto; max-width: none; }
-.grain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: var(--grain); mix-blend-mode: multiply; }
+.grain { position: absolute; inset: 0; pointer-events: none; opacity: var(--grain); background-size: 160px 160px; }
+.clouds { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
 
 .top {
   position: absolute; top: 0; left: 0; right: 0; z-index: 2; pointer-events: none;
@@ -292,9 +293,6 @@ textarea.field.tall { min-height: 260px; }
     <g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
       <circle cx="700" cy="170" r="30" fill="var(--sun)"/>
       <path style="opacity:var(--rays)" d="M700 124 v-12 M700 216 v12 M654 170 h-12 M746 170 h12 M668 138 l-8 -8 M732 202 l8 8 M668 202 l-8 8 M732 138 l8 -8" fill="none"/>
-      <g class="drift"><use href="#cloud" fill="var(--cloud)" transform="translate(0 200) scale(1.1)"/></g>
-      <g class="drift b"><use href="#cloud" fill="var(--cloud)" transform="translate(0 255) scale(.75)"/></g>
-      <g class="drift c"><use href="#cloud" fill="var(--cloud)" transform="translate(0 150) scale(.6)"/></g>
       <path d="M0 330 L90 270 L150 300 L240 240 L330 305 L420 262 L520 316 L600 266 L690 312 L790 250 L880 300 L960 268 L1060 318 L1200 270 V600 H0 Z" fill="var(--mtn)"/>
       <path d="M240 240 l-18 14 l10 -2 l8 8 l9 -9 l9 3z M790 250 l-18 14 l10 -2 l8 8 l9 -9 l9 3z" fill="var(--cloud)" stroke-width="1.8"/>
     </g>
@@ -304,14 +302,19 @@ textarea.field.tall { min-height: 260px; }
     </g>
   </svg>
 
+  <svg class="clouds" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <g stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round">
+      <g class="drift"><use href="#cloud" fill="var(--cloud)" transform="translate(0 200) scale(1.1)"/></g>
+      <g class="drift b"><use href="#cloud" fill="var(--cloud)" transform="translate(0 255) scale(.75)"/></g>
+      <g class="drift c"><use href="#cloud" fill="var(--cloud)" transform="translate(0 150) scale(.6)"/></g>
+    </g>
+  </svg>
+
   <div class="world" id="world">
     <svg id="land" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="一條往右延伸的小路，實心圓點是每一次諮商，虛線圓點是兩次諮商之間的路上"></svg>
   </div>
 
-  <svg class="grain" aria-hidden="true">
-    <filter id="grainf"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0.2  0 0 0 0 0.2  0 0 0 0 0.25  0 0 0 1.2 -0.45"/></filter>
-    <rect width="100%" height="100%" filter="url(#grainf)"/>
-  </svg>
+  <div class="grain" id="grain" aria-hidden="true"></div>
 
   <header class="top">
     <div style="flex:1;min-width:0">
@@ -382,6 +385,20 @@ textarea.field.tall { min-height: 260px; }
   const frontY = x => 548 + 8 * Math.sin(x / 60);
   const dotX = i => X0 + i * S;
 
+  // stable pseudo-noise for the hand-drawn wobble
+  const hash = n => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+  const wob = x => { const i = Math.floor(x / 9), t = x / 9 - i, a = hash(i), b = hash(i + 1); return (a + (b - a) * t * t * (3 - 2 * t) - .5) * 2.4; };
+  function blob(cx, cy, r, k = 11) {
+    const pts = [];
+    for (let i = 0; i < k; i++) {
+      const a = i / k * Math.PI * 2, rr = r * (1 + (hash(cx * 7.1 + cy * 3.3 + i) - .5) * .12);
+      pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+    }
+    const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+    let m = mid(pts[k - 1], pts[0]), d = `M${m[0].toFixed(1)} ${m[1].toFixed(1)}`;
+    for (let i = 0; i < k; i++) { const p = pts[i], n = mid(p, pts[(i + 1) % k]); d += ` Q${p[0].toFixed(1)} ${p[1].toFixed(1)} ${n[0].toFixed(1)} ${n[1].toFixed(1)}`; }
+    return d + 'Z';
+  }
   let seed;
   const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
@@ -391,22 +408,22 @@ textarea.field.tall { min-height: 260px; }
     const N = state.sessions.length;
     const last = dotX(N - 1);
     const WIDTH = last + AHEAD;
-    const wave = (f, step = 16) => { let d = `M -20 ${f(-20).toFixed(1)}`; for (let x = -20; x <= WIDTH + 20; x += step) d += ` L ${x} ${f(x).toFixed(1)}`; return d; };
+    const wave = (f, step = 12) => { let d = `M -20 ${f(-20).toFixed(1)}`; for (let x = -20; x <= WIDTH + 20; x += step) d += ` L ${x} ${(f(x) + wob(x)).toFixed(1)}`; return d; };
     const band = f => wave(f) + ` L ${WIDTH + 20} ${H + 20} L -20 ${H + 20} Z`;
 
     svg.setAttribute('viewBox', `0 0 ${WIDTH} ${H}`);
     svg.style.aspectRatio = `${WIDTH} / ${H}`;
 
     let out = `<defs>
-      <filter id="cr" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="4"/></filter>
       <pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-30)"><line x1="0" y1="0" x2="0" y2="9" stroke="var(--ink)" stroke-width="1.2" opacity=".09"/></pattern>
     </defs>`;
 
     let hills = `<path d="${band(hillY)}" fill="var(--hill-far)"/><path d="${band(hillY)}" fill="url(#hatch)" stroke="none"/>`;
     for (let x = 60; x < WIDTH; x += 70 + rnd() * 90) {
       const y = hillY(x) + 4, h = 26 + rnd() * 18;
-      if (rnd() < .5) hills += `<g class="sway" style="animation-delay:${-rnd() * 4}s"><path d="M${x} ${y} v-${h * .5}" stroke-width="3" fill="none" stroke="var(--trunk)"/><circle cx="${x}" cy="${y - h * .75}" r="${h * .38}" fill="var(--tree)"/></g>`;
-      else hills += `<g class="sway" style="animation-delay:${-rnd() * 4}s"><path d="M${x} ${y - h * 1.1} L${x + h * .32} ${y - 4} L${x - h * .32} ${y - 4} Z" fill="var(--tree-2)"/><path d="M${x} ${y - 4} v4" stroke="var(--trunk)" stroke-width="3"/></g>`;
+      const sw = rnd() < .3 ? `class="sway" style="animation-delay:${-rnd() * 4}s"` : '';
+      if (rnd() < .5) hills += `<g ${sw}><path d="M${x} ${y} v-${h * .5}" stroke-width="3" fill="none" stroke="var(--trunk)"/><path d="${blob(x, y - h * .75, h * .38)}" fill="var(--tree)"/></g>`;
+      else hills += `<g ${sw}><path d="M${x} ${y - h * 1.1} L${x + h * .32} ${y - 4} L${x - h * .32} ${y - 4} Z" fill="var(--tree-2)"/><path d="M${x} ${y - 4} v4" stroke="var(--trunk)" stroke-width="3"/></g>`;
     }
     const hx = 90, hy = hillY(90) + 6;
     hills += `<g><rect x="${hx - 20}" y="${hy - 30}" width="40" height="30" fill="var(--wall)"/><path d="M${hx - 26} ${hy - 28} L${hx} ${hy - 50} L${hx + 26} ${hy - 28} Z" fill="var(--roof)"/><rect x="${hx - 5}" y="${hy - 16}" width="10" height="16" fill="var(--trunk)"/><rect x="${hx + 8}" y="${hy - 24}" width="7" height="7" fill="var(--sky)"/></g>`;
@@ -425,24 +442,24 @@ textarea.field.tall { min-height: 260px; }
       if (rnd() < .55) {
         const c = ['--f1', '--f2', '--f3', '--f4'][Math.floor(rnd() * 4)];
         const r = 3 + rnd() * 2;
-        front += `<g class="sway" style="animation-delay:${-rnd() * 4}s"><path d="M${x} ${y + 12} v-12" stroke="var(--tree)" stroke-width="2"/><g fill="var(${c})" stroke-width="1.5">${[0, 72, 144, 216, 288].map(a => `<circle cx="${(x + Math.cos(a * Math.PI / 180) * r).toFixed(1)}" cy="${(y + Math.sin(a * Math.PI / 180) * r).toFixed(1)}" r="${r * .7}"/>`).join('')}</g><circle cx="${x}" cy="${y}" r="${r * .45}" fill="var(--scarf)" stroke="none"/></g>`;
+        front += `<g ${rnd() < .15 ? `class="sway" style="animation-delay:${-rnd() * 4}s"` : ''}><path d="M${x} ${y + 12} v-12" stroke="var(--tree)" stroke-width="2"/><g fill="var(${c})" stroke-width="1.5">${[0, 72, 144, 216, 288].map(a => `<circle cx="${(x + Math.cos(a * Math.PI / 180) * r).toFixed(1)}" cy="${(y + Math.sin(a * Math.PI / 180) * r).toFixed(1)}" r="${r * .7}"/>`).join('')}</g><circle cx="${x}" cy="${y}" r="${r * .45}" fill="var(--scarf)" stroke="none"/></g>`;
       } else {
-        front += `<path class="sway" style="animation-delay:${-rnd() * 4}s" d="M${x - 5} ${y + 8} l3 -10 l2 10 M${x} ${y + 8} l4 -14 l1 14 M${x + 4} ${y + 8} l5 -9" fill="none" stroke="var(--tree)" stroke-width="2"/>`;
+        front += `<path d="M${x - 5} ${y + 8} l3 -10 l2 10 M${x} ${y + 8} l4 -14 l1 14 M${x + 4} ${y + 8} l5 -9" fill="none" stroke="var(--tree)" stroke-width="2"/>`;
       }
     }
     let tufts = '';
     for (let x = 20; x < WIDTH; x += 40 + rnd() * 60) {
       const y = groundY(x) + 22 + rnd() * 20;
-      tufts += `<path class="sway" style="animation-delay:${-rnd() * 4}s" d="M${x - 4} ${y} l2 -8 l2 8 M${x} ${y} l3 -11 l1 11 M${x + 4} ${y} l4 -7" fill="none" stroke="var(--tree)" stroke-width="2"/>`;
+      tufts += `<path d="M${x - 4} ${y} l2 -8 l2 8 M${x} ${y} l3 -11 l1 11 M${x + 4} ${y} l4 -7" fill="none" stroke="var(--tree)" stroke-width="2"/>`;
     }
-    out += `<g filter="url(#cr)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">${hills}${ground}${tufts}</g>`;
+    out += `<g stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">${hills}${ground}${tufts}</g>`;
 
     for (let x = 30; x < last - 10; x += 22) out += `<ellipse cx="${x}" cy="${pathY(x) + (Math.round(x / 22) % 2 ? 5 : -5)}" rx="4.5" ry="2.6" fill="var(--foot)"/>`;
     for (let x = last + 140; x < WIDTH - 40; x += 26) out += `<circle cx="${x}" cy="${pathY(x)}" r="3" fill="var(--foot)" opacity=".7"/>`;
 
     const sign = (x, text, w) => {
       const y = groundY(x) + 6;
-      return `<g filter="url(#cr)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"><path d="M${x} ${y + 30} v-44" stroke="var(--fence)" stroke-width="5"/><rect x="${x - w / 2}" y="${y - 40}" width="${w}" height="26" rx="5" fill="var(--paper)"/></g><text class="lbl" x="${x}" y="${y - 22}" text-anchor="middle" style="fill:#2c3a4b">${text}</text>`;
+      return `<g stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"><path d="M${x} ${y + 30} v-44" stroke="var(--fence)" stroke-width="5"/><rect x="${x - w / 2}" y="${y - 40}" width="${w}" height="26" rx="5" fill="var(--paper)"/></g><text class="lbl" x="${x}" y="${y - 22}" text-anchor="middle" style="fill:#2c3a4b">${text}</text>`;
     };
     out += sign(X0 - 110, '起點 9/3', 76) + sign(last + 200, '下次 10/22', 86);
 
@@ -466,13 +483,13 @@ textarea.field.tall { min-height: 260px; }
       const x = dotX(i), y = pathY(x);
       return `<g class="hit" tabindex="0" role="button" data-kind="session" data-i="${i}" aria-label="第 ${s.n} 次諮商，${s.date}，${W[s.after]}">
         <circle cx="${x}" cy="${y}" r="30" fill="transparent"/>
-        <circle class="dot" cx="${x}" cy="${y}" r="15" fill="var(--w-${s.after})" stroke="var(--ink)" stroke-width="2.5" filter="url(#cr)"/>
+        <path class="dot" d="${blob(x, y, 15)}" fill="var(--w-${s.after})" stroke="var(--ink)" stroke-width="2.5"/>
         <text class="lbl" x="${x}" y="${y + 36}" text-anchor="middle">${s.short}</text></g>`;
     }).join('');
     out += `<g id="dots">${dots}</g>`;
 
     const fx = walkerFrom != null ? walkerFrom : last;
-    out += `<g id="walker" style="transform:translate(${fx - 4}px, ${pathY(fx) - 18}px)"><g stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#cr)">
+    out += `<g id="walker" style="transform:translate(${fx - 4}px, ${pathY(fx) - 18}px)"><g stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <ellipse cx="2" cy="4" rx="22" ry="5" fill="var(--foot)" stroke="none" opacity=".6"/>
       <g class="breathe">
         <path d="M-8 -22 L-10 0 h9 L0 -22 Z" fill="var(--boot)"/>
@@ -493,7 +510,7 @@ textarea.field.tall { min-height: 260px; }
     out += `<g transform="translate(${last + 160} ${pathY(last) - 130})"><g class="fly">
       <path class="wing" d="M0 0 C -10 -12, -16 -2, -8 4 Z" fill="var(--f1)" stroke="var(--ink)" stroke-width="1.6"/>
       <path class="wing r" d="M0 0 C 10 -12, 16 -2, 8 4 Z" fill="var(--f1)" stroke="var(--ink)" stroke-width="1.6"/></g></g>`;
-    out += `<g filter="url(#cr)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">${front}</g>`;
+    out += `<g stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">${front}</g>`;
     svg.innerHTML = out;
 
     hits = [...svg.querySelectorAll('.hit')];
@@ -760,6 +777,14 @@ textarea.field.tall { min-height: 260px; }
   document.addEventListener('click', e => { if (e.target.closest('[data-soon]')) { e.stopPropagation(); say('這一頁還在樣稿階段，之後會做'); } });
 
   try { document.getElementById('today').textContent = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' }); } catch (e) {}
+
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 160;
+    const g = c.getContext('2d'), img = g.createImageData(160, 160);
+    for (let i = 0; i < img.data.length; i += 4) { const v = Math.random(); img.data[i] = img.data[i + 1] = 40; img.data[i + 2] = 60; img.data[i + 3] = v > .55 ? (v - .55) * 120 : 0; }
+    g.putImageData(img, 0, 0);
+    document.getElementById('grain').style.backgroundImage = `url(${c.toDataURL()})`;
+  } catch (e) {}
 
   render();
   requestAnimationFrame(() => home());
