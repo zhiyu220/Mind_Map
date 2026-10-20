@@ -3,7 +3,7 @@ import type { RoadNote, Session, Song } from '../types';
 import { WEATHER_NAME } from '../types';
 import { SongChip } from './SongPicker';
 import { long, short } from '../lib/dates';
-import { AHEAD, blob, groundY, H, landMarkup, pathY, SIGN_X, STEP, X0 } from '../lib/scenery';
+import { AHEAD, blob, groundY, H, landMarkup, HOUSE_X, pathY, STEP, X0 } from '../lib/scenery';
 
 interface Props {
   sessions: Session[];
@@ -128,7 +128,7 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
           </defs>
           <g dangerouslySetInnerHTML={{ __html: land.back }} />
 
-          {sign(SIGN_X, N ? `起點 ${short(sessions[0].date)}` : '起點', N ? 76 : 50)}
+          {sign(HOUSE_X, N ? `起點 ${short(sessions[0].date)}` : '起點', N ? 76 : 50)}
           {sign(walkerX + 200, nextSession ? `下次 ${short(nextSession)}` : '下次？', nextSession ? 86 : 60, onNextSign)}
 
           {pastRoads.map(r => {
