@@ -11,6 +11,9 @@ export function seasonOf(d: Date): Season {
   return m >= 3 && m <= 5 ? 'spring' : m >= 6 && m <= 8 ? 'summer' : m >= 9 && m <= 11 ? 'autumn' : 'winter';
 }
 
+/** 'auto' follows the calendar; a fixed season stays put (to see another season's picture). */
+export const pickSeason = (choice: Season | 'auto' | undefined, d: Date): Season => (!choice || choice === 'auto' ? seasonOf(d) : choice);
+
 export function themeFor(mode: SkyMode, d: Date, phoneDark: boolean): 'light' | 'dark' {
   if (mode === 'day') return 'light';
   if (mode === 'phone') return phoneDark ? 'dark' : 'light';
@@ -18,13 +21,13 @@ export function themeFor(mode: SkyMode, d: Date, phoneDark: boolean): 'light' | 
 }
 
 /** Keeps <html data-theme data-season> up to date; checks again every minute and when the app comes back. */
-export function followSky(mode: SkyMode): () => void {
+export function followSky(mode: SkyMode, season: Season | 'auto' = 'auto'): () => void {
   const root = document.documentElement;
   const phone = matchMedia('(prefers-color-scheme: dark)');
   const apply = () => {
     const now = new Date();
     root.dataset.theme = themeFor(mode, now, phone.matches);
-    root.dataset.season = seasonOf(now);
+    root.dataset.season = pickSeason(season, now);
   };
   apply();
   const t = setInterval(apply, 60_000);

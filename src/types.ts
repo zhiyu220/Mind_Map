@@ -71,4 +71,8 @@ export interface Settings {
   spotifyPlaylist?: boolean;
   /** night sky after dark ('time', the default), with the phone's dark mode, or always day */
   sky?: 'time' | 'phone' | 'day';
+  /** the season's picture: follows the calendar ('auto', the default) or stays on one season */
+  season?: 'auto' | 'spring' | 'summer' | 'autumn' | 'winter';
+  /** the walker on the road */
+  walker?: 'girl' | 'boy';
 }

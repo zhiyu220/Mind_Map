@@ -3,7 +3,7 @@ import type { RoadNote, Session, Song } from '../types';
 import { WEATHER_NAME } from '../types';
 import { SongChip } from './SongPicker';
 import { long, short } from '../lib/dates';
-import { AHEAD, blob, groundY, H, landMarkup, pathY, STEP, X0 } from '../lib/scenery';
+import { AHEAD, blob, groundY, H, landMarkup, HOUSE_X, pathY, STEP, X0 } from '../lib/scenery';
 
 interface Props {
   sessions: Session[];
@@ -13,13 +13,14 @@ interface Props {
   onOpenRoad: (after: string | null) => void;
   onNextSign: () => void;
   onPlay: (s: Song) => void;
+  look: 'girl' | 'boy';
 }
 
 type Picked = { kind: 'session'; i: number } | { kind: 'road'; after: string | null; x: number };
 
 const dotX = (i: number) => X0 + i * STEP;
 
-export default function Landscape({ sessions, notes, nextSession, onOpenSession, onOpenRoad, onNextSign, onPlay }: Props) {
+export default function Landscape({ sessions, notes, nextSession, onOpenSession, onOpenRoad, onNextSign, onPlay, look }: Props) {
   const N = sessions.length;
   const walkerX = N ? dotX(N - 1) : X0 - 50;
   // the land always reaches past the right edge of the screen, even with only a few dots
@@ -81,7 +82,7 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
     const x = Math.max(half + 12, Math.min(box.width - half - 12, cx));
     const onWalker = picked?.kind === 'session' && picked.i === N - 1;
     b.style.left = `${x}px`;
-    b.style.top = `${c.top - box.top - (onWalker ? 128 * scale() : 0)}px`;
+    b.style.top = `${c.top - box.top - (onWalker ? 136 * scale() : 0)}px`;
     b.style.setProperty('--tip', `${Math.max(20, Math.min(b.offsetWidth - 20, cx - x + half))}px`);
     b.style.visibility = cx < -20 || cx > box.width + 20 ? 'hidden' : 'visible';
   };
@@ -128,7 +129,7 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
           </defs>
           <g dangerouslySetInnerHTML={{ __html: land.back }} />
 
-          {sign(X0 - 130, N ? `起點 ${short(sessions[0].date)}` : '起點', N ? 76 : 50)}
+          {sign(HOUSE_X, N ? `起點 ${short(sessions[0].date)}` : '起點', N ? 76 : 50)}
           {sign(walkerX + 200, nextSession ? `下次 ${short(nextSession)}` : '下次？', nextSession ? 86 : 60, onNextSign)}
 
           {pastRoads.map(r => {
@@ -167,7 +168,7 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
             );
           })}
 
-          <Walker x={walkerX} />
+          <Walker x={walkerX} look={look} />
 
           <g dangerouslySetInnerHTML={{ __html: land.front }} />
         </svg>
@@ -204,25 +205,94 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
   );
 }
 
-function Walker({ x }: { x: number }) {
+/** The walker, side on, facing the road ahead. Clothes follow the season (styles.css sets the colours,
+ *  .s-* and .no-* pieces show only in their season); `look` picks the girl or the boy. */
+function Walker({ x, look }: { x: number; look: 'girl' | 'boy' }) {
+  const girl = look === 'girl';
+  // limbs are an ink stroke with a narrower colour stroke on top, so they read as outlined shapes
+  const limb = (d: string, color: string, w = 8) => (
+    <>
+      <path d={d} stroke="var(--ink)" strokeWidth={w + 5} fill="none" />
+      <path d={d} stroke={color} strokeWidth={w} fill="none" />
+    </>
+  );
   return (
     <g className="walker" style={{ transform: `translate(${x - 4}px, ${pathY(x) - 18}px)` }}>
       <g stroke="var(--ink)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <ellipse cx="2" cy="4" rx="22" ry="5" fill="var(--foot)" stroke="none" opacity=".6" />
-        <g>
-          <path d="M-8 -22 L-10 0 h9 L0 -22 Z" fill="var(--boot)" />
-          <path d="M4 -22 L6 0 h9 L12 -22 Z" fill="var(--boot)" />
-          <rect x="-26" y="-74" width="16" height="30" rx="6" fill="var(--pack)" />
-          <path d="M-16 -22 C -20 -60, -14 -78, 2 -78 C 18 -78, 24 -60, 20 -22 Z" fill="var(--coat)" />
-          <path d="M2 -60 C 14 -56, 18 -46, 22 -40" fill="none" />
-          <circle cx="22" cy="-39" r="4" fill="var(--skin)" />
-          <path d="M-12 -78 C -6 -72, 12 -72, 16 -78 L14 -86 C 6 -82, -6 -82, -12 -86 Z" fill="var(--scarf)" />
-          <path d="M-10 -82 C -22 -80, -30 -74, -36 -70 L-32 -64 C -24 -70, -16 -72, -8 -76 Z" fill="var(--scarf)" />
-          <circle cx="2" cy="-102" r="20" fill="var(--skin)" />
-          <path d="M-18 -104 C -18 -126, 20 -128, 22 -104 C 14 -112, -2 -114, -18 -104 Z" fill="var(--boot)" />
-          <circle cx="12" cy="-100" r="2.2" fill="var(--ink)" stroke="none" />
-          <circle cx="14" cy="-92" r="4" fill="var(--cheek)" stroke="none" opacity=".8" />
-          <path d="M17 -88 q3 2 5 0" fill="none" strokeWidth="2" />
+        <ellipse cx="4" cy="3" rx="26" ry="5" fill="var(--foot)" stroke="none" opacity=".6" />
+
+        {/* legs: trousers or tights above, and below the knee whatever the season leaves bare */}
+        {limb('M-5 -34 L-7 -8', 'var(--pants)', 9)}
+        {limb('M-6 -18 L-7 -8', 'var(--shin)', 9)}
+        {limb('M9 -34 L11 -8', 'var(--pants)', 9)}
+        {limb('M10 -18 L11 -8', 'var(--shin)', 9)}
+        <path d="M-14 -8 h12 c6 0 9 3 9 8 h-21 Z" fill="var(--boot)" />
+        <path d="M4 -8 h12 c7 0 11 3 11 8 h-23 Z" fill="var(--boot)" />
+        <path className="s-winter" d="M-14 -6 h21 M4 -6 h23" strokeWidth="2" fill="none" />
+
+        {/* backpack */}
+        <rect x="-32" y="-84" width="20" height="38" rx="8" fill="var(--pack)" />
+        <rect x="-30" y="-64" width="13" height="11" rx="3" fill="var(--pack)" />
+        <path d="M-31 -74 C -26 -70, -18 -70, -13 -74" fill="none" strokeWidth="2" />
+
+        {/* long hair falls behind the shoulders */}
+        {girl && <path d="M-18 -106 C -26 -86, -24 -70, -14 -64 C -6 -61, 0 -66, 2 -76 L 2 -98 Z" fill="var(--hair)" />}
+
+        {/* coat, sweater or T-shirt; the girl's flares a little at the hem */}
+        <path d={girl ? 'M-16 -30 C -16 -58, -14 -80, 4 -80 C 20 -80, 24 -58, 26 -30 Z' : 'M-14 -34 C -18 -60, -14 -80, 4 -80 C 20 -80, 24 -60, 22 -34 Z'} fill="var(--coat)" />
+        <path className="no-summer" d="M8 -78 V-36" fill="none" strokeWidth="2" />
+        <g className="no-summer" fill="var(--ink)" stroke="none"><circle cx="12" cy="-66" r="1.8" /><circle cx="12" cy="-54" r="1.8" /></g>
+        <path className="s-summer" d="M-4 -78 C 0 -72, 8 -72, 12 -78" fill="none" strokeWidth="2" />
+        <path className="s-summer" d="M9 -60 c -2 -4 -7 -2 -4 2 l4 4 l4 -4 c 3 -4 -2 -6 -4 -2 Z" fill="var(--f1)" strokeWidth="1.5" />
+        <path className="s-winter" d="M-15 -62 C -2 -59, 12 -59, 23 -62 M-15 -48 C -2 -45, 12 -45, 23 -48" fill="none" strokeWidth="2" />
+        <path className="s-autumn" d={girl ? 'M-15 -36 C -2 -33, 12 -33, 25 -36' : 'M-14 -40 C -2 -37, 12 -37, 22 -40'} fill="none" strokeWidth="2" />
+        <path d="M14 -46 h8 v7 h-8 z" fill="none" strokeWidth="2" className="no-summer" />
+
+        {/* the front arm, holding the backpack strap */}
+        {limb('M8 -72 L15 -57', 'var(--coat)')}
+        {limb('M15 -57 L22 -48', 'var(--forearm)')}
+        <circle cx="23" cy="-46" r="4.6" fill="var(--hand)" />
+
+        {/* scarf: blowing back most of the year, hanging long in winter, off in summer */}
+        <g className="no-summer">
+          <path d="M-10 -79 C -4 -73, 13 -73, 18 -79 L16 -87 C 8 -83, -4 -83, -10 -87 Z" fill="var(--scarf)" />
+          <path className="no-winter" d="M-8 -83 C -20 -81, -28 -75, -34 -71 L-30 -65 C -22 -71, -14 -73, -6 -77 Z" fill="var(--scarf)" />
+          <path className="s-winter" d="M11 -79 C 13 -69, 13 -61, 11 -54 L18 -54 C 20 -62, 20 -71, 17 -79 Z" fill="var(--scarf)" />
+        </g>
+
+        {/* head */}
+        <path d="M0 -86 v6 h8 v-6" fill="var(--skin)" />
+        <circle cx="4" cy="-102" r="21" fill="var(--skin)" />
+        {girl ? (
+          <>
+            <path d="M-17 -98 C -21 -128, 22 -133, 26 -106 C 19 -110, 11 -112, 7 -117 C 4 -110, -4 -109, -8 -102 C -10 -96, -14 -94, -17 -98 Z" fill="var(--hair)" />
+            <circle cx="11" cy="-119" r="3.4" fill="var(--f1)" strokeWidth="1.6" />
+          </>
+        ) : (
+          <path d="M-18 -98 C -22 -127, 20 -133, 26 -108 C 21 -111, 17 -109, 15 -114 C 11 -108, 5 -110, 3 -115 C -1 -107, -7 -105, -9 -97 C -12 -94, -15 -94, -18 -98 Z" fill="var(--hair)" />
+        )}
+        {!girl && <path d="M-3 -100 c -5 0 -6 8 0 8" fill="var(--skin)" strokeWidth="2" />}
+        <path d="M11 -109 q3 -2.5 7 0" fill="none" strokeWidth="2" />
+        <ellipse cx="15" cy="-101" rx="2.2" ry="3" fill="var(--ink)" stroke="none" />
+        <circle cx="15.8" cy="-102.4" r=".9" fill="#fff" stroke="none" />
+        <ellipse cx="16" cy="-93" rx="4.2" ry="2.6" fill="var(--cheek)" stroke="none" opacity=".8" />
+        <path d="M19 -89 q3 2 5.5 -.5" fill="none" strokeWidth="2" />
+
+        {/* summer: a straw hat; autumn: a beret; winter: a knitted hat with a pompom */}
+        <g className="s-summer">
+          <path d="M-14 -113 C -14 -136, 22 -136, 22 -113 Z" fill="#f3d58b" />
+          <path d="M-13 -117 h34" stroke="#e0664f" strokeWidth="4" />
+          <ellipse cx="4" cy="-113" rx="31" ry="6" fill="#f3d58b" />
+        </g>
+        <g className="s-autumn">
+          <path d="M-20 -111 C -22 -130, 20 -136, 28 -115 C 18 -111, -6 -109, -20 -111 Z" fill="#9b3d4a" />
+          <path d="M4 -127 l1 -6" />
+        </g>
+        <g className="s-winter">
+          <path d="M-17 -109 C -19 -136, 25 -136, 25 -109 Z" fill="var(--scarf)" />
+          <path d="M-6 -112 v-14 M4 -112 v-17 M14 -112 v-14" fill="none" strokeWidth="1.6" />
+          <rect x="-20" y="-114" width="48" height="9" rx="4.5" fill="var(--paper)" />
+          <circle cx="4" cy="-134" r="6" fill="var(--paper)" />
         </g>
       </g>
     </g>

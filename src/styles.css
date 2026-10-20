@@ -64,21 +64,53 @@
   --grain: .3; --stars: 1; --rays: 0; color-scheme: dark; --sea: #2a4d7e; --sea-line: #5d7fae;
 }
 
-/* The meadow follows the seasons (lib/sky.ts sets data-season). Spring is the default above. */
+/* The four seasons (lib/sky.ts sets data-season), each its own picture, by day and by night:
+   spring is soft and full of flowers, summer deep green, autumn golden, winter under snow. */
+:root { --snow: #ffffff; --snow-shade: #dfe9f2; --hand: var(--skin); --hair: #5a3b2e; --pants: #4f6690; --shin: var(--pants); --forearm: var(--coat); }
+:root[data-theme="dark"] { --hair: #3f2a22; --pants: #3d5075; }
+:root[data-season="spring"]:not([data-theme="dark"]) {
+  --sky: #a3daf3; --sky-stroke: #bce4f6; --mtn: #bfe0d2; --hill-far: #cdec9e; --hill-near: #aade80; --grass-front: #93d16d;
+  --tree: #6cb25a; --tree-2: #92cc6a; --canopy: #f6b3c6; --canopy-2: #7cc16a;
+  --f1: #ff9fb6; --f2: #ffffff; --f3: #ffe27a; --f4: #c6b2f5; --coat: #f49ab0; --scarf: #fff0a6;
+}
+:root[data-season="spring"][data-theme="dark"] { --canopy: #a86f86; --coat: #c97d91; --scarf: #d9cd8a; }
 :root[data-season="summer"]:not([data-theme="dark"]) {
-  --hill-far: #a9d86a; --hill-near: #84c255; --grass-front: #6fb04a; --tree: #5aa047; --tree-2: #7cbd52;
-  --f1: #ff8a5c; --f2: #ffffff; --f3: #ffcf33; --f4: #ff9fb0;
+  --sky: #5fbcf0; --sky-stroke: #7ccaf4; --sun: #ffc933; --mtn: #79bda3; --hill-far: #8ccd4c; --hill-near: #5fb03a; --grass-front: #4b9e2e;
+  --sand: #f7dd9c; --tree: #3d8c2d; --tree-2: #57a637; --canopy: #3c963a; --canopy-2: #2e7d39;
+  --f1: #ff7a4d; --f2: #ffffff; --f3: #ffcf33; --f4: #ff5f8a; --coat: #ffd84d;
+}
+:root[data-season="summer"] { --shin: var(--skin); --forearm: var(--skin); --pants: #6f8fbf; }
+:root[data-season="summer"][data-theme="dark"] {
+  --hill-far: #2d5b33; --hill-near: #224b29; --grass-front: #1b3f22; --tree: #2a5a2f; --canopy: #285a30; --canopy-2: #224f2c; --coat: #cbb044;
 }
 :root[data-season="autumn"]:not([data-theme="dark"]) {
-  --hill-far: #cfd27c; --hill-near: #aac35e; --grass-front: #93b24f; --tree: #6f9e4a;
-  --canopy: #e39a45; --canopy-2: #d9b34a;
-  --f1: #e86a4a; --f2: #f7e3b0; --f3: #f2b03d; --f4: #c79bd9;
+  --sky: #a9d3e6; --sky-stroke: #bfdeec; --mtn: #ccb69c; --hill-far: #e6c86f; --hill-near: #d7ad56; --grass-front: #c49646;
+  --sand: #eed9aa; --foot: #c4a372; --tree: #8f7436; --tree-2: #b08a3e; --canopy: #e3793a; --canopy-2: #c9a23a;
+  --f1: #d9542f; --f2: #f3d9a0; --f3: #e9a23b; --f4: #a8573b; --coat: #d98a3d; --scarf: #9b3d4a;
 }
+:root[data-season="autumn"][data-theme="dark"] {
+  --mtn: #3d4560; --hill-far: #5e5531; --hill-near: #4f4628; --grass-front: #423a22; --sand: #7d6c4c; --tree: #5a4a2a;
+  --canopy: #8a4a2c; --canopy-2: #7d6a32; --coat: #b0713a; --scarf: #7d3640;
+}
+/* winter: the land is under snow; the road stays a little muddy so you can still see it */
 :root[data-season="winter"]:not([data-theme="dark"]) {
-  --sky: #a3d4ee; --hill-far: #c6dbaa; --hill-near: #aecb8e; --grass-front: #9cbf7f; --tree: #6f9c6a; --tree-2: #96bb86;
-  --f1: #ffffff; --f2: #f4d2dc; --f3: #fff3c4; --f4: #d6e4f5;
+  --sky: #b7dcf0; --mtn: #cfdfe9; --hill-far: #e2ecf3; --hill-near: #edf3f8; --grass-front: #f6f9fb;
+  --sand: #dccbaa; --foot: #b9a582; --tree: #5f8a68; --tree-2: #7ea385; --canopy: #6f9478; --canopy-2: #5f8a68;
+  --coat: #3f6fb5; --scarf: #e0544f; --hand: #e0544f;
 }
-:root[data-season="autumn"][data-theme="dark"] { --canopy: #8a5a2c; --canopy-2: #7d6a32; }
+:root[data-season="winter"][data-theme="dark"] {
+  --sky: #13254a; --sky-stroke: #1b305c; --mtn: #2e4467; --hill-far: #3f5579; --hill-near: #4b6286; --grass-front: #5a7196;
+  --sand: #6e6a72; --foot: #57545e; --snow: #d9e3f2; --snow-shade: #4d6488; --canopy: #2c4a46; --canopy-2: #2c4a46;
+  --coat: #3a5e9c; --scarf: #c9504c; --hand: #c9504c;
+}
+/* things that belong to one season (lib/scenery.ts, the walker in Landscape.tsx) */
+.s-spring, .s-summer, .s-autumn, .s-winter { display: none; }
+:root[data-season="spring"] .s-spring, :root[data-season="summer"] .s-summer,
+:root[data-season="autumn"] .s-autumn, :root[data-season="winter"] .s-winter { display: inline; }
+:root[data-season="winter"] .no-winter, :root[data-season="summer"] .no-summer { display: none; }
+/* big summer clouds */
+:root[data-season="summer"] .drift-cloud.a { width: 30vh; }
+:root[data-season="summer"] .drift-cloud.b { width: 22vh; }
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
@@ -317,6 +349,33 @@ img.cover { object-fit: cover; }
 .drift-cloud.b { top: 37%; width: 13vh; animation-duration: 160s; animation-delay: -70s; }
 .drift-cloud.c { top: 20%; width: 10vh; animation-duration: 140s; animation-delay: -30s; }
 @keyframes drift { from { transform: translateX(-30vh); } to { transform: translateX(calc(100vw + 10vh)); } }
+/* the butterfly is out on spring and summer days */
+:root[data-theme="dark"] .butterfly, :root[data-season="autumn"] .butterfly, :root[data-season="winter"] .butterfly { display: none; }
+
+/* what the season brings (drawings.ts SEASON_FX): each piece falls on its own; --d delay, --t pace, --s size */
+.fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; display: none; }
+:root[data-season="winter"] .fx-snow, :root[data-season="spring"] .fx-petal, :root[data-season="autumn"] .fx-leaf,
+:root[data-season="summer"][data-theme="dark"] .fx-firefly { display: block; }
+.fx i { position: absolute; top: 0; width: calc(2.2vh * var(--s)); will-change: transform; animation: fall calc(16s * var(--t)) linear var(--d) infinite; }
+.fx b { display: block; will-change: transform; animation: sway calc(5s * var(--t)) ease-in-out var(--d) infinite alternate; }
+.fx svg { display: block; width: 100%; height: auto; overflow: visible; }
+.fx-snow i { width: calc(1.3vh * var(--s)); animation-duration: calc(13s * var(--t)); }
+.fx-petal b, .fx-leaf b { animation-name: tumble; }
+.fx-leaf i { width: calc(2.6vh * var(--s)); animation-duration: calc(12s * var(--t)); }
+.fx-firefly i { width: calc(1.8vh * var(--s)); animation: glow calc(3.5s * var(--t)) ease-in-out var(--d) infinite; }
+.fx-firefly b { animation: hover calc(7s * var(--t)) ease-in-out var(--d) infinite alternate; }
+@keyframes fall { from { transform: translateY(-6vh); } to { transform: translateY(106vh); } }
+@keyframes sway { from { transform: translateX(-2.5vh); } to { transform: translateX(2.5vh); } }
+@keyframes tumble { from { transform: translateX(-4vh) rotate(-40deg); } to { transform: translateX(4vh) rotate(220deg); } }
+@keyframes glow { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+@keyframes hover { from { transform: translate(-2vh, 1vh); } to { transform: translate(2vh, -1.5vh); } }
+
+/* the aurora, behind the land, on winter nights */
+.aurora { position: absolute; left: -6vw; right: -6vw; top: 6%; height: 34%; pointer-events: none; display: none; will-change: transform, opacity; animation: aurora 18s ease-in-out infinite alternate; }
+.aurora svg { display: block; width: 100%; height: 100%; }
+:root[data-season="winter"][data-theme="dark"] .aurora { display: block; }
+@keyframes aurora { 0% { transform: translateX(-2vw); opacity: .75; } 50% { opacity: 1; } 100% { transform: translateX(2vw); opacity: .8; } }
+
 .butterfly { position: absolute; width: 4.5vh; margin: -2vh 0 0 -2vh; pointer-events: none; will-change: transform; animation: butterfly 9s ease-in-out infinite; }
 .butterfly svg { display: block; width: 100%; height: auto; overflow: visible; animation: flap .35s ease-in-out infinite; }
 @keyframes butterfly { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(3vh, -2.5vh); } 50% { transform: translate(6vh, .4vh); } 75% { transform: translate(2.5vh, 1.8vh); } }
