@@ -66,7 +66,8 @@
 
 /* The four seasons (lib/sky.ts sets data-season), each its own picture, by day and by night:
    spring is soft and full of flowers, summer deep green, autumn golden, winter under snow. */
-:root { --snow: #ffffff; --snow-shade: #dfe9f2; --hand: var(--skin); }
+:root { --snow: #ffffff; --snow-shade: #dfe9f2; --hand: var(--skin); --hair: #5a3b2e; --pants: #4f6690; --shin: var(--pants); --forearm: var(--coat); }
+:root[data-theme="dark"] { --hair: #3f2a22; --pants: #3d5075; }
 :root[data-season="spring"]:not([data-theme="dark"]) {
   --sky: #a3daf3; --sky-stroke: #bce4f6; --mtn: #bfe0d2; --hill-far: #cdec9e; --hill-near: #aade80; --grass-front: #93d16d;
   --tree: #6cb25a; --tree-2: #92cc6a; --canopy: #f6b3c6; --canopy-2: #7cc16a;
@@ -78,6 +79,7 @@
   --sand: #f7dd9c; --tree: #3d8c2d; --tree-2: #57a637; --canopy: #3c963a; --canopy-2: #2e7d39;
   --f1: #ff7a4d; --f2: #ffffff; --f3: #ffcf33; --f4: #ff5f8a; --coat: #ffd84d;
 }
+:root[data-season="summer"] { --shin: var(--skin); --forearm: var(--skin); --pants: #6f8fbf; }
 :root[data-season="summer"][data-theme="dark"] {
   --hill-far: #2d5b33; --hill-near: #224b29; --grass-front: #1b3f22; --tree: #2a5a2f; --canopy: #285a30; --canopy-2: #224f2c; --coat: #cbb044;
 }

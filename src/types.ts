@@ -73,4 +73,6 @@ export interface Settings {
   sky?: 'time' | 'phone' | 'day';
   /** the season's picture: follows the calendar ('auto', the default) or stays on one season */
   season?: 'auto' | 'spring' | 'summer' | 'autumn' | 'winter';
+  /** the walker on the road */
+  walker?: 'girl' | 'boy';
 }

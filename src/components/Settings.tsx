@@ -16,6 +16,7 @@ export const HELPLINES = [
 ];
 
 const SKY_MODES: [NonNullable<S['sky']>, string][] = [['time', '晚上變成夜空'], ['phone', '跟著手機的深色模式'], ['day', '一直是白天']];
+const WALKERS: [NonNullable<S['walker']>, string][] = [['girl', '女生'], ['boy', '男生']];
 const SEASONS: [NonNullable<S['season']>, string][] = [['auto', '跟著日子'], ['spring', '春天'], ['summer', '夏天'], ['autumn', '秋天'], ['winter', '冬天']];
 
 export function NextSessionField({ value, onDone }: { value?: string; onDone?: () => void }) {
@@ -107,6 +108,16 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
             {SKY_MODES.map(([k, name]) => (
               <button key={k} className="chip" type="button" role="radio" aria-checked={(settings.sky ?? 'time') === k} aria-pressed={(settings.sky ?? 'time') === k}
                 onClick={() => saveSettings({ sky: k })}>{name}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="group">
+          <h3>小路上的人</h3>
+          <div className="chips small" role="radiogroup" aria-label="小路上的人">
+            {WALKERS.map(([k, name]) => (
+              <button key={k} className="chip" type="button" role="radio" aria-checked={(settings.walker ?? 'girl') === k} aria-pressed={(settings.walker ?? 'girl') === k}
+                onClick={() => saveSettings({ walker: k })}>{name}</button>
             ))}
           </div>
         </div>

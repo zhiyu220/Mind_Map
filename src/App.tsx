@@ -268,6 +268,7 @@ function Main() {
         onPlay={play}
         onOpenRoad={after => setView({ kind: 'road', after })}
         onNextSign={() => setView({ kind: 'next' })}
+        look={settings.walker ?? 'girl'}
       />
       {/* snow, petals, leaves or fireflies, in front of the land; they let taps through */}
       <div dangerouslySetInnerHTML={{ __html: SEASON_FX }} style={{ display: 'contents' }} />
