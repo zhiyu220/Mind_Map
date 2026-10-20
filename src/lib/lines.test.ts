@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { homeLines, lineOfTheDay } from './lines';
-import { daysBetween, short, weekday } from './dates';
+import { countdown, daysBetween, short, weekday } from './dates';
 import type { RoadNote, Session } from '../types';
 
 const s = (id: string, date: string, extra: Partial<Session> = {}): Session => ({
@@ -13,6 +13,13 @@ describe('dates', () => {
     expect(daysBetween('2026-09-28', '2026-10-03')).toBe(5);
     expect(short('2026-10-05')).toBe('10/5');
     expect(weekday('2026-10-22')).toBe('週四');
+  });
+  it('counts down to the next session', () => {
+    expect(countdown('2026-10-20', '2026-10-22')).toEqual({ big: '還有 2 天', small: '10月22日 週四' });
+    expect(countdown('2026-10-21', '2026-10-22')).toEqual({ big: '還有 1 天', small: '明天，10月22日 週四' });
+    expect(countdown('2026-10-22', '2026-10-22')?.big).toBe('就是今天');
+    expect(countdown('2026-10-23', '2026-10-22')).toBeNull();
+    expect(countdown('2026-10-20')).toBeNull();
   });
 });
 

@@ -133,6 +133,10 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
   padding-block: 22px calc(26px + env(safe-area-inset-bottom, 0px));
   animation: rise .28s ease-out;
 }
+.countdown { display: grid; justify-items: center; gap: 2px; text-align: center; }
+.countdown b { font-weight: 400; font-size: 34px; line-height: 1.2; }
+.countdown span { font-size: 16px; color: var(--sheet-soft); }
+.countdown small { font-size: 13px; color: var(--sheet-soft); margin-top: 12px; justify-self: start; }
 .ask h3 { margin: 0 0 4px; font-size: 22px; font-weight: 400; text-align: center; }
 .big { display: flex; align-items: center; gap: 14px; width: 100%; max-width: 480px; margin: 0 auto; border: 2.5px solid var(--ink); background: var(--chip); border-radius: 20px; padding: 14px 18px; text-align: left; font-size: 18px; color: var(--sheet-ink); }
 .big svg { width: 40px; height: 40px; flex: none; }

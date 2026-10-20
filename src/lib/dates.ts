@@ -41,3 +41,14 @@ export function weekday(key: string): string {
 export function headerDate(key: string): string {
   return `${long(key)} 星期${WEEKDAY[fromKey(key).getDay()]}`;
 }
+
+/** What the 下次 sign says when you tap it; null when no upcoming session is set. */
+export function countdown(today: string, next?: string): { big: string; small: string } | null {
+  if (!next) return null;
+  const k = daysBetween(today, next);
+  if (k < 0) return null;
+  const when = `${long(next)} ${weekday(next)}`;
+  if (k === 0) return { big: '就是今天', small: when };
+  if (k === 1) return { big: '還有 1 天', small: `明天，${when}` };
+  return { big: `還有 ${k} 天`, small: when };
+}
