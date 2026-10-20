@@ -221,22 +221,23 @@ function Main() {
         <div className="ask" role="dialog" aria-label="下次諮商">
           {(() => {
             const c = countdown(today, settings.nextSession);
+            // countdown, then the card to get ready, then the date field with its own label right above it
             return c ? (
-              <div className="countdown">
-                <b>{c.big}</b>
-                <span>{c.small}</span>
-                <small>要改日期的話：</small>
-              </div>
+              <>
+                <div className="countdown">
+                  <b>{c.big}</b>
+                  <span>{c.small}</span>
+                </div>
+                <button className="big" type="button" onClick={() => setView({ kind: 'prep' })}>
+                  <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 10h24v22H8z" fill="var(--paper)" stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round" /><path d="M13 17h14M13 23h10" stroke="var(--ink)" strokeWidth="2.2" strokeLinecap="round" /></svg>
+                  <span>去說說話之前<small>上次的一句話、想帶去說的、這段路上的天氣</small></span>
+                </button>
+                <small className="change-date">要改日期的話：</small>
+              </>
             ) : (
               <h3>下次諮商是哪一天？</h3>
             );
           })()}
-          {countdown(today, settings.nextSession) && (
-            <button className="big" type="button" onClick={() => setView({ kind: 'prep' })}>
-              <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 10h24v22H8z" fill="var(--paper)" stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round" /><path d="M13 17h14M13 23h10" stroke="var(--ink)" strokeWidth="2.2" strokeLinecap="round" /></svg>
-              <span>去說說話之前<small>上次的一句話、想帶去說的、這段路上的天氣</small></span>
-            </button>
-          )}
           <NextSessionField value={settings.nextSession} onDone={close} />
         </div>
       </>
