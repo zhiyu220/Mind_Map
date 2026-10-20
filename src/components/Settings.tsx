@@ -3,6 +3,7 @@ import type { Settings as S } from '../types';
 import { saveSettings } from '../db';
 import { todayKey } from '../lib/dates';
 import { hashPin } from '../lib/pin';
+import { canUseFaceId, checkFaceId, setUpFaceId } from '../lib/faceid';
 import { makeBackup, openBackup, readBackup, restoreBackup, shareOrDownload, type Backup } from '../lib/backup';
 import type { Sealed } from '../lib/crypto';
 import { clientId, disconnect, isConnected, needsReconnect, playlistInfo, playlistUrl, startSpotifyLogin } from '../lib/spotify';
@@ -13,6 +14,10 @@ export const HELPLINES = [
   { name: '生命線', number: '1995', note: '24 小時' },
   { name: '張老師專線', number: '1980', note: '' }
 ];
+
+const SKY_MODES: [NonNullable<S['sky']>, string][] = [['time', '晚上變成夜空'], ['phone', '跟著手機的深色模式'], ['day', '一直是白天']];
+const WALKERS: [NonNullable<S['walker']>, string][] = [['girl', '女生'], ['boy', '男生']];
+const SEASONS: [NonNullable<S['season']>, string][] = [['auto', '跟著日子'], ['spring', '春天'], ['summer', '夏天'], ['autumn', '秋天'], ['winter', '冬天']];
 
 export function NextSessionField({ value, onDone }: { value?: string; onDone?: () => void }) {
   const [v, setV] = useState(value ?? '');
@@ -41,6 +46,7 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
   const [pinStep, setPinStep] = useState<'idle' | 'set' | 'again'>('idle');
   const [pin, setPin] = useState('');
   const [first, setFirst] = useState('');
+  const [faceOk, setFaceOk] = useState(false);
   const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone;
 
   useEffect(() => {
@@ -49,6 +55,18 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
     playlistInfo().then(p => setPlaylist(p?.id ?? null));
     clientId().then(id => setHasClientId(!!id));
   }, [settings.spotifyClientId]);
+  useEffect(() => {
+    canUseFaceId().then(setFaceOk);
+  }, []);
+
+  const turnOnFace = async () => {
+    const id = await setUpFaceId();
+    // make sure it really answers before relying on it
+    if (id && (await checkFaceId(id))) {
+      await saveSettings({ faceId: id });
+      say('好了，下次打開用 Face ID 就好');
+    } else say('沒有設好，可以再試一次');
+  };
 
   const pinInput = async (v: string) => {
     const digits = v.replace(/\D/g, '').slice(0, 4);
@@ -84,6 +102,36 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
           <NextSessionField value={settings.nextSession} onDone={() => say('記住了')} />
         </div>
 
+        <div className="group">
+          <h3>天空</h3>
+          <div className="chips small" role="radiogroup" aria-label="天空">
+            {SKY_MODES.map(([k, name]) => (
+              <button key={k} className="chip" type="button" role="radio" aria-checked={(settings.sky ?? 'time') === k} aria-pressed={(settings.sky ?? 'time') === k}
+                onClick={() => saveSettings({ sky: k })}>{name}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="group">
+          <h3>小路上的人</h3>
+          <div className="chips small" role="radiogroup" aria-label="小路上的人">
+            {WALKERS.map(([k, name]) => (
+              <button key={k} className="chip" type="button" role="radio" aria-checked={(settings.walker ?? 'girl') === k} aria-pressed={(settings.walker ?? 'girl') === k}
+                onClick={() => saveSettings({ walker: k })}>{name}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="group">
+          <h3>季節</h3>
+          <div className="chips small" role="radiogroup" aria-label="季節">
+            {SEASONS.map(([k, name]) => (
+              <button key={k} className="chip" type="button" role="radio" aria-checked={(settings.season ?? 'auto') === k} aria-pressed={(settings.season ?? 'auto') === k}
+                onClick={() => saveSettings({ season: k })}>{name}</button>
+            ))}
+          </div>
+          <p className="tiny">春天落櫻花，夏天有向日葵、晚上有螢火蟲，秋天掉葉子，冬天下雪、晚上有極光。</p>
+        </div>
         <div className="group">
           <h3>Spotify</h3>
           {spotify ? (
@@ -133,7 +181,7 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
             settings.pinHash ? (
               <div className="row-buttons">
                 <button className="pill sm" type="button" onClick={() => setPinStep('set')}>換一組</button>
-                <button className="pill sm" type="button" onClick={() => saveSettings({ pinHash: undefined }).then(() => say('密碼鎖關掉了'))}>關掉</button>
+                <button className="pill sm" type="button" onClick={() => saveSettings({ pinHash: undefined, faceId: undefined }).then(() => say('密碼鎖關掉了'))}>關掉</button>
               </div>
             ) : (
               <>
@@ -147,6 +195,16 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
               <input id="pin-new" className="field pin" inputMode="numeric" autoComplete="off" autoFocus type="password" value={pin} onChange={e => pinInput(e.target.value)} />
               <button className="linkish" type="button" onClick={() => { setPinStep('idle'); setPin(''); }}>算了</button>
             </>
+          )}
+          {settings.pinHash && pinStep === 'idle' && faceOk && (
+            settings.faceId ? (
+              <p className="tiny">
+                Face ID 已開啟。認不出來的時候，還是可以輸入密碼。{' '}
+                <button className="linkish small" type="button" style={{ display: 'inline' }} onClick={() => saveSettings({ faceId: undefined }).then(() => say('Face ID 關掉了'))}>不用 Face ID</button>
+              </p>
+            ) : (
+              <button className="pill sm" type="button" onClick={turnOnFace}>改用 Face ID 解鎖</button>
+            )
           )}
           <p className="tiny">忘記密碼就打不開了（資料只在這支手機裡），記得也做備份。</p>
         </div>

@@ -34,6 +34,8 @@
   --boot: #6b4a3a;
   --f1: #ff9fb0; --f2: #ffffff; --f3: #ffd45c; --f4: #b9a3f0;
   --w-sun: #ffc23d; --w-partly: #ffe796; --w-cloud: #d8dee5; --w-rain: #7fb2e5; --w-storm: #9192bd;
+  --canopy: var(--tree); --canopy-2: var(--tree-2);
+  --sea: #6fc0e6; --sea-line: #e9f7ff;
   --grain: .2;
   --stars: 0;
   --rays: 1;
@@ -48,7 +50,7 @@
     --sheet: #1c2a4a; --sheet-ink: #f1ecdd; --sheet-soft: #a3aec2; --sheet-line: #33456b; --chip: #283a60; --chip-on: #4f78b8;
     --skin: #f1d6ba; --cheek: #e39a8c; --boot: #4e372b;
     --f1: #d98a99; --f2: #d9d6cc; --f3: #d9bb5c; --f4: #9b8acb; --w-cloud: #b6becb;
-    --grain: .3; --stars: 1; --rays: 0; color-scheme: dark;
+    --grain: .3; --stars: 1; --rays: 0; color-scheme: dark; --sea: #2a4d7e; --sea-line: #5d7fae;
   }
 }
 :root[data-theme="dark"] {
@@ -59,8 +61,56 @@
   --sheet: #1c2a4a; --sheet-ink: #f1ecdd; --sheet-soft: #a3aec2; --sheet-line: #33456b; --chip: #283a60; --chip-on: #4f78b8;
   --skin: #f1d6ba; --cheek: #e39a8c; --boot: #4e372b;
   --f1: #d98a99; --f2: #d9d6cc; --f3: #d9bb5c; --f4: #9b8acb; --w-cloud: #b6becb;
-  --grain: .3; --stars: 1; --rays: 0; color-scheme: dark;
+  --grain: .3; --stars: 1; --rays: 0; color-scheme: dark; --sea: #2a4d7e; --sea-line: #5d7fae;
 }
+
+/* The four seasons (lib/sky.ts sets data-season), each its own picture, by day and by night:
+   spring is soft and full of flowers, summer deep green, autumn golden, winter under snow. */
+:root { --snow: #ffffff; --snow-shade: #dfe9f2; --hand: var(--skin); --hair: #5a3b2e; --pants: #4f6690; --shin: var(--pants); --forearm: var(--coat); }
+:root[data-theme="dark"] { --hair: #3f2a22; --pants: #3d5075; }
+:root[data-season="spring"]:not([data-theme="dark"]) {
+  --sky: #a3daf3; --sky-stroke: #bce4f6; --mtn: #bfe0d2; --hill-far: #cdec9e; --hill-near: #aade80; --grass-front: #93d16d;
+  --tree: #6cb25a; --tree-2: #92cc6a; --canopy: #f6b3c6; --canopy-2: #7cc16a;
+  --f1: #ff9fb6; --f2: #ffffff; --f3: #ffe27a; --f4: #c6b2f5; --coat: #f49ab0; --scarf: #fff0a6;
+}
+:root[data-season="spring"][data-theme="dark"] { --canopy: #a86f86; --coat: #c97d91; --scarf: #d9cd8a; }
+:root[data-season="summer"]:not([data-theme="dark"]) {
+  --sky: #5fbcf0; --sky-stroke: #7ccaf4; --sun: #ffc933; --mtn: #79bda3; --hill-far: #8ccd4c; --hill-near: #5fb03a; --grass-front: #4b9e2e;
+  --sand: #f7dd9c; --tree: #3d8c2d; --tree-2: #57a637; --canopy: #3c963a; --canopy-2: #2e7d39;
+  --f1: #ff7a4d; --f2: #ffffff; --f3: #ffcf33; --f4: #ff5f8a; --coat: #ffd84d;
+}
+:root[data-season="summer"] { --shin: var(--skin); --forearm: var(--skin); --pants: #6f8fbf; }
+:root[data-season="summer"][data-theme="dark"] {
+  --hill-far: #2d5b33; --hill-near: #224b29; --grass-front: #1b3f22; --tree: #2a5a2f; --canopy: #285a30; --canopy-2: #224f2c; --coat: #cbb044;
+}
+:root[data-season="autumn"]:not([data-theme="dark"]) {
+  --sky: #a9d3e6; --sky-stroke: #bfdeec; --mtn: #ccb69c; --hill-far: #e6c86f; --hill-near: #d7ad56; --grass-front: #c49646;
+  --sand: #eed9aa; --foot: #c4a372; --tree: #8f7436; --tree-2: #b08a3e; --canopy: #e3793a; --canopy-2: #c9a23a;
+  --f1: #d9542f; --f2: #f3d9a0; --f3: #e9a23b; --f4: #a8573b; --coat: #d98a3d; --scarf: #9b3d4a;
+}
+:root[data-season="autumn"][data-theme="dark"] {
+  --mtn: #3d4560; --hill-far: #5e5531; --hill-near: #4f4628; --grass-front: #423a22; --sand: #7d6c4c; --tree: #5a4a2a;
+  --canopy: #8a4a2c; --canopy-2: #7d6a32; --coat: #b0713a; --scarf: #7d3640;
+}
+/* winter: the land is under snow; the road stays a little muddy so you can still see it */
+:root[data-season="winter"]:not([data-theme="dark"]) {
+  --sky: #b7dcf0; --mtn: #cfdfe9; --hill-far: #e2ecf3; --hill-near: #edf3f8; --grass-front: #f6f9fb;
+  --sand: #dccbaa; --foot: #b9a582; --tree: #5f8a68; --tree-2: #7ea385; --canopy: #6f9478; --canopy-2: #5f8a68;
+  --coat: #3f6fb5; --scarf: #e0544f; --hand: #e0544f;
+}
+:root[data-season="winter"][data-theme="dark"] {
+  --sky: #13254a; --sky-stroke: #1b305c; --mtn: #2e4467; --hill-far: #3f5579; --hill-near: #4b6286; --grass-front: #5a7196;
+  --sand: #6e6a72; --foot: #57545e; --snow: #d9e3f2; --snow-shade: #4d6488; --canopy: #2c4a46; --canopy-2: #2c4a46;
+  --coat: #3a5e9c; --scarf: #c9504c; --hand: #c9504c;
+}
+/* things that belong to one season (lib/scenery.ts, the walker in Landscape.tsx) */
+.s-spring, .s-summer, .s-autumn, .s-winter { display: none; }
+:root[data-season="spring"] .s-spring, :root[data-season="summer"] .s-summer,
+:root[data-season="autumn"] .s-autumn, :root[data-season="winter"] .s-winter { display: inline; }
+:root[data-season="winter"] .no-winter, :root[data-season="summer"] .no-summer { display: none; }
+/* big summer clouds */
+:root[data-season="summer"] .drift-cloud.a { width: 30vh; }
+:root[data-season="summer"] .drift-cloud.b { width: 22vh; }
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
@@ -299,6 +349,33 @@ img.cover { object-fit: cover; }
 .drift-cloud.b { top: 37%; width: 13vh; animation-duration: 160s; animation-delay: -70s; }
 .drift-cloud.c { top: 20%; width: 10vh; animation-duration: 140s; animation-delay: -30s; }
 @keyframes drift { from { transform: translateX(-30vh); } to { transform: translateX(calc(100vw + 10vh)); } }
+/* the butterfly is out on spring and summer days */
+:root[data-theme="dark"] .butterfly, :root[data-season="autumn"] .butterfly, :root[data-season="winter"] .butterfly { display: none; }
+
+/* what the season brings (drawings.ts SEASON_FX): each piece falls on its own; --d delay, --t pace, --s size */
+.fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; display: none; }
+:root[data-season="winter"] .fx-snow, :root[data-season="spring"] .fx-petal, :root[data-season="autumn"] .fx-leaf,
+:root[data-season="summer"][data-theme="dark"] .fx-firefly { display: block; }
+.fx i { position: absolute; top: 0; width: calc(2.2vh * var(--s)); will-change: transform; animation: fall calc(16s * var(--t)) linear var(--d) infinite; }
+.fx b { display: block; will-change: transform; animation: sway calc(5s * var(--t)) ease-in-out var(--d) infinite alternate; }
+.fx svg { display: block; width: 100%; height: auto; overflow: visible; }
+.fx-snow i { width: calc(1.3vh * var(--s)); animation-duration: calc(13s * var(--t)); }
+.fx-petal b, .fx-leaf b { animation-name: tumble; }
+.fx-leaf i { width: calc(2.6vh * var(--s)); animation-duration: calc(12s * var(--t)); }
+.fx-firefly i { width: calc(1.8vh * var(--s)); animation: glow calc(3.5s * var(--t)) ease-in-out var(--d) infinite; }
+.fx-firefly b { animation: hover calc(7s * var(--t)) ease-in-out var(--d) infinite alternate; }
+@keyframes fall { from { transform: translateY(-6vh); } to { transform: translateY(106vh); } }
+@keyframes sway { from { transform: translateX(-2.5vh); } to { transform: translateX(2.5vh); } }
+@keyframes tumble { from { transform: translateX(-4vh) rotate(-40deg); } to { transform: translateX(4vh) rotate(220deg); } }
+@keyframes glow { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+@keyframes hover { from { transform: translate(-2vh, 1vh); } to { transform: translate(2vh, -1.5vh); } }
+
+/* the aurora, behind the land, on winter nights */
+.aurora { position: absolute; left: -6vw; right: -6vw; top: 6%; height: 34%; pointer-events: none; display: none; will-change: transform, opacity; animation: aurora 18s ease-in-out infinite alternate; }
+.aurora svg { display: block; width: 100%; height: 100%; }
+:root[data-season="winter"][data-theme="dark"] .aurora { display: block; }
+@keyframes aurora { 0% { transform: translateX(-2vw); opacity: .75; } 50% { opacity: 1; } 100% { transform: translateX(2vw); opacity: .8; } }
+
 .butterfly { position: absolute; width: 4.5vh; margin: -2vh 0 0 -2vh; pointer-events: none; will-change: transform; animation: butterfly 9s ease-in-out infinite; }
 .butterfly svg { display: block; width: 100%; height: auto; overflow: visible; animation: flap .35s ease-in-out infinite; }
 @keyframes butterfly { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(3vh, -2.5vh); } 50% { transform: translate(6vh, .4vh); } 75% { transform: translate(2.5vh, 1.8vh); } }
@@ -323,7 +400,7 @@ img.cover { object-fit: cover; }
 
 /* 全部紀錄 tabs and 每月回顧 */
 .tabs-row { display: flex; gap: 6px; background: var(--chip); border-radius: 999px; padding: 4px; align-self: flex-start; }
-.tabs-row button { border: 0; background: none; border-radius: 999px; padding: 6px 16px; font-size: 15px; color: var(--sheet-soft); }
+.tabs-row button { border: 0; background: none; border-radius: 999px; padding: 6px 12px; font-size: 15px; color: var(--sheet-soft); white-space: nowrap; }
 .tabs-row button[aria-selected="true"] { background: var(--paper); color: #2c3a4b; box-shadow: 0 1px 0 var(--sheet-line); }
 .months { display: grid; gap: 18px; }
 .month { display: grid; gap: 12px; padding-bottom: 18px; border-bottom: 1.5px dashed var(--sheet-line); }
@@ -335,6 +412,70 @@ img.cover { object-fit: cover; }
 .month-song .tiny { display: block; margin-top: 6px; }
 .quote.small { font-size: 17px; margin-top: 8px; }
 .quote small { display: block; font-size: 12px; color: var(--sheet-soft); }
+
+/* 照主題回看 */
+.topic-filter { display: grid; gap: 8px; }
+.topic-filter .tiny { margin: 0; }
+.chips.small .chip { font-size: 14px; padding: 4px 12px; }
+.chips.static button.chip { cursor: pointer; }
+
+/* 這一年的天空 */
+.year { display: grid; gap: 12px; }
+.year-head { display: flex; align-items: center; justify-content: space-between; }
+.year-head h3 { margin: 0; font-size: 20px; font-weight: 400; }
+.year-head .ghost { font-size: 26px; padding: 0 12px; line-height: 1; }
+.year-head .ghost:disabled { opacity: .25; }
+.year-grid { display: grid; gap: 6px; }
+.year-row { display: flex; align-items: center; gap: 10px; min-height: 40px; border-bottom: 1.5px dashed var(--sheet-line); padding-bottom: 6px; }
+.year-m { width: 34px; flex: none; font-size: 13px; color: var(--sheet-soft); font-variant-numeric: tabular-nums; }
+.year-cells { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.sky-cell { width: 38px; height: 38px; border: 2px solid var(--ink); border-radius: 12px; padding: 2px; display: grid; place-items: center; }
+.sky-cell svg { width: 30px; height: 30px; }
+.road-cell { width: 12px; height: 12px; border-radius: 50%; border: 1.5px dashed var(--ink); }
+.year-empty { width: 24px; border-top: 2px dotted var(--sheet-line); }
+.w-sun { background: color-mix(in srgb, var(--w-sun) 45%, var(--paper)); }
+.w-partly { background: color-mix(in srgb, var(--w-partly) 55%, var(--paper)); }
+.w-cloud { background: color-mix(in srgb, var(--w-cloud) 70%, var(--paper)); }
+.w-rain { background: color-mix(in srgb, var(--w-rain) 55%, var(--paper)); }
+.w-storm { background: color-mix(in srgb, var(--w-storm) 60%, var(--paper)); }
+.road-cell.w-sun { background: var(--w-sun); }
+.road-cell.w-partly { background: var(--w-partly); }
+.road-cell.w-cloud { background: var(--w-cloud); }
+.road-cell.w-rain { background: var(--w-rain); }
+.road-cell.w-storm { background: var(--w-storm); }
+
+/* 記下的話 */
+.quotes { display: grid; gap: 4px; }
+.quotes > .pill { justify-self: start; margin-bottom: 8px; }
+.quote-card { display: grid; gap: 10px; text-align: left; border: 2.5px solid var(--ink); background: var(--paper); color: #2c3a4b; border-radius: 22px; padding: 22px 20px; margin-bottom: 12px; box-shadow: 0 4px 0 var(--ink); }
+.quote-card span { font-size: 22px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.quote-card small { font-size: 12px; color: #7a8491; }
+.quote-row { border: 0; background: none; padding: 6px 0; text-align: left; color: var(--sheet-ink); width: 100%; }
+.quote-row .quote.small { margin-top: 0; }
+
+/* 想練習的事 */
+.practices { display: grid; gap: 10px; background: var(--chip); border-radius: 20px; padding: 14px; }
+.practices .label { margin-bottom: -2px; }
+.practices .tiny { margin: 0; line-height: 1.6; }
+.practice { display: flex; gap: 12px; align-items: flex-start; border-bottom: 1.5px dashed var(--sheet-line); padding-bottom: 10px; }
+.practice-txt { flex: 1; min-width: 0; display: grid; gap: 4px; font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; }
+.practice.away { opacity: .75; }
+.tried { flex: none; border: 2px solid var(--ink); background: var(--paper); color: #2c3a4b; border-radius: 999px; padding: 5px 14px; font-size: 14px; }
+.tried[aria-pressed="true"] { background: var(--tree-2); color: #1f2d3d; }
+.sprouts { display: flex; flex-wrap: wrap; align-items: center; gap: 1px; }
+.sprouts svg { width: 18px; height: 18px; }
+.sprouts small { font-size: 12px; color: var(--sheet-soft); }
+
+/* 去說說話之前 */
+.prep-card { display: grid; gap: 2px; margin-top: 10px; text-align: left; border: 2.5px solid var(--ink); background: var(--paper); color: #2c3a4b; border-radius: 16px; padding: 8px 14px; box-shadow: 0 3px 0 var(--ink); max-width: 260px; }
+.prep-card b { font-weight: 400; font-size: 16px; }
+.prep-card small { font-size: 12px; color: #7a8491; }
+.prep-weather { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.prep-w { display: grid; justify-items: center; gap: 0; background: var(--chip); border-radius: 12px; padding: 4px 6px 2px; }
+.prep-w.first { outline: 2px solid var(--sheet-line); }
+.prep-w svg { width: 32px; height: 32px; }
+.prep-w small { font-size: 11px; color: var(--sheet-soft); font-variant-numeric: tabular-nums; }
+.prep-practice { display: grid; gap: 2px; }
 
 /* a plain sky over everything while the app is in the background (see lib/privacy.ts) */
 html.covered-up body::after { content: ""; position: fixed; inset: 0; z-index: 9999; background: var(--sky); }

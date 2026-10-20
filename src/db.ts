@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { RoadNote, Session, Settings } from './types';
+import type { Practice, RoadNote, Session, Settings } from './types';
 
 interface KV {
   key: string;
@@ -9,6 +9,7 @@ interface KV {
 export const db = new Dexie('my-sky') as Dexie & {
   sessions: EntityTable<Session, 'id'>;
   notes: EntityTable<RoadNote, 'id'>;
+  practices: EntityTable<Practice, 'id'>;
   kv: EntityTable<KV, 'key'>;
 };
 
@@ -17,6 +18,7 @@ db.version(1).stores({
   notes: 'id, after, createdAt',
   kv: 'key'
 });
+db.version(2).stores({ practices: 'id, createdAt' });
 
 export const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 

@@ -2,18 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, DEFAULT_SETTINGS, getSettings, saveSettings } from './db';
 import type { Session, Song } from './types';
-import { DEFS, SKY } from './drawings';
-import { countdown, headerDate, short, todayKey } from './lib/dates';
+import { DEFS, SEASON_FX, SKY } from './drawings';
+import { countdown, daysBetween, headerDate, short, todayKey } from './lib/dates';
 import { homeLines, lineOfTheDay } from './lib/lines';
+import { followSky } from './lib/sky';
 import { addSession, byDate, updateSession } from './lib/store';
 import { playlistUris, syncPlaylist } from './lib/spotify';
 import Landscape from './components/Landscape';
 import SessionFlow, { clearDraft, emptyDraft, loadDraft, type Draft } from './components/SessionFlow';
 import RoadSheet from './components/RoadSheet';
-import { Book, Detail } from './components/Book';
+import { Book, Detail, type BookTab } from './components/Book';
 import { SongPlayer } from './components/SongPicker';
 import Settings, { NextSessionField } from './components/Settings';
 import Lock from './components/Lock';
+import Prep from './components/Prep';
 import { ToastProvider, useToast } from './components/Toast';
 
 type View =
@@ -24,6 +26,7 @@ type View =
   | { kind: 'detail'; id: string }
   | { kind: 'settings' }
   | { kind: 'next' }
+  | { kind: 'prep' }
   | { kind: 'song'; song: Song; back: View | null };
 
 const RELOCK_AFTER = 60_000;
@@ -41,12 +44,16 @@ function Main() {
   const say = useToast();
   const sessions = useLiveQuery(async () => (await db.sessions.toArray()).sort(byDate), []);
   const notes = useLiveQuery(() => db.notes.toArray(), []);
+  const practices = useLiveQuery(() => db.practices.toArray(), []);
   const loaded = useLiveQuery(getSettings, []);
   const settings = loaded ?? DEFAULT_SETTINGS;
   const [view, setView] = useState<View | null>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [lineIdx, setLineIdx] = useState<number | null>(null);
   const [today, setToday] = useState(todayKey);
+  // 全部紀錄 remembers which tab and topic you were on while you look at one session
+  const [bookTab, setBookTab] = useState<BookTab>('all');
+  const [topic, setTopic] = useState<string | null>(null);
 
   // lock again after the app has been in the background for a while; notice a new day
   useEffect(() => {
@@ -61,6 +68,9 @@ function Main() {
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
+
+  // night sky after dark, and the meadow's season
+  useEffect(() => followSky(settings.sky ?? 'time', settings.season), [settings.sky, settings.season]);
 
   // with no lock set, stay open (setting a PIN now locks from the next time on)
   useEffect(() => {
@@ -77,8 +87,8 @@ function Main() {
 
   const lines = useMemo(() => homeLines(sessions ?? [], notes ?? [], today, settings.nextSession), [sessions, notes, today, settings.nextSession]);
 
-  if (!sessions || !notes || !loaded) return <div className="page" />;
-  if (settings.pinHash && !unlocked) return <Lock pinHash={settings.pinHash} onUnlock={() => setUnlocked(true)} />;
+  if (!sessions || !notes || !practices || !loaded) return <div className="page" />;
+  if (settings.pinHash && !unlocked) return <Lock pinHash={settings.pinHash} faceId={settings.faceId} onUnlock={() => setUnlocked(true)} />;
 
   const current = sessions.length ? sessions[sessions.length - 1].id : null;
   const roadOf = (after: string | null) => notes.filter(n => n.after === after);
@@ -86,6 +96,9 @@ function Main() {
   const close = () => setView(null);
   const play = (song: Song) => setView({ kind: 'song', song, back: view });
   const todaySession = sessions.find(s => s.date === today);
+  // the day before a session (and the day itself, until it's recorded): a card to get ready
+  const until = settings.nextSession ? daysBetween(today, settings.nextSession) : -1;
+  const prepCard = (until === 0 || until === 1) && !todaySession;
 
   const saveFlow = async (d: Draft & { weather: NonNullable<Draft['weather']> }, done: boolean, edit?: Session, past?: boolean) => {
     const { weather, moods, topics, quote, notes: text, song, date } = d;
@@ -155,18 +168,22 @@ function Main() {
   } else if (view?.kind === 'road') {
     const i = sessions.findIndex(s => s.id === view.after);
     const title = view.after ? `路上 · ${short(sessions[i].date)} 之後` : sessions.length ? '路上 · 第一次之前' : '路上 · 出發之前';
-    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} onPlay={play} onClose={close} />;
+    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} practices={practices} onPlay={play} onClose={close} />;
   } else if (view?.kind === 'book') {
     sheet = (
       <Book
         sessions={sessions}
         notes={notes}
+        tab={bookTab}
+        topic={topic}
+        onTab={setBookTab}
+        onTopic={setTopic}
         onPlay={play}
         onOpen={s => setView({ kind: 'detail', id: s.id })}
         onBackfill={() => setView({ kind: 'flow', past: true })}
         onBackfillRoad={() => setView({ kind: 'road', after: current })}
         onSettings={() => setView({ kind: 'settings' })}
-        onClose={close}
+        onClose={() => (setTopic(null), close())}
       />
     );
   } else if (view?.kind === 'detail') {
@@ -178,6 +195,7 @@ function Main() {
           n={i + 1}
           roadBefore={roadOf(i ? sessions[i - 1].id : null)}
           onEdit={() => setView({ kind: 'flow', edit: sessions[i] })}
+          onTopic={t => (setBookTab('all'), setTopic(t), setView({ kind: 'book' }))}
           onClose={() => setView({ kind: 'book' })}
         />
       );
@@ -213,9 +231,27 @@ function Main() {
               <h3>下次諮商是哪一天？</h3>
             );
           })()}
+          {countdown(today, settings.nextSession) && (
+            <button className="big" type="button" onClick={() => setView({ kind: 'prep' })}>
+              <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 10h24v22H8z" fill="var(--paper)" stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round" /><path d="M13 17h14M13 23h10" stroke="var(--ink)" strokeWidth="2.2" strokeLinecap="round" /></svg>
+              <span>去說說話之前<small>上次的一句話、想帶去說的、這段路上的天氣</small></span>
+            </button>
+          )}
           <NextSessionField value={settings.nextSession} onDone={close} />
         </div>
       </>
+    );
+  } else if (view?.kind === 'prep') {
+    sheet = (
+      <Prep
+        sessions={sessions}
+        road={roadOf(current)}
+        practices={practices}
+        today={today}
+        nextSession={settings.nextSession}
+        onOpenRoad={() => setView({ kind: 'road', after: current })}
+        onClose={close}
+      />
     );
   }
 
@@ -232,7 +268,10 @@ function Main() {
         onPlay={play}
         onOpenRoad={after => setView({ kind: 'road', after })}
         onNextSign={() => setView({ kind: 'next' })}
+        look={settings.walker ?? 'girl'}
       />
+      {/* snow, petals, leaves or fireflies, in front of the land; they let taps through */}
+      <div dangerouslySetInnerHTML={{ __html: SEASON_FX }} style={{ display: 'contents' }} />
       <Grain />
 
       <header className="top">
@@ -251,6 +290,12 @@ function Main() {
           )}
           {line?.song && (
             <button className="listen" type="button" onClick={() => play(line.song!)}>♪ 聽聽看</button>
+          )}
+          {prepCard && (
+            <button className="prep-card" type="button" onClick={() => setView({ kind: 'prep' })}>
+              <b>{until === 0 ? '今天要去說說話' : '明天要去說說話了'}</b>
+              <small>看看上次的話、想帶去說的事 ›</small>
+            </button>
           )}
         </div>
         <button className="book" type="button" aria-label="全部紀錄" onClick={() => setView({ kind: 'book' })}>

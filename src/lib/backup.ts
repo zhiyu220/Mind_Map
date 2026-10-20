@@ -1,5 +1,5 @@
 import { db, getSettings } from '../db';
-import type { RoadNote, Session, Settings } from '../types';
+import type { Practice, RoadNote, Session, Settings } from '../types';
 import { todayKey } from './dates';
 import { isSealed, seal, unseal, type Sealed } from './crypto';
 
@@ -9,13 +9,15 @@ export interface Backup {
   exportedAt: string;
   sessions: Session[];
   notes: RoadNote[];
-  settings: Omit<Settings, 'pinHash'>;
+  /** added in 1.1; older backups have none */
+  practices?: Practice[];
+  settings: Omit<Settings, 'pinHash' | 'faceId'>;
 }
 
 /** A backup file locked with a password of your choosing. */
 export async function makeBackup(password: string): Promise<File> {
-  const { pinHash: _pin, ...settings } = await getSettings();
-  const data: Backup = { app: 'my-sky', version: 1, exportedAt: new Date().toISOString(), sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), settings };
+  const { pinHash: _pin, faceId: _face, ...settings } = await getSettings();
+  const data: Backup = { app: 'my-sky', version: 1, exportedAt: new Date().toISOString(), sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), practices: await db.practices.toArray(), settings };
   const sealed = await seal(data, password);
   return new File([JSON.stringify(sealed)], `MindMap-備份-${todayKey()}.json`, { type: 'application/json' });
 }
@@ -58,12 +60,14 @@ function checkBackup(raw: unknown): Backup {
 
 /** Replaces everything on this phone with the backup (the lock stays as it is). */
 export async function restoreBackup(data: Backup) {
-  await db.transaction('rw', db.sessions, db.notes, db.kv, async () => {
+  await db.transaction('rw', [db.sessions, db.notes, db.practices, db.kv], async () => {
     const cur = await getSettings();
     await db.sessions.clear();
     await db.notes.clear();
+    await db.practices.clear();
     await db.sessions.bulkAdd(data.sessions);
     await db.notes.bulkAdd(data.notes);
-    await db.kv.put({ key: 'settings', value: { ...data.settings, pinHash: cur.pinHash } });
+    await db.practices.bulkAdd(data.practices ?? []);
+    await db.kv.put({ key: 'settings', value: { ...data.settings, pinHash: cur.pinHash, faceId: cur.faceId } });
   });
 }

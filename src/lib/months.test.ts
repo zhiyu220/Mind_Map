@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupByMonth } from './months';
+import { groupByMonth, recordYears, skyOfYear, topicsUsed } from './months';
 import type { RoadNote, Session } from '../types';
 
 const song = (id: string) => ({ id, name: id, artists: '' });
@@ -21,5 +21,29 @@ describe('groupByMonth', () => {
   });
   it('has nothing to show with no records', () => {
     expect(groupByMonth([], [])).toEqual([]);
+  });
+});
+
+describe('skyOfYear', () => {
+  it('puts each session and road weather in its month, in order', () => {
+    const sky = skyOfYear(
+      2026,
+      [s('b', '2026-03-20', { weather: 'sun' }), s('a', '2026-03-06', { weather: 'rain' }), s('old', '2025-03-01')],
+      [n('r', '2026-03-10', { weather: 'storm' }), n('plain', '2026-03-11'), n('x', '2026-12-31', { weather: 'sun' })]
+    );
+    expect(sky).toHaveLength(12);
+    expect(sky[2].sessions.map(x => x.id)).toEqual(['a', 'b']);
+    expect(sky[2].road).toEqual(['storm']);
+    expect(sky[11].road).toEqual(['sun']);
+    expect(sky[0].sessions).toEqual([]);
+  });
+  it('lists the years with records, newest first', () => {
+    expect(recordYears([s('a', '2025-05-01'), s('b', '2026-01-01')], [n('c', '2024-12-31')])).toEqual([2026, 2025, 2024]);
+  });
+});
+
+describe('topicsUsed', () => {
+  it('lists the most talked-about topics first', () => {
+    expect(topicsUsed([s('a', '2026-01-01', { topics: ['家庭', '自己'] }), s('b', '2026-01-08', { topics: ['自己'] })])).toEqual(['自己', '家庭']);
   });
 });

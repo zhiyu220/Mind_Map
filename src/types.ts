@@ -49,11 +49,30 @@ export interface RoadNote {
   createdAt: number;
 }
 
+/** 想練習的事: a small thing to try between sessions. No checkbox, just a mark each day you tried. */
+export interface Practice {
+  id: string;
+  text: string;
+  /** YYYY-MM-DD of each day you tried it, oldest first */
+  tries: string[];
+  /** put away for now; kept so it can come back */
+  archived?: boolean;
+  createdAt: number;
+}
+
 export interface Settings {
   nextSession?: string; // YYYY-MM-DD
   customTopics: string[];
   pinHash?: string;
+  /** id of this phone's Face ID key (WebAuthn); never goes into a backup */
+  faceId?: string;
   spotifyClientId?: string;
   /** keep a private 「Mind Map」 playlist of every session's song; on unless turned off */
   spotifyPlaylist?: boolean;
+  /** night sky after dark ('time', the default), with the phone's dark mode, or always day */
+  sky?: 'time' | 'phone' | 'day';
+  /** the season's picture: follows the calendar ('auto', the default) or stays on one season */
+  season?: 'auto' | 'spring' | 'summer' | 'autumn' | 'winter';
+  /** the walker on the road */
+  walker?: 'girl' | 'boy';
 }
