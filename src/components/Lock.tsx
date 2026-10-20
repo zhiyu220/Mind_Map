@@ -1,14 +1,26 @@
 import { useEffect, useState } from 'react';
 import { afterMiss, hashPin, loadTries, saveTries } from '../lib/pin';
+import { checkFaceId } from '../lib/faceid';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
 
-export default function Lock({ pinHash, onUnlock }: { pinHash: string; onUnlock: () => void }) {
+export default function Lock({ pinHash, faceId, onUnlock }: { pinHash: string; faceId?: string; onUnlock: () => void }) {
   const [pin, setPin] = useState('');
   const [wrong, setWrong] = useState(false);
   const [tries, setTries] = useState(loadTries);
   const [now, setNow] = useState(Date.now);
   const waitFor = Math.max(0, Math.ceil((tries.until - now) / 1000));
+
+  const face = async () => {
+    if (faceId && (await checkFaceId(faceId))) {
+      saveTries(null);
+      onUnlock();
+    }
+  };
+  // ask for Face ID right away; if the phone wants a tap first, the button below does it
+  useEffect(() => {
+    face();
+  }, []);
 
   // tick while you have to wait
   useEffect(() => {
@@ -52,6 +64,9 @@ export default function Lock({ pinHash, onUnlock }: { pinHash: string; onUnlock:
           </button>
         ))}
       </div>
+      {faceId && (
+        <button className="pill sm" type="button" onClick={face}>用 Face ID 解鎖</button>
+      )}
     </section>
   );
 }

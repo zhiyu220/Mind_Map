@@ -3,6 +3,7 @@ import type { Settings as S } from '../types';
 import { saveSettings } from '../db';
 import { todayKey } from '../lib/dates';
 import { hashPin } from '../lib/pin';
+import { canUseFaceId, checkFaceId, setUpFaceId } from '../lib/faceid';
 import { makeBackup, openBackup, readBackup, restoreBackup, shareOrDownload, type Backup } from '../lib/backup';
 import type { Sealed } from '../lib/crypto';
 import { clientId, disconnect, isConnected, needsReconnect, playlistInfo, playlistUrl, startSpotifyLogin } from '../lib/spotify';
@@ -43,6 +44,7 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
   const [pinStep, setPinStep] = useState<'idle' | 'set' | 'again'>('idle');
   const [pin, setPin] = useState('');
   const [first, setFirst] = useState('');
+  const [faceOk, setFaceOk] = useState(false);
   const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone;
 
   useEffect(() => {
@@ -51,6 +53,18 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
     playlistInfo().then(p => setPlaylist(p?.id ?? null));
     clientId().then(id => setHasClientId(!!id));
   }, [settings.spotifyClientId]);
+  useEffect(() => {
+    canUseFaceId().then(setFaceOk);
+  }, []);
+
+  const turnOnFace = async () => {
+    const id = await setUpFaceId();
+    // make sure it really answers before relying on it
+    if (id && (await checkFaceId(id))) {
+      await saveSettings({ faceId: id });
+      say('好了，下次打開用 Face ID 就好');
+    } else say('沒有設好，可以再試一次');
+  };
 
   const pinInput = async (v: string) => {
     const digits = v.replace(/\D/g, '').slice(0, 4);
@@ -145,7 +159,7 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
             settings.pinHash ? (
               <div className="row-buttons">
                 <button className="pill sm" type="button" onClick={() => setPinStep('set')}>換一組</button>
-                <button className="pill sm" type="button" onClick={() => saveSettings({ pinHash: undefined }).then(() => say('密碼鎖關掉了'))}>關掉</button>
+                <button className="pill sm" type="button" onClick={() => saveSettings({ pinHash: undefined, faceId: undefined }).then(() => say('密碼鎖關掉了'))}>關掉</button>
               </div>
             ) : (
               <>
@@ -159,6 +173,16 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
               <input id="pin-new" className="field pin" inputMode="numeric" autoComplete="off" autoFocus type="password" value={pin} onChange={e => pinInput(e.target.value)} />
               <button className="linkish" type="button" onClick={() => { setPinStep('idle'); setPin(''); }}>算了</button>
             </>
+          )}
+          {settings.pinHash && pinStep === 'idle' && faceOk && (
+            settings.faceId ? (
+              <p className="tiny">
+                Face ID 已開啟。認不出來的時候，還是可以輸入密碼。{' '}
+                <button className="linkish small" type="button" style={{ display: 'inline' }} onClick={() => saveSettings({ faceId: undefined }).then(() => say('Face ID 關掉了'))}>不用 Face ID</button>
+              </p>
+            ) : (
+              <button className="pill sm" type="button" onClick={turnOnFace}>改用 Face ID 解鎖</button>
+            )
           )}
           <p className="tiny">忘記密碼就打不開了（資料只在這支手機裡），記得也做備份。</p>
         </div>
