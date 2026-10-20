@@ -65,8 +65,9 @@
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
 body { margin: 0; }
-/* behind everything: sky above, grass below, so no other color can ever peek out at the edges */
-html { background: linear-gradient(var(--sky) 50%, var(--grass-front) 50%); }
+/* On the iPhone home screen the page can come up short by the status bar's height; that strip shows
+   the plain page color (a gradient doesn't reach it), so make it the meadow's color and it blends in. */
+html { background-color: var(--grass-front); }
 body { background: transparent; -webkit-text-size-adjust: 100%; user-select: none; -webkit-user-select: none; color: var(--text); font-family: var(--font); overflow: hidden; -webkit-tap-highlight-color: transparent; }
 button, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
