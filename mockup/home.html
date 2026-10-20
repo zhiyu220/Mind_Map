@@ -1,0 +1,793 @@
+<title>我的天空</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<style>
+/* Layout: a side-view picture-book landscape. The sky layer stays still; the land scrolls sideways.
+   Solid dots are session days, a dashed dot is "on the road" between sessions. Recording opens a paper sheet, one question per page. */
+:root {
+  --sky: #8fcff0;
+  --sky-stroke: #a6daf5;
+  --cloud: #fffaf0;
+  --sun: #ffd45c;
+  --mtn: #a6d2cc;
+  --hill-far: #b8dd7c;
+  --hill-near: #93ca63;
+  --grass-front: #7dba55;
+  --sand: #f4e0ae;
+  --foot: #d6b77c;
+  --tree: #6fae55;
+  --tree-2: #8cc45e;
+  --trunk: #9a6b47;
+  --wall: #fff3df;
+  --roof: #e06a52;
+  --fence: #c4925f;
+  --ink: #3b4757;
+  --text: #2c3a4b;
+  --paper: #fffaf0;
+  --sheet: #fdf7ea;
+  --sheet-ink: #2c3a4b;
+  --sheet-soft: #7a8491;
+  --sheet-line: #e6dcc6;
+  --chip: #f3ead6;
+  --chip-on: #8fcff0;
+  --coat: #ee7a5f;
+  --scarf: #ffcf4a;
+  --pack: #6d9fd8;
+  --skin: #ffe1c4;
+  --cheek: #f7a99a;
+  --boot: #6b4a3a;
+  --f1: #ff9fb0; --f2: #ffffff; --f3: #ffd45c; --f4: #b9a3f0;
+  --w-sun: #ffc23d; --w-partly: #ffe796; --w-cloud: #d8dee5; --w-rain: #7fb2e5; --w-storm: #9192bd;
+  --spotify: #1db954;
+  --grain: .2;
+  --stars: 0;
+  --rays: 1;
+  --font: "Huninn", "PingFang TC", "Noto Sans TC", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sky: #23396a; --sky-stroke: #2c4479; --cloud: #4d6190; --sun: #f6e8a6; --mtn: #2f4d6a;
+    --hill-far: #3f6a46; --hill-near: #2f5838; --grass-front: #264a2f; --sand: #8c7d5c; --foot: #6f6247;
+    --tree: #2d5a37; --tree-2: #36663f; --trunk: #5e4330; --wall: #d9cdb2; --roof: #a9503f; --fence: #7c5d40;
+    --ink: #0f182c; --text: #f4efe0; --paper: #f4efe0; --coat: #e5866c; --scarf: #e8c05a; --pack: #5f8cc4;
+    --sheet: #1c2a4a; --sheet-ink: #f1ecdd; --sheet-soft: #a3aec2; --sheet-line: #33456b; --chip: #283a60; --chip-on: #4f78b8;
+    --skin: #f1d6ba; --cheek: #e39a8c; --boot: #4e372b;
+    --f1: #d98a99; --f2: #d9d6cc; --f3: #d9bb5c; --f4: #9b8acb; --w-cloud: #b6becb;
+    --grain: .3; --stars: 1; --rays: 0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --sky: #23396a; --sky-stroke: #2c4479; --cloud: #4d6190; --sun: #f6e8a6; --mtn: #2f4d6a;
+  --hill-far: #3f6a46; --hill-near: #2f5838; --grass-front: #264a2f; --sand: #8c7d5c; --foot: #6f6247;
+  --tree: #2d5a37; --tree-2: #36663f; --trunk: #5e4330; --wall: #d9cdb2; --roof: #a9503f; --fence: #7c5d40;
+  --ink: #0f182c; --text: #f4efe0; --paper: #f4efe0; --coat: #e5866c; --scarf: #e8c05a; --pack: #5f8cc4;
+  --sheet: #1c2a4a; --sheet-ink: #f1ecdd; --sheet-soft: #a3aec2; --sheet-line: #33456b; --chip: #283a60; --chip-on: #4f78b8;
+  --skin: #f1d6ba; --cheek: #e39a8c; --boot: #4e372b;
+  --f1: #d98a99; --f2: #d9d6cc; --f3: #d9bb5c; --f4: #9b8acb; --w-cloud: #b6becb;
+  --grain: .3; --stars: 1; --rays: 0; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--sky); color: var(--text); font-family: var(--font); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+.page { position: relative; height: 100%; overflow: hidden; }
+.back { position: absolute; inset: 0; width: 100%; height: 100%; display: block; will-change: transform; }
+.world { position: absolute; inset: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.world::-webkit-scrollbar { display: none; }
+.world svg { display: block; height: 100%; width: auto; max-width: none; }
+.grain { position: absolute; inset: 0; pointer-events: none; opacity: var(--grain); background-size: 160px 160px; }
+.clouds { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+
+.top {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2; pointer-events: none;
+  padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px));
+  padding-block: 22px 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+}
+.top > * { pointer-events: auto; }
+.date { font-size: 15px; letter-spacing: .06em; }
+.line { display: block; border: 0; background: none; padding: 0; text-align: left; font-size: 23px; line-height: 1.4; margin-top: 4px; }
+.line small { display: block; font-size: 13px; opacity: .8; margin-top: 2px; }
+.book { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--paper); display: grid; place-items: center; color: #3b4757; }
+.book svg { width: 22px; height: 22px; }
+
+.bottom {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: grid; justify-items: center; gap: 8px; pointer-events: none;
+  padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px));
+  padding-block: 0 calc(22px + env(safe-area-inset-bottom, 0px));
+}
+.bottom > * { pointer-events: auto; }
+.hint { font-size: 13px; color: var(--text); opacity: .85; }
+.pill { border: 2.5px solid var(--ink); background: var(--paper); color: #2c3a4b; font-size: 19px; padding: 12px 34px; border-radius: 999px; box-shadow: 0 4px 0 var(--ink); transition: transform .12s, box-shadow .12s; }
+.pill:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.pill:disabled { opacity: .45; cursor: default; }
+
+.hit { cursor: pointer; outline: none; }
+.dot { transition: transform .2s; transform-box: fill-box; transform-origin: center; }
+.hit.on .dot { transform: scale(1.2); }
+.lbl { font-family: var(--font); font-size: 13px; fill: var(--text); }
+#walker { transition: transform 1.8s ease-in-out; }
+
+.bubble {
+  position: absolute; z-index: 3; min-width: 180px; max-width: 240px; padding: 10px 14px 12px;
+  background: var(--paper); color: #2c3a4b; border: 2.5px solid var(--ink); border-radius: 18px;
+  font-size: 14px; line-height: 1.5; transform: translate(-50%, calc(-100% - 18px));
+}
+.bubble::after { content: ""; position: absolute; left: var(--tip, 50%); bottom: -9px; width: 14px; height: 14px; background: var(--paper); border-right: 2.5px solid var(--ink); border-bottom: 2.5px solid var(--ink); transform: translateX(-50%) rotate(45deg); }
+.bubble b { display: block; font-size: 16px; font-weight: 400; white-space: nowrap; }
+.bubble .song { display: block; margin-top: 4px; font-size: 13px; opacity: .8; }
+.bubble button { margin-top: 6px; border: 0; background: none; padding: 0; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; color: #2c3a4b; }
+
+.toast { position: absolute; left: 50%; bottom: calc(110px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 8px); opacity: 0; transition: .3s; z-index: 40; background: var(--paper); color: #2c3a4b; border: 2px solid var(--ink); padding: 8px 16px; border-radius: 999px; font-size: 14px; width: max-content; max-width: calc(100% - 40px); text-align: center; pointer-events: none; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- sheets ---------- */
+.scrim { position: absolute; inset: 0; z-index: 10; background: rgba(20, 30, 50, .28); }
+.ask {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 11; background: var(--sheet); color: var(--sheet-ink);
+  border-top: 2.5px solid var(--ink); border-radius: 26px 26px 0 0; display: grid; gap: 12px;
+  padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px));
+  padding-block: 22px calc(26px + env(safe-area-inset-bottom, 0px));
+  animation: rise .28s ease-out;
+}
+.ask h3 { margin: 0 0 4px; font-size: 22px; font-weight: 400; text-align: center; }
+.big { display: flex; align-items: center; gap: 14px; width: 100%; max-width: 480px; margin: 0 auto; border: 2.5px solid var(--ink); background: var(--chip); border-radius: 20px; padding: 14px 18px; text-align: left; font-size: 18px; color: var(--sheet-ink); }
+.big svg { width: 40px; height: 40px; flex: none; }
+.big small { display: block; font-size: 13px; color: var(--sheet-soft); }
+@keyframes rise { from { transform: translateY(100%); } }
+
+.sheet { position: absolute; inset: 0; z-index: 20; background: var(--sheet); color: var(--sheet-ink); display: flex; flex-direction: column; animation: rise .32s ease-out; }
+.sheet-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 8px;
+}
+.ghost { border: 0; background: none; padding: 8px 4px; font-size: 15px; color: var(--sheet-soft); }
+.progress { display: flex; gap: 7px; }
+.progress i { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--sheet-soft); }
+.progress i.done { background: var(--sheet-soft); }
+.progress i.now { background: var(--sheet-ink); border-color: var(--sheet-ink); }
+.sheet-body {
+  flex: 1; overflow-y: auto; width: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;
+  padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px));
+  padding-block: 18px;
+}
+.q { font-size: 27px; line-height: 1.35; margin: 12px 0 0; font-weight: 400; text-wrap: balance; }
+.sub { margin: -8px 0 0; font-size: 14px; color: var(--sheet-soft); }
+.sheet-foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; max-width: 560px; margin: 0 auto;
+  padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px));
+  padding-block: 10px calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+.weathers { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.wbtn { border: 2.5px solid transparent; background: none; border-radius: 18px; padding: 8px 2px; display: grid; justify-items: center; gap: 4px; font-size: 13px; color: var(--sheet-ink); }
+.wbtn svg { width: 100%; max-width: 62px; height: auto; }
+.wbtn[aria-pressed="true"] { border-color: var(--ink); background: var(--chip); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 9px; }
+.chip { border: 2px solid var(--ink); background: var(--chip); color: var(--sheet-ink); border-radius: 999px; padding: 7px 15px; font-size: 16px; }
+.chip[aria-pressed="true"] { background: var(--chip-on); color: #1f2d3d; }
+.chip.add { border-style: dashed; background: transparent; }
+.addrow { display: flex; gap: 8px; }
+.addrow input { flex: 1; min-width: 0; }
+
+.field { width: 100%; border: 2px solid var(--sheet-line); background: var(--paper); color: #2c3a4b; border-radius: 18px; padding: 14px 16px; font-size: 17px; line-height: 1.7; resize: none; }
+.field::placeholder { color: #9aa0a8; }
+textarea.field { min-height: 150px; }
+textarea.field.tall { min-height: 260px; }
+
+.search { position: relative; }
+.search svg { position: absolute; left: 14px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: #7a8491; }
+.search input { padding-left: 42px; }
+.results { display: grid; gap: 4px; }
+.song-row { display: flex; align-items: center; gap: 12px; border: 0; background: none; border-radius: 14px; padding: 8px; text-align: left; color: var(--sheet-ink); width: 100%; }
+.song-row:hover { background: var(--chip); }
+.cover { width: 46px; height: 46px; flex: none; border-radius: 8px; border: 2px solid var(--ink); display: grid; place-items: center; }
+.cover svg { width: 22px; height: 22px; color: rgba(255,255,255,.9); }
+.song-row b, .player b { display: block; font-weight: 400; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-row span, .player span { font-size: 13px; color: var(--sheet-soft); }
+.song-row > div:last-child, .player .meta { min-width: 0; flex: 1; }
+.label { font-size: 13px; color: var(--sheet-soft); letter-spacing: .08em; }
+.player { display: flex; align-items: center; gap: 12px; border: 2.5px solid var(--ink); border-radius: 18px; padding: 12px; background: var(--chip); }
+.player .cover { width: 64px; height: 64px; }
+.player .play { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--spotify); color: #fff; display: grid; place-items: center; flex: none; }
+.player .play svg { width: 18px; height: 18px; }
+.bar { height: 4px; border-radius: 2px; background: var(--sheet-line); margin-top: 8px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--sheet-ink); }
+.player.playing .bar i { animation: prog 30s linear forwards; }
+@keyframes prog { to { width: 100%; } }
+.tiny { font-size: 12px; color: var(--sheet-soft); }
+.linkish { border: 0; background: none; padding: 0; font-size: 14px; color: var(--sheet-soft); text-decoration: underline; text-underline-offset: 3px; align-self: flex-start; }
+.connect { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--sheet-soft); margin-top: -8px; }
+.connect i { width: 10px; height: 10px; border-radius: 50%; background: var(--spotify); }
+
+/* road (between sessions) */
+.entries { display: grid; gap: 10px; }
+.entry { display: flex; gap: 12px; align-items: flex-start; border-bottom: 1.5px dashed var(--sheet-line); padding-bottom: 12px; }
+.entry svg.w { width: 34px; height: 34px; flex: none; }
+.entry .txt { flex: 1; min-width: 0; font-size: 16px; line-height: 1.6; }
+.entry .txt span { display: block; font-size: 12px; color: var(--sheet-soft); }
+.entry .txt em { font-style: normal; color: var(--sheet-soft); }
+.star { border: 0; background: none; padding: 4px; flex: none; color: var(--sheet-soft); }
+.star svg { width: 24px; height: 24px; }
+.star[aria-pressed="true"] { color: #d79a00; }
+.star[aria-pressed="true"] { --star-fill: var(--sun); }
+.mini { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.mini .wbtn { padding: 4px; border-radius: 12px; }
+.mini .wbtn svg { width: 34px; }
+.compose { display: grid; gap: 10px; background: var(--chip); border-radius: 20px; padding: 14px; }
+.compose textarea.field { min-height: 90px; }
+.compose-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.pill.sm { font-size: 16px; padding: 8px 22px; box-shadow: 0 3px 0 var(--ink); flex: none; }
+
+/* ambient motion */
+.drift { animation: drift 120s linear infinite; }
+.drift.b { animation-duration: 160s; animation-delay: -70s; }
+.drift.c { animation-duration: 140s; animation-delay: -30s; }
+@keyframes drift { from { transform: translateX(-300px); } to { transform: translateX(1300px); } }
+.bird { animation: flap 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes flap { 50% { transform: scaleY(.55); } }
+.breathe { animation: breathe 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes breathe { 50% { transform: scaleY(1.015); } }
+.scarf-tail { animation: flutter 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 0 0; }
+@keyframes flutter { 50% { transform: rotate(-12deg); } }
+.sway { animation: sway 4.5s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(4deg); } }
+.fly { animation: butterfly 9s ease-in-out infinite; }
+@keyframes butterfly { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(18px, -14px); } 50% { transform: translate(34px, 2px); } 75% { transform: translate(14px, 10px); } }
+.wing { animation: wing .35s ease-in-out infinite; transform-box: fill-box; transform-origin: 100% 50%; }
+.wing.r { transform-origin: 0 50%; }
+@keyframes wing { 50% { transform: scaleX(.3); } }
+.pulse { animation: pulse 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pulse { 50% { transform: scale(1.12); } }
+
+@media (max-height: 500px) {
+  .hint { display: none; }
+  .bottom { justify-items: end; }
+  .line { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<!-- shared drawings -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="crayon" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7"/>
+      <feDisplacementMap in="SourceGraphic" scale="4"/>
+    </filter>
+    <path id="cl60" d="M14 42 C 5 42, 5 29, 15 30 C 15 19, 29 16, 33 25 C 37 18, 51 20, 49 31 C 57 31, 57 42, 49 42 Z"/>
+    <symbol id="w-sun" viewBox="0 0 60 60"><g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"><path d="M30 6v7M30 47v7M6 30h7M47 30h7M13 13l5 5M42 42l5 5M13 47l5-5M42 18l5-5" fill="none"/><circle cx="30" cy="30" r="12" fill="var(--w-sun)"/></g></symbol>
+    <symbol id="w-partly" viewBox="0 0 60 60"><g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"><circle cx="38" cy="22" r="11" fill="var(--w-sun)"/><use href="#cl60" fill="#fffaf0" transform="translate(-4 6)"/></g></symbol>
+    <symbol id="w-cloud" viewBox="0 0 60 60"><g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"><use href="#cl60" fill="var(--w-cloud)" transform="translate(0 2)"/></g></symbol>
+    <symbol id="w-rain" viewBox="0 0 60 60"><g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><use href="#cl60" fill="var(--w-cloud)" transform="translate(0 -4)"/><path d="M20 45l-3 7M31 45l-3 7M42 45l-3 7" stroke="var(--w-rain)" stroke-width="3" fill="none"/></g></symbol>
+    <symbol id="w-storm" viewBox="0 0 60 60"><g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"><use href="#cl60" fill="var(--w-storm)" transform="translate(0 -5)"/><path d="M31 37l-6 10h6l-3 9 10-13h-6l3-6z" fill="var(--w-sun)"/></g></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" fill="var(--star-fill, none)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor"/><circle cx="17.5" cy="16" r="2.5" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<div class="page" id="page">
+  <!-- still sky layer -->
+  <svg class="back" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs><path id="cloud" d="M10 46 C -4 44, 0 22, 20 26 C 22 8, 50 4, 58 20 C 66 8, 92 12, 90 30 C 106 30, 108 48, 94 50 Z"/></defs>
+    <rect width="1200" height="600" fill="var(--sky)"/>
+    <g stroke="var(--sky-stroke)" stroke-width="5" stroke-linecap="round" fill="none" filter="url(#crayon)">
+      <path d="M380 120 q40 -6 80 0 M520 210 q50 -6 100 0 M760 260 q40 -5 80 0 M430 300 q30 -4 60 0 M840 110 q30 -4 60 0"/>
+    </g>
+    <g style="opacity:var(--stars)" fill="var(--sun)">
+      <path d="M470 150 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/>
+      <path d="M560 240 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
+      <path d="M640 120 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
+      <path d="M745 300 l2 4 4 2 -4 2 -2 4 -2 -4 -4 -2 4 -2z"/>
+      <path d="M800 200 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5z"/>
+    </g>
+    <g filter="url(#crayon)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+      <circle cx="700" cy="150" r="30" fill="var(--sun)"/>
+      <path style="opacity:var(--rays)" d="M700 104 v-12 M700 196 v12 M654 150 h-12 M746 150 h12 M668 118 l-8 -8 M732 182 l8 8 M668 182 l-8 8 M732 118 l8 -8" fill="none"/>
+      <path d="M0 286 L90 226 L150 256 L240 196 L330 261 L420 218 L520 272 L600 222 L690 268 L790 206 L880 256 L960 224 L1060 274 L1200 226 V600 H0 Z" fill="var(--mtn)"/>
+      <path d="M240 196 l-18 14 l10 -2 l8 8 l9 -9 l9 3z M790 206 l-18 14 l10 -2 l8 8 l9 -9 l9 3z" fill="var(--cloud)" stroke-width="1.8"/>
+    </g>
+    <g fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round">
+      <path class="bird" d="M560 200 q6 -6 12 0 q6 -6 12 0"/>
+      <path class="bird" style="animation-delay:-.5s" d="M592 186 q4 -4 8 0 q4 -4 8 0"/>
+    </g>
+  </svg>
+
+  <svg class="clouds" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <g stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round">
+      <g class="drift"><use href="#cloud" fill="var(--cloud)" transform="translate(0 175) scale(1.1)"/></g>
+      <g class="drift b"><use href="#cloud" fill="var(--cloud)" transform="translate(0 225) scale(.75)"/></g>
+      <g class="drift c"><use href="#cloud" fill="var(--cloud)" transform="translate(0 120) scale(.6)"/></g>
+    </g>
+  </svg>
+
+  <div class="world" id="world">
+    <svg id="land" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="一條往右延伸的小路，實心圓點是每一次諮商，虛線圓點是兩次諮商之間的路上"></svg>
+  </div>
+
+  <div class="grain" id="grain" aria-hidden="true"></div>
+
+  <header class="top">
+    <div style="flex:1;min-width:0">
+      <div class="date" id="today">10月20日 星期二</div>
+      <button class="line" id="line" type="button" aria-label="首頁的話，點一下換一句"></button>
+    </div>
+    <button class="book" type="button" aria-label="全部紀錄" data-soon>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v14"/></svg>
+    </button>
+  </header>
+
+  <div class="bottom">
+    <div class="hint">滑一滑，看看走過的路</div>
+    <button class="pill" id="write" type="button">記下今天</button>
+  </div>
+
+  <div class="bubble" id="bubble" hidden></div>
+  <div id="layer"></div>
+  <div class="toast" id="toast" role="status"></div>
+</div>
+
+<script>
+(function () {
+  const W = { sun: '晴朗', partly: '有點雲', cloud: '陰天', rain: '下雨', storm: '雷雨' };
+  const WK = ['sun', 'partly', 'cloud', 'rain', 'storm'];
+  const MOODS = ['平靜', '輕鬆', '感謝', '有希望', '疲累', '焦慮', '難過', '生氣', '委屈', '困惑', '空空的', '說不出來'];
+  const TOPICS = ['家庭', '感情', '朋友', '工作／學業', '自己', '身體／睡眠', '過去的事'];
+  const SONGS = [
+    { t: '晴天', a: '周杰倫', c: '#f2c14e' }, { t: '小幸運', a: '田馥甄', c: '#e88c7d' },
+    { t: '倔強', a: '五月天', c: '#5b8bd6' }, { t: '擁抱', a: '五月天', c: '#7fb27a' },
+    { t: '刻在我心底的名字', a: '盧廣仲', c: '#b58ad6' }, { t: '魚仔', a: '盧廣仲', c: '#6fc3c9' },
+    { t: '我好想你', a: '蘇打綠', c: '#e3a65b' }, { t: '小情歌', a: '蘇打綠', c: '#d97a9a' },
+    { t: '修煉愛情', a: '林俊傑', c: '#8a9bb8' }, { t: '日落大道', a: '梁博', c: '#e0894f' }
+  ];
+
+  // ----- example data -----
+  const state = {
+    sessions: [
+      { n: 1, date: '9月3日', short: '9/3', after: 'rain' },
+      { n: 2, date: '9月10日', short: '9/10', after: 'rain' },
+      { n: 3, date: '9月17日', short: '9/17', after: 'cloud' },
+      { n: 4, date: '9月24日', short: '9/24', after: 'cloud' },
+      { n: 5, date: '10月1日', short: '10/1', after: 'rain', quote: '累的時候，先照顧身體就好。' },
+      { n: 6, date: '10月8日', short: '10/8', after: 'partly' },
+      { n: 7, date: '10月15日', short: '10/15', after: 'partly', quote: '你不需要一次就把所有事情想清楚。', song: SONGS[5] }
+    ],
+    // road[i] = notes written on the way after session i
+    road: {
+      3: [{ date: '9/27', w: 'rain', text: '睡不著，凌晨三點還醒著。', star: true }],
+      6: [
+        { date: '10/17', w: 'cloud', text: '跟媽媽講完電話，掛掉之後好累。', star: true },
+        { date: '10/19', w: 'partly', text: '', star: false }
+      ]
+    }
+  };
+  const TODAY = { date: '10月20日', short: '10/20' };
+
+  const H = 600, S = 100, X0 = 230, AHEAD = 560;
+  const svg = document.getElementById('land');
+  const world = document.getElementById('world');
+  const page = document.getElementById('page');
+  const bubble = document.getElementById('bubble');
+  const layer = document.getElementById('layer');
+
+  const pathY = x => 418 + 9 * Math.sin(x / 95);
+  const groundY = x => 360 + 12 * Math.sin(x / 140 + 1);
+  const hillY = x => 292 + 26 * Math.sin(x / 230) + 12 * Math.sin(x / 83 + 2);
+  const frontY = x => 492 + 8 * Math.sin(x / 60);
+  const dotX = i => X0 + i * S;
+
+  // stable pseudo-noise for the hand-drawn wobble
+  const hash = n => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+  const wob = x => { const i = Math.floor(x / 9), t = x / 9 - i, a = hash(i), b = hash(i + 1); return (a + (b - a) * t * t * (3 - 2 * t) - .5) * 2.4; };
+  function blob(cx, cy, r, k = 11) {
+    const pts = [];
+    for (let i = 0; i < k; i++) {
+      const a = i / k * Math.PI * 2, rr = r * (1 + (hash(cx * 7.1 + cy * 3.3 + i) - .5) * .12);
+      pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+    }
+    const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+    let m = mid(pts[k - 1], pts[0]), d = `M${m[0].toFixed(1)} ${m[1].toFixed(1)}`;
+    for (let i = 0; i < k; i++) { const p = pts[i], n = mid(p, pts[(i + 1) % k]); d += ` Q${p[0].toFixed(1)} ${p[1].toFixed(1)} ${n[0].toFixed(1)} ${n[1].toFixed(1)}`; }
+    return d + 'Z';
+  }
+  let seed;
+  const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+  let hits = [];
+  function render(walkerFrom) {
+    seed = 11; // the meadow looks the same every visit
+    const N = state.sessions.length;
+    const last = dotX(N - 1);
+    const WIDTH = last + AHEAD;
+    const wave = (f, step = 12) => { let d = `M -20 ${f(-20).toFixed(1)}`; for (let x = -20; x <= WIDTH + 20; x += step) d += ` L ${x} ${(f(x) + wob(x)).toFixed(1)}`; return d; };
+    const band = f => wave(f) + ` L ${WIDTH + 20} ${H + 20} L -20 ${H + 20} Z`;
+
+    svg.setAttribute('viewBox', `0 0 ${WIDTH} ${H}`);
+    svg.style.aspectRatio = `${WIDTH} / ${H}`;
+
+    let out = `<defs>
+      <pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-30)"><line x1="0" y1="0" x2="0" y2="9" stroke="var(--ink)" stroke-width="1.2" opacity=".09"/></pattern>
+    </defs>`;
+
+    let hills = `<path d="${band(hillY)}" fill="var(--hill-far)"/><path d="${band(hillY)}" fill="url(#hatch)" stroke="none"/>`;
+    for (let x = 60; x < WIDTH; x += 70 + rnd() * 90) {
+      const y = hillY(x) + 4, h = 26 + rnd() * 18;
+      const sw = rnd() < .3 ? `class="sway" style="animation-delay:${-rnd() * 4}s"` : '';
+      if (rnd() < .5) hills += `<g ${sw}><path d="M${x} ${y} v-${h * .5}" stroke-width="3" fill="none" stroke="var(--trunk)"/><path d="${blob(x, y - h * .75, h * .38)}" fill="var(--tree)"/></g>`;
+      else hills += `<g ${sw}><path d="M${x} ${y - h * 1.1} L${x + h * .32} ${y - 4} L${x - h * .32} ${y - 4} Z" fill="var(--tree-2)"/><path d="M${x} ${y - 4} v4" stroke="var(--trunk)" stroke-width="3"/></g>`;
+    }
+    const hx = 90, hy = hillY(90) + 6;
+    hills += `<g><rect x="${hx - 20}" y="${hy - 30}" width="40" height="30" fill="var(--wall)"/><path d="M${hx - 26} ${hy - 28} L${hx} ${hy - 50} L${hx + 26} ${hy - 28} Z" fill="var(--roof)"/><rect x="${hx - 5}" y="${hy - 16}" width="10" height="16" fill="var(--trunk)"/><rect x="${hx + 8}" y="${hy - 24}" width="7" height="7" fill="var(--sky)"/></g>`;
+
+    let ground = `<path d="${band(groundY)}" fill="var(--hill-near)"/><path d="${band(groundY)}" fill="url(#hatch)" stroke="none"/>`;
+    [[X0 - 160, X0 + 60], [X0 + S * 2.4, X0 + S * 3.9]].forEach(([a, b]) => {
+      let posts = '';
+      for (let x = a; x <= b; x += 34) posts += `<path d="M${x} ${groundY(x) + 30} v-30"/>`;
+      ground += `<g stroke="var(--fence)" stroke-width="4" fill="none">${posts}<path d="M${a} ${groundY(a) + 10} L${b} ${groundY(b) + 10} M${a} ${groundY(a) + 20} L${b} ${groundY(b) + 20}" stroke-width="3"/></g>`;
+    });
+    ground += `<path d="${wave(pathY, 12)}" fill="none" stroke="var(--sand)" stroke-width="40" stroke-linecap="round"/>`;
+
+    let front = `<path d="${band(frontY)}" fill="var(--grass-front)"/>`;
+    for (let x = 10; x < WIDTH; x += 18 + rnd() * 30) {
+      const y = frontY(x) + 10 + rnd() * 30;
+      if (rnd() < .55) {
+        const c = ['--f1', '--f2', '--f3', '--f4'][Math.floor(rnd() * 4)];
+        const r = 3 + rnd() * 2;
+        front += `<g ${rnd() < .15 ? `class="sway" style="animation-delay:${-rnd() * 4}s"` : ''}><path d="M${x} ${y + 12} v-12" stroke="var(--tree)" stroke-width="2"/><g fill="var(${c})" stroke-width="1.5">${[0, 72, 144, 216, 288].map(a => `<circle cx="${(x + Math.cos(a * Math.PI / 180) * r).toFixed(1)}" cy="${(y + Math.sin(a * Math.PI / 180) * r).toFixed(1)}" r="${r * .7}"/>`).join('')}</g><circle cx="${x}" cy="${y}" r="${r * .45}" fill="var(--scarf)" stroke="none"/></g>`;
+      } else {
+        front += `<path d="M${x - 5} ${y + 8} l3 -10 l2 10 M${x} ${y + 8} l4 -14 l1 14 M${x + 4} ${y + 8} l5 -9" fill="none" stroke="var(--tree)" stroke-width="2"/>`;
+      }
+    }
+    let tufts = '';
+    for (let x = 20; x < WIDTH; x += 40 + rnd() * 60) {
+      const y = groundY(x) + 22 + rnd() * 20;
+      tufts += `<path d="M${x - 4} ${y} l2 -8 l2 8 M${x} ${y} l3 -11 l1 11 M${x + 4} ${y} l4 -7" fill="none" stroke="var(--tree)" stroke-width="2"/>`;
+    }
+    out += `<g stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">${hills}${ground}${tufts}</g>`;
+
+    for (let x = 30; x < last - 10; x += 22) out += `<ellipse cx="${x}" cy="${pathY(x) + (Math.round(x / 22) % 2 ? 5 : -5)}" rx="4.5" ry="2.6" fill="var(--foot)"/>`;
+    for (let x = last + 140; x < WIDTH - 40; x += 26) out += `<circle cx="${x}" cy="${pathY(x)}" r="3" fill="var(--foot)" opacity=".7"/>`;
+
+    const sign = (x, text, w) => {
+      const y = groundY(x) + 6;
+      return `<g stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"><path d="M${x} ${y + 30} v-44" stroke="var(--fence)" stroke-width="5"/><rect x="${x - w / 2}" y="${y - 40}" width="${w}" height="26" rx="5" fill="var(--paper)"/></g><text class="lbl" x="${x}" y="${y - 22}" text-anchor="middle" style="fill:#2c3a4b">${text}</text>`;
+    };
+    out += sign(X0 - 110, '起點 9/3', 76) + sign(last + 200, '下次 10/22', 86);
+
+    // dashed dots: past ones only when something was written; the current one is always there
+    let dots = '';
+    Object.keys(state.road).forEach(k => {
+      const i = +k;
+      if (i >= N - 1 || !state.road[i].length) return;
+      const x = dotX(i) + S / 2, y = pathY(x);
+      dots += `<g class="hit" tabindex="0" role="button" data-kind="road" data-i="${i}" aria-label="路上，記了 ${state.road[i].length} 件事">
+        <circle cx="${x}" cy="${y}" r="22" fill="transparent"/>
+        <circle class="dot" cx="${x}" cy="${y}" r="8" fill="var(--paper)" fill-opacity=".7" stroke="var(--ink)" stroke-width="2.2" stroke-dasharray="4 4"/></g>`;
+    });
+    const rx = last + 100, ry = pathY(rx), cur = state.road[N - 1] || [];
+    dots += `<g class="hit" tabindex="0" role="button" data-kind="road" data-i="${N - 1}" aria-label="現在這段路上，記了 ${cur.length} 件事，點一下打開">
+      <circle cx="${rx}" cy="${ry}" r="30" fill="transparent"/>
+      <g class="pulse"><circle class="dot" cx="${rx}" cy="${ry}" r="13" fill="var(--paper)" fill-opacity=".75" stroke="var(--ink)" stroke-width="2.5" stroke-dasharray="5 5"/></g>
+      ${cur.length ? `<text class="lbl" x="${rx}" y="${ry + 5}" text-anchor="middle" style="fill:#2c3a4b">${cur.length}</text>` : `<path d="M${rx - 5} ${ry} h10 M${rx} ${ry - 5} v10" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"/>`}
+      <text class="lbl" x="${rx}" y="${ry + 34}" text-anchor="middle">路上</text></g>`;
+    dots += state.sessions.map((s, i) => {
+      const x = dotX(i), y = pathY(x);
+      return `<g class="hit" tabindex="0" role="button" data-kind="session" data-i="${i}" aria-label="第 ${s.n} 次諮商，${s.date}，${W[s.after]}">
+        <circle cx="${x}" cy="${y}" r="30" fill="transparent"/>
+        <path class="dot" d="${blob(x, y, 15)}" fill="var(--w-${s.after})" stroke="var(--ink)" stroke-width="2.5"/>
+        <text class="lbl" x="${x}" y="${y + 36}" text-anchor="middle">${s.short}</text></g>`;
+    }).join('');
+    out += `<g id="dots">${dots}</g>`;
+
+    const fx = walkerFrom != null ? walkerFrom : last;
+    out += `<g id="walker" style="transform:translate(${fx - 4}px, ${pathY(fx) - 18}px)"><g stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="2" cy="4" rx="22" ry="5" fill="var(--foot)" stroke="none" opacity=".6"/>
+      <g class="breathe">
+        <path d="M-8 -22 L-10 0 h9 L0 -22 Z" fill="var(--boot)"/>
+        <path d="M4 -22 L6 0 h9 L12 -22 Z" fill="var(--boot)"/>
+        <rect x="-26" y="-74" width="16" height="30" rx="6" fill="var(--pack)"/>
+        <path d="M-16 -22 C -20 -60, -14 -78, 2 -78 C 18 -78, 24 -60, 20 -22 Z" fill="var(--coat)"/>
+        <path d="M2 -60 C 14 -56, 18 -46, 22 -40" fill="none"/>
+        <circle cx="22" cy="-39" r="4" fill="var(--skin)"/>
+        <path d="M-12 -78 C -6 -72, 12 -72, 16 -78 L14 -86 C 6 -82, -6 -82, -12 -86 Z" fill="var(--scarf)"/>
+        <path class="scarf-tail" d="M-10 -82 C -22 -80, -30 -74, -36 -70 L-32 -64 C -24 -70, -16 -72, -8 -76 Z" fill="var(--scarf)"/>
+        <circle cx="2" cy="-102" r="20" fill="var(--skin)"/>
+        <path d="M-18 -104 C -18 -126, 20 -128, 22 -104 C 14 -112, -2 -114, -18 -104 Z" fill="var(--boot)"/>
+        <circle cx="12" cy="-100" r="2.2" fill="var(--ink)" stroke="none"/>
+        <circle cx="14" cy="-92" r="4" fill="var(--cheek)" stroke="none" opacity=".8"/>
+        <path d="M17 -88 q3 2 5 0" fill="none" stroke-width="2"/>
+      </g></g></g>`;
+
+    out += `<g transform="translate(${last + 160} ${pathY(last) - 130})"><g class="fly">
+      <path class="wing" d="M0 0 C -10 -12, -16 -2, -8 4 Z" fill="var(--f1)" stroke="var(--ink)" stroke-width="1.6"/>
+      <path class="wing r" d="M0 0 C 10 -12, 16 -2, 8 4 Z" fill="var(--f1)" stroke="var(--ink)" stroke-width="1.6"/></g></g>`;
+    out += `<g stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">${front}</g>`;
+    svg.innerHTML = out;
+
+    hits = [...svg.querySelectorAll('.hit')];
+    hits.forEach(g => {
+      const go = () => openBubble(g);
+      g.addEventListener('click', e => { e.stopPropagation(); go(); });
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+    if (walkerFrom != null) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        document.getElementById('walker').style.transform = `translate(${last - 4}px, ${pathY(last) - 18}px)`;
+      }));
+    }
+    setLine();
+  }
+
+  const scale = () => svg.getBoundingClientRect().height / H;
+  const lastX = () => dotX(state.sessions.length - 1);
+  let homeLeft = 0;
+  function home(smooth) { homeLeft = lastX() * scale() - world.clientWidth * 0.55; world.scrollTo({ left: homeLeft, behavior: smooth ? 'smooth' : 'auto' }); }
+
+  // ----- the line on top: facts first, said gently; sometimes one of your own quotes -----
+  let lineIdx = 0;
+  function lines() {
+    const s = state.sessions, last = s[s.length - 1], cur = state.road[s.length - 1] || [];
+    const L = [];
+    if (last.short === TODAY.short) {
+      L.push({ t: `今天走到了|第 ${s.length} 個點。` }, { t: `今天走完，|是${W[last.after]}。` });
+    } else {
+      L.push({ t: `${last.short} 之後，|已經走了 5 天。` });
+      L.push({ t: `上次走完的那天，|是${W[last.after]}。` });
+      L.push({ t: '再兩天就是週四，|又要去說說話了。' });
+      if (cur.length) L.push({ t: `這幾天在路上，|記下了 ${cur.length} 件事。` });
+    }
+    L.push({ t: `這條路上，|有 ${s.length} 個點了。` });
+    s.filter(x => x.quote).forEach(x => L.push({ t: `「${x.quote}」`, sm: `${x.short} 記下的` }));
+    return L;
+  }
+  function setLine() {
+    const L = lines();
+    const l = L[lineIdx % L.length];
+    document.getElementById('line').innerHTML = `${esc(l.t).split('|').join('<br>')}${l.sm ? `<small>${l.sm}</small>` : ''}`;
+  }
+  document.getElementById('line').addEventListener('click', () => { lineIdx++; setLine(); });
+
+  // ----- bubble -----
+  let current = null;
+  function openBubble(g) {
+    if (current === g) { closeBubble(); return; }
+    const i = +g.dataset.i;
+    if (g.dataset.kind === 'road' && i === state.sessions.length - 1) { closeBubble(); openRoad(); return; }
+    current = g;
+    hits.forEach(el => el.classList.toggle('on', el === g));
+    if (g.dataset.kind === 'session') {
+      const s = state.sessions[i];
+      bubble.innerHTML = `<b>第 ${s.n} 次 · ${s.date}</b>${W[s.after]}${s.unfinished ? '，還沒寫完' : ''}
+        ${s.song ? `<span class="song">♪ ${s.song.t} · ${s.song.a}</span>` : ''}
+        <button type="button" data-soon>看這一次的紀錄</button>`;
+    } else {
+      bubble.innerHTML = `<b>路上 · ${state.sessions[i].short} 之後</b>記了 ${state.road[i].length} 件事
+        <button type="button" data-road="${i}">打開看看</button>`;
+    }
+    bubble.hidden = false;
+    place();
+  }
+  function place() {
+    if (!current) return;
+    const c = current.querySelector('.dot').getBoundingClientRect();
+    const box = page.getBoundingClientRect();
+    const half = bubble.offsetWidth / 2;
+    const cx = c.left + c.width / 2 - box.left;
+    const x = Math.max(half + 12, Math.min(box.width - half - 12, cx));
+    const onWalker = current.dataset.kind === 'session' && +current.dataset.i === state.sessions.length - 1;
+    bubble.style.left = x + 'px';
+    bubble.style.top = (c.top - box.top - (onWalker ? 128 * scale() : 0)) + 'px';
+    bubble.style.setProperty('--tip', Math.max(20, Math.min(bubble.offsetWidth - 20, cx - x + half)) + 'px');
+    bubble.hidden = cx < -20 || cx > box.width + 20;
+  }
+  function closeBubble() { current = null; bubble.hidden = true; hits.forEach(el => el.classList.remove('on')); }
+  svg.addEventListener('click', closeBubble);
+  world.addEventListener('scroll', place, { passive: true });
+  window.addEventListener('resize', () => { home(); place(); });
+
+  // ----- helpers -----
+  function esc(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  const wIcon = (k, cls = '') => `<svg class="${cls}" viewBox="0 0 60 60" aria-hidden="true"><use href="#w-${k}"/></svg>`;
+  const toast = document.getElementById('toast');
+  let tt;
+  function say(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => toast.classList.remove('show'), 2400); }
+  function clearLayer() { layer.innerHTML = ''; }
+
+  // ----- "記下今天": was today a session day? -----
+  document.getElementById('write').addEventListener('click', () => {
+    closeBubble();
+    layer.innerHTML = `<div class="scrim" data-close></div>
+      <div class="ask" role="dialog" aria-label="記下今天">
+        <h3>今天有去諮商嗎？</h3>
+        <button class="big" type="button" data-pick="session"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="13" fill="var(--w-partly)" stroke="var(--ink)" stroke-width="2.5"/></svg><span>有，今天去了<small>在路上放一個新的點</small></span></button>
+        <button class="big" type="button" data-pick="road"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="13" fill="none" stroke="var(--sheet-ink)" stroke-width="2.5" stroke-dasharray="5 5"/></svg><span>沒有，記在路上<small>兩次諮商之間的事</small></span></button>
+      </div>`;
+  });
+
+  // ----- session flow: one question per page -----
+  let draft, step;
+  const STEPS = ['weather', 'mood', 'topic', 'quote', 'notes', 'song'];
+  function openFlow() {
+    draft = { after: null, moods: [], topics: [], quote: '', notes: '', song: null, q: '' };
+    step = 0;
+    drawFlow();
+  }
+  function drawFlow() {
+    const k = STEPS[step];
+    let body = '';
+    if (k === 'weather') {
+      body = `<h2 class="q">今天的天氣是？</h2><p class="sub">選一個最接近的就好。</p>
+        <div class="weathers">${WK.map(w => `<button class="wbtn" type="button" data-w="${w}" aria-pressed="${draft.after === w}">${wIcon(w)}${W[w]}</button>`).join('')}</div>`;
+    } else if (k === 'mood') {
+      body = `<h2 class="q">現在的心情</h2><p class="sub">可以選很多個。</p>
+        <div class="chips">${MOODS.map(m => `<button class="chip" type="button" data-mood="${m}" aria-pressed="${draft.moods.includes(m)}">${m}</button>`).join('')}</div>`;
+    } else if (k === 'topic') {
+      const all = TOPICS.concat(draft.topics.filter(t => !TOPICS.includes(t)));
+      body = `<h2 class="q">今天談了什麼？</h2>
+        <div class="chips">${all.map(t => `<button class="chip" type="button" data-topic="${esc(t)}" aria-pressed="${draft.topics.includes(t)}">${esc(t)}</button>`).join('')}
+        <button class="chip add" type="button" id="addTopic">＋ 自己寫</button></div>
+        <div class="addrow" id="topicRow" hidden><input class="field" id="topicInput" placeholder="例如：搬家" maxlength="12"><button class="pill sm" type="button" id="topicOk">加入</button></div>`;
+    } else if (k === 'quote') {
+      body = `<h2 class="q">印象最深的一句話</h2>
+        <textarea class="field" id="quote" placeholder="記得的那句話">${esc(draft.quote)}</textarea>`;
+    } else if (k === 'notes') {
+      body = `<h2 class="q">還想寫點什麼嗎？</h2>
+        <textarea class="field tall" id="notes">${esc(draft.notes)}</textarea>`;
+    } else if (k === 'song') {
+      body = `<h2 class="q">這次的歌</h2>
+        <div class="connect"><i></i>已連結 Spotify（樣稿）</div>
+        <div id="songArea" style="display:grid;gap:12px"></div>`;
+    }
+    const lastStep = step === STEPS.length - 1;
+    layer.innerHTML = `<section class="sheet" role="dialog" aria-label="記錄今天的諮商">
+      <div class="sheet-head">
+        <button class="ghost" type="button" data-flow="close">${draft.after ? '先存起來' : '關閉'}</button>
+        <div class="progress" aria-label="第 ${step + 1} 題，共 ${STEPS.length} 題">${STEPS.map((_, i) => `<i class="${i < step ? 'done' : i === step ? 'now' : ''}"></i>`).join('')}</div>
+        <button class="ghost" type="button" data-flow="back" ${step === 0 ? 'style="visibility:hidden"' : ''}>上一題</button>
+      </div>
+      <div class="sheet-body">${body}</div>
+      <div class="sheet-foot">
+        ${k === 'weather' ? '<span></span>' : `<button class="ghost" type="button" data-flow="skip">跳過</button>`}
+        <button class="pill" type="button" data-flow="next" ${k === 'weather' && !draft.after ? 'disabled' : ''}>${lastStep ? '完成' : '下一題'}</button>
+      </div>
+    </section>`;
+    if (k === 'song') drawSongs();
+  }
+  function keepText() {
+    const q = document.getElementById('quote'); if (q) draft.quote = q.value;
+    const n = document.getElementById('notes'); if (n) draft.notes = n.value;
+  }
+  function drawSongs() {
+    const area = document.getElementById('songArea');
+    if (draft.song) {
+      const s = draft.song;
+      area.innerHTML = `<div class="player" id="player">
+          <div class="cover" style="background:${s.c}"><svg><use href="#i-note"/></svg></div>
+          <div class="meta"><b>${s.t}</b><span>${s.a} · Spotify</span><div class="bar"><i></i></div></div>
+          <button class="play" type="button" id="play" aria-label="播放"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg></button>
+        </div>
+        <p class="tiny">正式版這裡會是 Spotify 官方播放器，旁邊有「在 Spotify 打開」。</p>
+        <button class="linkish" type="button" id="reSong">換一首</button>`;
+      return;
+    }
+    area.innerHTML = `<div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input class="field" id="songQ" placeholder="搜尋歌名或歌手" value="${esc(draft.q)}" autocomplete="off"></div>
+      <div class="label" id="songLabel"></div>
+      <div class="results" id="results"></div>`;
+    const input = document.getElementById('songQ');
+    const list = () => {
+      draft.q = input.value.trim();
+      const r = draft.q ? SONGS.filter(s => (s.t + s.a).includes(draft.q)) : SONGS.slice(0, 4);
+      document.getElementById('songLabel').textContent = draft.q ? (r.length ? '搜尋結果' : '找不到，換個關鍵字試試') : '最近聽過';
+      document.getElementById('results').innerHTML = r.map(s => `<button class="song-row" type="button" data-song="${SONGS.indexOf(s)}">
+        <div class="cover" style="background:${s.c}"><svg><use href="#i-note"/></svg></div><div><b>${s.t}</b><span>${s.a}</span></div></button>`).join('');
+    };
+    input.addEventListener('input', list);
+    list();
+  }
+  function finishFlow(unfinished) {
+    keepText();
+    const from = lastX();
+    state.sessions.push({ n: state.sessions.length + 1, date: TODAY.date, short: TODAY.short, after: draft.after, quote: draft.quote.trim() || undefined, song: draft.song || undefined, unfinished });
+    clearLayer();
+    render(from);
+    lineIdx = 0; setLine();
+    home(true);
+    say(unfinished ? '先存起來了，想補的時候再點那個點' : '存好了');
+  }
+
+  // ----- road sheet -----
+  let roadDraft = { w: null, star: false };
+  function openRoad(i) {
+    const idx = i == null ? state.sessions.length - 1 : i;
+    const list = state.road[idx] || [];
+    const isNow = idx === state.sessions.length - 1;
+    roadDraft = { w: null, star: false };
+    layer.innerHTML = `<section class="sheet" role="dialog" aria-label="路上">
+      <div class="sheet-head"><button class="ghost" type="button" data-close>關閉</button></div>
+      <div class="sheet-body">
+        <h2 class="q">路上 · ${state.sessions[idx].short} 之後</h2>
+        ${isNow ? `<p class="sub">兩次諮商之間的事。一句話、只點天氣，都可以。</p>
+        <div class="compose">
+          <textarea class="field" id="roadText" placeholder="發生了什麼，或想到什麼"></textarea>
+          <div class="mini" role="group" aria-label="當下的天氣">${WK.map(w => `<button class="wbtn" type="button" data-rw="${w}" aria-pressed="false" aria-label="${W[w]}">${wIcon(w)}</button>`).join('')}</div>
+          <div class="compose-row">
+            <button class="star" type="button" id="roadStar" aria-pressed="false" aria-label="想帶去說"><svg><use href="#i-star"/></svg></button>
+            <span class="tiny" style="flex:1">加星星，下次諮商前會拿出來給你看</span>
+            <button class="pill sm" type="button" id="roadSave">記下來</button>
+          </div>
+        </div>` : ''}
+        <div class="entries">${list.map((e, k) => ({ e, k })).reverse().map(({ e, k }) => `<div class="entry">${e.w ? wIcon(e.w, 'w') : '<svg class="w"></svg>'}
+            <div class="txt"><span>${e.date}</span>${e.text ? esc(e.text) : `<em>只記了天氣：${W[e.w]}</em>`}</div>
+            <button class="star" type="button" data-star="${idx}:${k}" aria-pressed="${e.star}" aria-label="想帶去說"><svg><use href="#i-star"/></svg></button></div>`).join('') || '<p class="sub">這段路上還沒有記東西。</p>'}</div>
+      </div>
+    </section>`;
+  }
+  function saveRoad() {
+    const t = document.getElementById('roadText').value.trim();
+    if (!t && !roadDraft.w) { say('寫一句，或點一個天氣'); return; }
+    const idx = state.sessions.length - 1;
+    (state.road[idx] = state.road[idx] || []).push({ date: TODAY.short, w: roadDraft.w, text: t, star: roadDraft.star });
+    render();
+    openRoad();
+    say('記下來了');
+  }
+
+  // ----- one click handler for every sheet -----
+  layer.addEventListener('click', e => {
+    const t = e.target.closest('button, [data-close]');
+    if (!t) return;
+    if (t.hasAttribute('data-close')) { clearLayer(); return; }
+    if (t.dataset.pick === 'session') { openFlow(); return; }
+    if (t.dataset.pick === 'road') { openRoad(); return; }
+    if (t.dataset.w) { draft.after = t.dataset.w; drawFlow(); return; }
+    if (t.dataset.mood) { const m = t.dataset.mood; draft.moods = draft.moods.includes(m) ? draft.moods.filter(x => x !== m) : draft.moods.concat(m); t.setAttribute('aria-pressed', draft.moods.includes(m)); return; }
+    if (t.dataset.topic) { const m = t.dataset.topic; draft.topics = draft.topics.includes(m) ? draft.topics.filter(x => x !== m) : draft.topics.concat(m); t.setAttribute('aria-pressed', draft.topics.includes(m)); return; }
+    if (t.id === 'addTopic') { document.getElementById('topicRow').hidden = false; document.getElementById('topicInput').focus(); return; }
+    if (t.id === 'topicOk') { const v = document.getElementById('topicInput').value.trim(); if (v && !draft.topics.includes(v)) draft.topics.push(v); drawFlow(); return; }
+    if (t.dataset.song) { draft.song = SONGS[+t.dataset.song]; drawSongs(); return; }
+    if (t.id === 'reSong') { draft.song = null; drawSongs(); return; }
+    if (t.id === 'play') { const p = document.getElementById('player'); p.classList.toggle('playing'); say(p.classList.contains('playing') ? '樣稿不會真的播放，正式版會用你的 Spotify' : '暫停'); return; }
+    if (t.dataset.rw) { roadDraft.w = roadDraft.w === t.dataset.rw ? null : t.dataset.rw; layer.querySelectorAll('[data-rw]').forEach(b => b.setAttribute('aria-pressed', b.dataset.rw === roadDraft.w)); return; }
+    if (t.id === 'roadStar') { roadDraft.star = !roadDraft.star; t.setAttribute('aria-pressed', roadDraft.star); return; }
+    if (t.id === 'roadSave') { saveRoad(); return; }
+    if (t.dataset.star) { const [i, k] = t.dataset.star.split(':').map(Number); const en = state.road[i][k]; en.star = !en.star; t.setAttribute('aria-pressed', en.star); return; }
+    const f = t.dataset.flow;
+    if (f === 'close') { if (draft.after) finishFlow(true); else clearLayer(); return; }
+    if (f === 'back') { keepText(); step = Math.max(0, step - 1); drawFlow(); return; }
+    if (f === 'skip' || f === 'next') {
+      keepText();
+      if (step === STEPS.length - 1) finishFlow(false);
+      else { step++; drawFlow(); }
+    }
+  });
+
+  bubble.addEventListener('click', e => {
+    const r = e.target.closest('[data-road]');
+    if (r) { e.stopPropagation(); const i = +r.dataset.road; closeBubble(); openRoad(i); }
+  });
+  document.addEventListener('click', e => { if (e.target.closest('[data-soon]')) { e.stopPropagation(); say('這一頁還在樣稿階段，之後會做'); } });
+
+  try { document.getElementById('today').textContent = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' }); } catch (e) {}
+
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 160;
+    const g = c.getContext('2d'), img = g.createImageData(160, 160);
+    for (let i = 0; i < img.data.length; i += 4) { const v = Math.random(); img.data[i] = img.data[i + 1] = 40; img.data[i + 2] = 60; img.data[i + 3] = v > .55 ? (v - .55) * 120 : 0; }
+    g.putImageData(img, 0, 0);
+    document.getElementById('grain').style.backgroundImage = `url(${c.toDataURL()})`;
+  } catch (e) {}
+
+  render();
+  requestAnimationFrame(() => home());
+})();
+</script>
