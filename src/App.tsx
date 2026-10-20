@@ -10,7 +10,7 @@ import { playlistUris, syncPlaylist } from './lib/spotify';
 import Landscape from './components/Landscape';
 import SessionFlow, { clearDraft, emptyDraft, loadDraft, type Draft } from './components/SessionFlow';
 import RoadSheet from './components/RoadSheet';
-import { Book, Detail } from './components/Book';
+import { Book, Detail, type BookTab } from './components/Book';
 import { SongPlayer } from './components/SongPicker';
 import Settings, { NextSessionField } from './components/Settings';
 import Lock from './components/Lock';
@@ -47,6 +47,9 @@ function Main() {
   const [unlocked, setUnlocked] = useState(false);
   const [lineIdx, setLineIdx] = useState<number | null>(null);
   const [today, setToday] = useState(todayKey);
+  // 全部紀錄 remembers which tab and topic you were on while you look at one session
+  const [bookTab, setBookTab] = useState<BookTab>('all');
+  const [topic, setTopic] = useState<string | null>(null);
 
   // lock again after the app has been in the background for a while; notice a new day
   useEffect(() => {
@@ -161,12 +164,16 @@ function Main() {
       <Book
         sessions={sessions}
         notes={notes}
+        tab={bookTab}
+        topic={topic}
+        onTab={setBookTab}
+        onTopic={setTopic}
         onPlay={play}
         onOpen={s => setView({ kind: 'detail', id: s.id })}
         onBackfill={() => setView({ kind: 'flow', past: true })}
         onBackfillRoad={() => setView({ kind: 'road', after: current })}
         onSettings={() => setView({ kind: 'settings' })}
-        onClose={close}
+        onClose={() => (setTopic(null), close())}
       />
     );
   } else if (view?.kind === 'detail') {
@@ -178,6 +185,7 @@ function Main() {
           n={i + 1}
           roadBefore={roadOf(i ? sessions[i - 1].id : null)}
           onEdit={() => setView({ kind: 'flow', edit: sessions[i] })}
+          onTopic={t => (setBookTab('all'), setTopic(t), setView({ kind: 'book' }))}
           onClose={() => setView({ kind: 'book' })}
         />
       );
