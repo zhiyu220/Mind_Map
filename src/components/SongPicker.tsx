@@ -1,8 +1,39 @@
 import { useEffect, useState } from 'react';
 import type { Song } from '../types';
-import { embedUrl, isConnected, openUrl, searchTracks, songFromLink, trackIdFromLink } from '../lib/spotify';
+import { canRemote, embedUrl, isConnected, openUrl, pauseSpotify, playOnSpotify, searchTracks, songFromLink, trackIdFromLink, type RemoteResult } from '../lib/spotify';
+import { useToast } from './Toast';
+
+const REMOTE_MSG: Record<Exclude<RemoteResult, 'playing'>, string> = {
+  'no-device': '找不到你的 Spotify。先打開 Spotify App 一下，再回來按一次',
+  premium: 'Spotify 說這個帳號不能遙控播放（需要 Premium）',
+  'not-connected': 'Spotify 的連結過期了，到「設定」重新連結',
+  error: '現在連不上 Spotify，等一下再試'
+};
 
 export function SongPlayer({ song }: { song: Song }) {
+  const say = useToast();
+  const [remote, setRemote] = useState<'yes' | 'reconnect' | 'no'>('no');
+  const [playing, setPlaying] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    Promise.all([isConnected(), canRemote()]).then(([c, r]) => setRemote(r ? 'yes' : c ? 'reconnect' : 'no'));
+  }, []);
+
+  const play = async () => {
+    setBusy(true);
+    const r = await playOnSpotify(song.id);
+    setBusy(false);
+    if (r === 'playing') {
+      setPlaying(true);
+      say(`在你的 Spotify 播放：${song.name}`);
+    } else say(REMOTE_MSG[r]);
+  };
+  const pause = async () => {
+    await pauseSpotify();
+    setPlaying(false);
+  };
+
   return (
     <div className="song-player">
       <iframe
@@ -13,6 +44,15 @@ export function SongPlayer({ song }: { song: Song }) {
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
         loading="lazy"
       />
+      {remote === 'yes' && (
+        <div className="remote">
+          <button className="pill sm" type="button" disabled={busy} onClick={playing ? pause : play}>
+            <i className="spotify-dot" aria-hidden="true" />
+            {playing ? '暫停' : busy ? '連線中…' : '用我的 Spotify 播完整首'}
+          </button>
+        </div>
+      )}
+      {remote === 'reconnect' && <p className="tiny">到「設定」重新連結 Spotify，就能用你的 Spotify 播完整首。</p>}
       <a className="linkish" href={openUrl(song.id)} target="_blank" rel="noreferrer">在 Spotify 打開</a>
     </div>
   );
