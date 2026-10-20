@@ -1,4 +1,6 @@
-# 每週檢查一次相依套件和 GitHub Actions 有沒有安全更新，開 PR 到 dev（不會直接動 main）
+# 每週檢查一次相依套件和 GitHub Actions，開 PR 到 dev（不會直接動 main）。
+# 小版本更新和 Actions 的更新，檢查通過會自動合併到 dev（見 workflows/dependabot-auto-merge.yml）。
+# npm 的大版本更新常要改程式，先不開 PR；有安全漏洞時，GitHub 的安全性更新還是會照常開 PR。
 version: 2
 updates:
   - package-ecosystem: npm
@@ -9,6 +11,9 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "[設定]"
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
     groups:
       minor-and-patch:
         update-types: [minor, patch]
@@ -19,3 +24,6 @@ updates:
       interval: weekly
     commit-message:
       prefix: "[設定]"
+    groups:
+      actions:
+        patterns: ["*"]
