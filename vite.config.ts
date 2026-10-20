@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: 'prompt', // we choose when to switch to a new version (see src/lib/update.ts)
       includeAssets: ['icons/apple-touch-icon.png', 'icons/favicon.svg'],
       manifest: {
-        name: '我的天空',
-        short_name: '我的天空',
+        name: 'Mind Map',
+        short_name: 'Mind Map',
         description: '記住每一次諮商的心情。',
         lang: 'zh-TW',
         display: 'standalone',

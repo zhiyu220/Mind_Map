@@ -69,7 +69,7 @@ describe('syncPlaylist', () => {
       calls.push(`${init?.method ?? 'GET'} ${path.split('?')[0]}`);
       if (path === '/me') return json({ id: 'me' });
       if (path === '/users/me/playlists') {
-        expect(JSON.parse(String(init?.body))).toMatchObject({ name: '我的天空', public: false });
+        expect(JSON.parse(String(init?.body))).toMatchObject({ name: 'Mind Map', public: false });
         return json({ id: 'pl' }, 201);
       }
       if (path.startsWith('/playlists/pl/tracks')) return json({ snapshot_id: 's' }, 201);

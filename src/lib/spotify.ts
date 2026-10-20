@@ -1,6 +1,6 @@
 // Spotify, signed in with your own account (Authorization Code + PKCE: no server, no secret).
 // Used to search songs by name, to offer what you've just been listening to, to keep a private
-// 「我的天空」 playlist of every session's song, and (with Premium) to start a song on your Spotify app.
+// 「Mind Map」 playlist of every session's song, and (with Premium) to start a song on your Spotify app.
 // In-page full playback (Web Playback SDK) does not work in mobile browsers, so we use the
 // embedded player plus remote control of the Spotify app instead.
 
@@ -175,7 +175,7 @@ export function dedupe(songs: Song[], skip?: string): Song[] {
   return songs.filter(s => !seen.has(s.id) && seen.add(s.id));
 }
 
-// ---------- the 「我的天空」 playlist ----------
+// ---------- the 「Mind Map」 playlist ----------
 
 interface PlaylistState {
   id: string;
@@ -198,7 +198,7 @@ export async function playlistInfo() {
 }
 
 /**
- * Makes the private 「我的天空」 playlist match the road: created on first use, recreated if you
+ * Makes the private 「Mind Map」 playlist match the road: created on first use, recreated if you
  * deleted it in Spotify. Returns the playlist id, or null when it can't (not connected / no permission).
  */
 export async function syncPlaylist(uris: string[]): Promise<string | null> {
@@ -222,7 +222,7 @@ export async function syncPlaylist(uris: string[]): Promise<string | null> {
     const { id: userId } = (await me.json()) as { id: string };
     const made = await api(`/users/${encodeURIComponent(userId)}/playlists`, {
       method: 'POST',
-      body: JSON.stringify({ name: '我的天空', public: false, description: '每一次諮商的歌，照日期排。由「我的天空」自動整理。' })
+      body: JSON.stringify({ name: 'Mind Map', public: false, description: '每一次諮商的歌，照日期排。由「Mind Map」自動整理。' })
     });
     if (!made.ok) return null;
     st = { id: ((await made.json()) as { id: string }).id, synced: '' };
