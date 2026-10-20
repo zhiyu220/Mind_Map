@@ -65,12 +65,15 @@
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
 body { margin: 0; }
-body { background: var(--sky); -webkit-text-size-adjust: 100%; user-select: none; -webkit-user-select: none; color: var(--text); font-family: var(--font); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+/* behind everything: sky above, grass below, so no other color can ever peek out at the edges */
+html { background: linear-gradient(var(--sky) 50%, var(--grass-front) 50%); }
+body { background: transparent; -webkit-text-size-adjust: 100%; user-select: none; -webkit-user-select: none; color: var(--text); font-family: var(--font); overflow: hidden; -webkit-tap-highlight-color: transparent; }
 button, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 
-.page { position: relative; height: 100%; overflow: hidden; }
+/* fixed to the whole screen: on the iPhone home screen, height: 100% falls short by the status bar */
+.page { position: fixed; inset: 0; overflow: hidden; }
 .back { position: absolute; inset: 0; width: 100%; height: 100%; display: block; will-change: transform; }
 .world { position: absolute; inset: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .world::-webkit-scrollbar { display: none; }
