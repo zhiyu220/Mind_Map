@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db';
-import { addNote, addPractice, addSession, deleteSession, tidyRoad, tryPractice, updateSession } from './store';
+import { addFound, addNote, addPractice, addSession, deleteFound, deleteSession, tidyRoad, tryPractice, updateSession } from './store';
 
 const blank = { weather: 'cloud' as const, moods: [], topics: [], quote: '', notes: '' };
 const afterOf = async (text: string) => (await db.notes.toArray()).find(n => n.text === text)?.after;
@@ -59,5 +59,14 @@ describe('the road in the database', () => {
     expect(once.tries).toEqual(['2026-10-01']);
     await tryPractice(once, '2026-10-01');
     expect((await db.practices.get(p.id))!.tries).toEqual([]);
+  });
+
+  it('keeps 後來我發現 on its session, oldest first, and lets one go', async () => {
+    const a = await addSession(blank, true, '2026-09-03');
+    const one = await addFound(a.id, '第一句', '2026-09-05');
+    await addFound(a.id, '第二句', '2026-09-08');
+    expect((await db.sessions.get(a.id))!.found!.map(f => f.text)).toEqual(['第一句', '第二句']);
+    await deleteFound(a.id, one.id);
+    expect((await db.sessions.get(a.id))!.found!.map(f => f.text)).toEqual(['第二句']);
   });
 });

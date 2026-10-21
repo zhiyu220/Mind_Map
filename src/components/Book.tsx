@@ -2,14 +2,14 @@ import { useState } from 'react';
 import type { RoadNote, Session, Song } from '../types';
 import { WEATHER_NAME } from '../types';
 import { long, short, weekday } from '../lib/dates';
-import { deleteSession } from '../lib/store';
+import { addFound, deleteFound, deleteSession } from '../lib/store';
 import { groupByMonth, recordYears, skyOfYear, topicsUsed } from '../lib/months';
 import { WeatherIcon } from './Weather';
 import { Cover, SongChip, SongPlayer } from './SongPicker';
 
-export type BookTab = 'all' | 'months' | 'year' | 'quotes';
+export type BookTab = 'all' | 'months' | 'year' | 'quotes' | 'found';
 
-const TABS: [BookTab, string][] = [['all', '每一次'], ['months', '每月'], ['year', '這一年'], ['quotes', '記下的話']];
+const TABS: [BookTab, string][] = [['all', '每一次'], ['months', '每月'], ['year', '這一年'], ['quotes', '記下的話'], ['found', '了解到的事']];
 
 /** 全部紀錄: every session, newest first; the same road month by month, as a year of sky, or just the sentences. */
 interface BookProps {
@@ -83,8 +83,10 @@ export function Book({ sessions, notes, tab, topic, onTab, onTopic, onOpen, onPl
           <Months sessions={sessions} notes={notes} onOpen={onOpen} onPlay={onPlay} />
         ) : tab === 'year' ? (
           <YearSky sessions={sessions} notes={notes} onOpen={onOpen} />
-        ) : (
+        ) : tab === 'quotes' ? (
           <Quotes sessions={sessions} onOpen={onOpen} />
+        ) : (
+          <FoundList sessions={sessions} onOpen={onOpen} />
         )}
       </div>
     </section>
@@ -150,6 +152,23 @@ function Quotes({ sessions, onOpen }: { sessions: Session[]; onOpen: (s: Session
       {kept.map(s => (
         <button key={s.id} className="quote-row" type="button" onClick={() => onOpen(s)}>
           <blockquote className="quote small">「{s.quote.trim()}」<small>{long(s.date)}</small></blockquote>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** 了解到的事: every 「後來我發現……」, newest first, each with the session it grew out of. */
+function FoundList({ sessions, onOpen }: { sessions: Session[]; onOpen: (s: Session) => void }) {
+  const all = sessions
+    .flatMap(s => (s.found ?? []).map(f => ({ f, s })))
+    .sort((a, b) => b.f.date.localeCompare(a.f.date) || b.f.createdAt - a.f.createdAt);
+  if (!all.length) return <p className="sub">還沒有。過幾天想清楚了，可以在任何一次諮商的紀錄最下面寫「後來我發現……」，會收在這裡。</p>;
+  return (
+    <div className="quotes">
+      {all.map(({ f, s }) => (
+        <button key={f.id} className="quote-row" type="button" onClick={() => onOpen(s)}>
+          <blockquote className="quote small found">{f.text}<small>{long(f.date)} · {short(s.date)} 那次之後想到的</small></blockquote>
         </button>
       ))}
     </div>
@@ -237,8 +256,26 @@ export function Detail({ session, n, roadBefore, onEdit, onTopic, onClose }: { s
             <div className="chips static">{s.topics.map(m => <button key={m} type="button" className="chip" onClick={() => onTopic(m)}>{m}</button>)}</div>
           </div>
         )}
+        {s.raw && (
+          <div>
+            <div className="label">剛結束的時候</div>
+            <p className="notes">{s.raw}</p>
+          </div>
+        )}
         {s.quote.trim() && <blockquote className="quote">「{s.quote.trim()}」</blockquote>}
         {s.notes.trim() && <p className="notes">{s.notes}</p>}
+        {s.takeHome && (
+          <div>
+            <div className="label">想帶回家的一句</div>
+            <p className="notes">{s.takeHome}</p>
+          </div>
+        )}
+        {s.leave && (
+          <div>
+            <div className="label">先留在諮商室的{s.bringLeave ? ' · 下次要帶去' : ''}</div>
+            <p className="notes">{s.leave}</p>
+          </div>
+        )}
         {s.song && (
           <div>
             <div className="label">這次的歌</div>
@@ -251,6 +288,7 @@ export function Detail({ session, n, roadBefore, onEdit, onTopic, onClose }: { s
             <ul className="brought">{starred.map(r => <li key={r.id}>{short(r.date)}　{r.text || WEATHER_NAME[r.weather!]}</li>)}</ul>
           </div>
         )}
+        <FoundSection session={s} />
         <div className="danger">
           {confirm ? (
             <div className="confirm">
@@ -264,5 +302,44 @@ export function Detail({ session, n, roadBefore, onEdit, onTopic, onClose }: { s
         </div>
       </div>
     </section>
+  );
+}
+
+/** 後來我發現……: added days later, once it's been thought over. Never asked for, only offered. */
+function FoundSection({ session }: { session: Session }) {
+  const [text, setText] = useState('');
+  const [open, setOpen] = useState(false);
+  const found = session.found ?? [];
+  const save = async () => {
+    const t = text.trim();
+    if (!t) return;
+    await addFound(session.id, t);
+    setText('');
+    setOpen(false);
+  };
+  return (
+    <div className="found-section">
+      {found.length > 0 && <div className="label">後來我發現</div>}
+      {found.map(f => (
+        <div key={f.id} className="found-row">
+          <p className="notes">{f.text}</p>
+          <small>
+            {long(f.date)}
+            <button className="linkish small" type="button" onClick={() => deleteFound(session.id, f.id)}>刪除</button>
+          </small>
+        </div>
+      ))}
+      {open ? (
+        <div className="compose">
+          <textarea id="found-text" className="field" autoFocus placeholder="後來我發現……" value={text} onChange={e => setText(e.target.value)} />
+          <div className="row-buttons">
+            <button className="pill sm" type="button" onClick={save}>記下來</button>
+            <button className="ghost" type="button" onClick={() => (setText(''), setOpen(false))}>算了</button>
+          </div>
+        </div>
+      ) : (
+        <button className="linkish small" type="button" onClick={() => setOpen(true)}>後來我發現……</button>
+      )}
+    </div>
   );
 }

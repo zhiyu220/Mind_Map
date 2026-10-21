@@ -1,5 +1,5 @@
 import { db, newId, getSettings, saveSettings } from '../db';
-import type { Practice, RoadNote, Session, Song, Weather } from '../types';
+import type { Found, Practice, RoadNote, Session, Song, Weather } from '../types';
 import { todayKey } from './dates';
 import { restretch, stretchFor } from './stretch';
 
@@ -15,7 +15,9 @@ async function tidyStretches() {
 export const tidyRoad = () => db.transaction('rw', db.sessions, db.notes, tidyStretches);
 
 /** Adds a session for today, or for an earlier day when filling in the past. */
-export async function addSession(d: { weather: Weather; moods: string[]; topics: string[]; quote: string; notes: string; song?: Song }, done: boolean, date = todayKey()) {
+type SessionFields = Pick<Session, 'weather' | 'moods' | 'topics' | 'quote' | 'notes' | 'song' | 'raw' | 'takeHome' | 'leave' | 'bringLeave'>;
+
+export async function addSession(d: SessionFields, done: boolean, date = todayKey()) {
   const now = Date.now();
   const s: Session = { id: newId(), date, ...d, done, createdAt: now, updatedAt: now };
   await db.transaction('rw', db.sessions, db.notes, db.kv, async () => {
@@ -60,6 +62,15 @@ export async function updateNote(id: string, patch: { text: string; weather?: We
   await db.notes.update(id, { ...patch, after });
   return after;
 }
+
+/** 後來我發現: a sentence added to a session later on. */
+export async function addFound(sessionId: string, text: string, date = todayKey()) {
+  const f: Found = { id: newId(), text, date, createdAt: Date.now() };
+  await db.sessions.where('id').equals(sessionId).modify(s => void (s.found = [...(s.found ?? []), f]));
+  return f;
+}
+export const deleteFound = (sessionId: string, id: string) =>
+  db.sessions.where('id').equals(sessionId).modify(s => void (s.found = (s.found ?? []).filter(f => f.id !== id)));
 
 export const toggleStar = (n: RoadNote) => db.notes.update(n.id, { star: !n.star });
 export const deleteNote = (id: string) => db.notes.delete(id);

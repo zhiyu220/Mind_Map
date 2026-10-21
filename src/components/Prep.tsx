@@ -44,6 +44,13 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
           </div>
         )}
 
+        {last?.bringLeave && last.leave && (
+          <div className="prep-box">
+            <div className="label">上次留在諮商室、說好要帶來的</div>
+            <p className="notes">{last.leave}</p>
+          </div>
+        )}
+
         <div className="prep-box">
           <div className="label prep-head">
             想帶去說的

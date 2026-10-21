@@ -17,6 +17,7 @@ import { WeatherPicker } from './components/Weather';
 import Settings, { NextSessionField } from './components/Settings';
 import Lock from './components/Lock';
 import Prep from './components/Prep';
+import Talk from './components/Talk';
 import { ToastProvider, useToast } from './components/Toast';
 
 type View =
@@ -31,6 +32,8 @@ type View =
   | { kind: 'settings' }
   | { kind: 'next' }
   | { kind: 'prep' }
+  // 想說話的時候; back is where to return
+  | { kind: 'talk'; back: View | null }
   | { kind: 'song'; song: Song; back: View | null };
 
 const RELOCK_AFTER = 60_000;
@@ -109,18 +112,19 @@ function Main() {
   const prepCard = (until === 0 || until === 1) && !todaySession;
 
   const saveFlow = async (d: Draft & { weather: NonNullable<Draft['weather']> }, done: boolean, edit?: Session, past?: boolean) => {
-    const { weather, moods, topics, quote, notes: text, song, date } = d;
+    const { weather, moods, topics, quote, notes: text, song, date, raw, takeHome, leave, bringLeave } = d;
+    const more = { raw: raw?.trim() || undefined, takeHome: takeHome?.trim() || undefined, leave: leave?.trim() || undefined, bringLeave: leave?.trim() ? bringLeave : undefined };
     if (edit) {
-      await updateSession(edit.id, { weather, moods, topics, quote, notes: text, song, date: date ?? edit.date, done: edit.done || done });
+      await updateSession(edit.id, { weather, moods, topics, quote, notes: text, song, ...more, date: date ?? edit.date, done: edit.done || done });
       setView({ kind: 'detail', id: edit.id });
       say('改好了');
     } else if (past && date) {
-      const s = await addSession({ weather, moods, topics, quote, notes: text, song }, done, date);
+      const s = await addSession({ weather, moods, topics, quote, notes: text, song, ...more }, done, date);
       setLineIdx(null);
       setView({ kind: 'detail', id: s.id });
       say(`補記好了，放在 ${short(date)} 的位置`);
     } else {
-      const s = await addSession({ weather, moods, topics, quote, notes: text, song }, done);
+      const s = await addSession({ weather, moods, topics, quote, notes: text, song, ...more }, done);
       clearDraft();
       setLineIdx(null);
       // ask once whether the next one keeps the same gap; nothing is saved unless you say so
@@ -190,7 +194,7 @@ function Main() {
       <SessionFlow
         initial={
           e
-            ? { weather: e.weather, moods: e.moods, topics: e.topics, quote: e.quote, notes: e.notes, song: e.song, date: e.date }
+            ? { weather: e.weather, moods: e.moods, topics: e.topics, quote: e.quote, notes: e.notes, song: e.song, date: e.date, raw: e.raw, takeHome: e.takeHome, leave: e.leave, bringLeave: e.bringLeave }
             : past
               ? emptyDraft()
               : (loadDraft() ?? emptyDraft())
@@ -206,7 +210,7 @@ function Main() {
   } else if (view?.kind === 'road') {
     const i = sessions.findIndex(s => s.id === view.after);
     const title = view.after ? `路上 · ${short(sessions[i].date)} 之後` : sessions.length ? '路上 · 第一次之前' : '路上 · 出發之前';
-    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} practices={practices} onPlay={play} onClose={close} />;
+    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} practices={practices} onPlay={play} onTalk={() => setView({ kind: 'talk', back: view })} onClose={close} />;
   } else if (view?.kind === 'book') {
     sheet = (
       <Book
@@ -238,7 +242,10 @@ function Main() {
         />
       );
   } else if (view?.kind === 'settings') {
-    sheet = <Settings settings={settings} onClose={() => setView({ kind: 'book' })} />;
+    sheet = <Settings settings={settings} onClose={() => setView({ kind: 'book' })} onTalk={() => setView({ kind: 'talk', back: view })} />;
+  } else if (view?.kind === 'talk') {
+    const back = view.back;
+    sheet = <Talk settings={settings} onClose={() => setView(back)} />;
   } else if (view?.kind === 'song') {
     const { song, back } = view;
     sheet = (
