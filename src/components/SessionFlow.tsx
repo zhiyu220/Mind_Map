@@ -173,7 +173,14 @@ export default function SessionFlow({ initial, mode, takenDates = [], customTopi
       </div>
 
       <div className="sheet-foot">
-        {k === 'weather' || k === 'date' ? <span /> : <button className="ghost" type="button" onClick={next}>跳過</button>}
+        {k === 'date' ? (
+          <span />
+        ) : k === 'weather' ? (
+          // only the weather is needed: once it's chosen, that's a whole record, not an unfinished one
+          d.weather && !editing ? <button className="ghost" type="button" onClick={() => save(true)}>這樣就好</button> : <span />
+        ) : (
+          <button className="ghost" type="button" onClick={next}>跳過</button>
+        )}
         <button className="pill" type="button" disabled={!canGo} onClick={next}>
           {last ? '完成' : '下一題'}
         </button>

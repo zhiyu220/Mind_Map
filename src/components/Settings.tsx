@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Settings as S } from '../types';
 import { saveSettings } from '../db';
-import { todayKey } from '../lib/dates';
+import { addDays, todayKey } from '../lib/dates';
 import { hashPin } from '../lib/pin';
 import { canUseFaceId, checkFaceId, setUpFaceId } from '../lib/faceid';
 import { makeBackup, openBackup, readBackup, restoreBackup, shareOrDownload, type Backup } from '../lib/backup';
@@ -32,6 +32,10 @@ export function NextSessionField({ value, onDone }: { value?: string; onDone?: (
     >
       <input id="next-session" className="field" type="date" min={todayKey()} value={v} onChange={e => setV(e.target.value)} />
       <button className="pill sm" type="submit">好</button>
+      <div className="quick-dates">
+        <button className="chip" type="button" onClick={() => setV(addDays(todayKey(), 7))}>一週後</button>
+        <button className="chip" type="button" onClick={() => setV(addDays(todayKey(), 14))}>兩週後</button>
+      </div>
     </form>
   );
 }
@@ -102,6 +106,13 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
           <h3>下次諮商</h3>
           <p className="tiny">小路上的「下次」路牌和首頁的話會用到。去過之後會自動清掉。</p>
           <NextSessionField value={settings.nextSession} onDone={() => say('記住了')} />
+          <label className="toggle">
+            <input type="checkbox" checked={!!settings.resting} onChange={e => saveSettings({ resting: e.target.checked || undefined })} />
+            <span>
+              先休息一陣子
+              <small>暫停諮商的時候打開。首頁不數天數、不倒數，下次記下諮商時會自動關掉。</small>
+            </span>
+          </label>
         </div>
 
         <div className="group">

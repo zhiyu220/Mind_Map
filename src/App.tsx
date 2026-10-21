@@ -3,16 +3,17 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, DEFAULT_SETTINGS, getSettings, saveSettings } from './db';
 import type { Session, Song } from './types';
 import { DEFS, SEASON_FX, SKY } from './drawings';
-import { countdown, daysBetween, headerDate, short, todayKey } from './lib/dates';
+import { countdown, daysBetween, guessNext, headerDate, long, short, todayKey, upcoming, weekday } from './lib/dates';
 import { homeLines, lineOfTheDay } from './lib/lines';
 import { followSky } from './lib/sky';
-import { addSession, byDate, updateSession } from './lib/store';
+import { addNote, addSession, byDate, deleteNote, updateSession } from './lib/store';
 import { playlistUris, quietPlaylist, syncPlaylist } from './lib/spotify';
 import Landscape from './components/Landscape';
 import SessionFlow, { clearDraft, emptyDraft, loadDraft, type Draft } from './components/SessionFlow';
 import RoadSheet from './components/RoadSheet';
 import { Book, Detail, type BookTab } from './components/Book';
 import { SongPlayer } from './components/SongPicker';
+import { WeatherPicker } from './components/Weather';
 import Settings, { NextSessionField } from './components/Settings';
 import Lock from './components/Lock';
 import Prep from './components/Prep';
@@ -21,7 +22,10 @@ import { ToastProvider, useToast } from './components/Toast';
 type View =
   | { kind: 'ask' }
   | { kind: 'flow'; edit?: Session; past?: boolean }
-  | { kind: 'road'; after: string | null }
+  // quick: opened to write one thing; the sheet closes once it's saved
+  | { kind: 'road'; after: string | null; quick?: boolean }
+  // after recording today: "下次是 10/28（週二）嗎？"
+  | { kind: 'askNext'; date: string; done: boolean }
   | { kind: 'book' }
   | { kind: 'detail'; id: string }
   | { kind: 'settings' }
@@ -87,7 +91,9 @@ function Main() {
     return () => clearTimeout(t);
   }, [songKey, loaded?.spotifyPlaylist]);
 
-  const lines = useMemo(() => homeLines(sessions ?? [], notes ?? [], today, settings.nextSession), [sessions, notes, today, settings.nextSession]);
+  // a next-session date long gone isn't counted down to or shown on the sign
+  const next = upcoming(settings.nextSession, today);
+  const lines = useMemo(() => homeLines(sessions ?? [], notes ?? [], today, next, settings.resting), [sessions, notes, today, next, settings.resting]);
 
   if (!sessions || !notes || !practices || !loaded) return <div className="page" />;
   if (settings.pinHash && !unlocked) return <Lock pinHash={settings.pinHash} faceId={settings.faceId} onUnlock={() => setUnlocked(true)} />;
@@ -99,7 +105,7 @@ function Main() {
   const play = (song: Song) => setView({ kind: 'song', song, back: view });
   const todaySession = sessions.find(s => s.date === today);
   // the day before a session (and the day itself, until it's recorded): a card to get ready
-  const until = settings.nextSession ? daysBetween(today, settings.nextSession) : -1;
+  const until = next ? daysBetween(today, next) : -1;
   const prepCard = (until === 0 || until === 1) && !todaySession;
 
   const saveFlow = async (d: Draft & { weather: NonNullable<Draft['weather']> }, done: boolean, edit?: Session, past?: boolean) => {
@@ -114,11 +120,16 @@ function Main() {
       setView({ kind: 'detail', id: s.id });
       say(`補記好了，放在 ${short(date)} 的位置`);
     } else {
-      await addSession({ weather, moods, topics, quote, notes: text, song }, done);
+      const s = await addSession({ weather, moods, topics, quote, notes: text, song }, done);
       clearDraft();
       setLineIdx(null);
-      close();
-      say(done ? '存好了' : '先存起來了，想補的時候再點那個點');
+      // ask once whether the next one keeps the same gap; nothing is saved unless you say so
+      const guess = settings.resting || upcoming(settings.nextSession, today) ? null : guessNext([...sessions, s].sort(byDate).map(x => x.date), today);
+      if (guess) setView({ kind: 'askNext', date: guess, done });
+      else {
+        close();
+        say(done ? '存好了' : '先存起來了，想補的時候再點那個點');
+      }
     }
   };
 
@@ -141,10 +152,35 @@ function Main() {
               <span>有，今天去了<small>在路上放一個新的點</small></span>
             </button>
           )}
-          <button className="big" type="button" onClick={() => setView({ kind: 'road', after: current })}>
+          <button className="big" type="button" onClick={() => setView({ kind: 'road', after: current, quick: true })}>
             <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="13" fill="none" stroke="var(--sheet-ink)" strokeWidth="2.5" strokeDasharray="5 5" /></svg>
             <span>沒有，記在路上<small>{stars ? `路上有 ${stars} 件加了星星的事` : '兩次諮商之間的事'}</small></span>
           </button>
+          {/* one tap: today's weather goes on the road, and 收回 takes it back */}
+          <div className="ask-weather">
+            <small>或只點一下今天的天氣</small>
+            <WeatherPicker small value={null} onChange={async w => {
+              if (!w) return;
+              const n = await addNote({ text: '', weather: w, star: false });
+              close();
+              say('記在路上了', () => deleteNote(n.id));
+            }} />
+          </div>
+        </div>
+      </>
+    );
+  } else if (view?.kind === 'askNext') {
+    const d = view.date;
+    sheet = (
+      <>
+        <div className="scrim" onClick={close} />
+        <div className="ask" role="dialog" aria-label="下次諮商">
+          <small className="saved-note">{view.done ? '存好了。' : '先存起來了，想補的時候再點那個點。'}</small>
+          <h3>下次是 {long(d)}（{weekday(d)}）嗎？</h3>
+          <div className="row-buttons even">
+            <button className="pill" type="button" onClick={async () => (await saveSettings({ nextSession: d }), close(), say('記住了'))}>對</button>
+            <button className="pill" type="button" onClick={close}>還不知道</button>
+          </div>
         </div>
       </>
     );
@@ -170,7 +206,7 @@ function Main() {
   } else if (view?.kind === 'road') {
     const i = sessions.findIndex(s => s.id === view.after);
     const title = view.after ? `路上 · ${short(sessions[i].date)} 之後` : sessions.length ? '路上 · 第一次之前' : '路上 · 出發之前';
-    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} practices={practices} onPlay={play} onClose={close} />;
+    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} practices={practices} onPlay={play} onClose={close} />;
   } else if (view?.kind === 'book') {
     sheet = (
       <Book
@@ -261,15 +297,15 @@ function Main() {
   return (
     <div className="page">
       {/* hidden and still under a full-page sheet, so typing doesn't compete with the landscape */}
-      <div className={`home${sheet && view?.kind !== 'ask' && view?.kind !== 'next' && view?.kind !== 'song' ? ' covered' : ''}`} inert={!!sheet}>
+      <div className={`home${sheet && view?.kind !== 'ask' && view?.kind !== 'askNext' && view?.kind !== 'next' && view?.kind !== 'song' ? ' covered' : ''}`} inert={!!sheet}>
       <div dangerouslySetInnerHTML={{ __html: SKY }} style={{ display: 'contents' }} />
       <Landscape
         sessions={sessions}
         notes={notes}
-        nextSession={settings.nextSession}
+        nextSession={next}
         onOpenSession={s => setView({ kind: 'detail', id: s.id })}
         onPlay={play}
-        onOpenRoad={after => setView({ kind: 'road', after })}
+        onOpenRoad={after => setView({ kind: 'road', after, quick: after === current })}
         onNextSign={() => setView({ kind: 'next' })}
         look={settings.walker ?? 'girl'}
       />

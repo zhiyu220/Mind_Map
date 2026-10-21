@@ -22,9 +22,10 @@ export async function addSession(d: { weather: Weather; moods: string[]; topics:
     await db.sessions.add(s);
     // a dot added in the middle of the road splits that stretch: later notes move behind it
     await tidyStretches();
-    // today's session reached: the "next session" sign moves on
+    // today's session reached: the "next session" sign moves on, and a rest is over
     const st = await getSettings();
     if (st.nextSession && st.nextSession <= s.date) await saveSettings({ nextSession: undefined });
+    if (st.resting && date === todayKey()) await saveSettings({ resting: undefined });
   });
   return s;
 }
@@ -45,12 +46,12 @@ export async function deleteSession(id: string) {
   });
 }
 
-/** Adds a road note; its date decides which stretch of road it lands on. Returns that stretch. */
+/** Adds a road note; its date decides which stretch of road it lands on. Returns the note. */
 export async function addNote(n: { text: string; weather?: Weather; star: boolean; song?: Song }, date = todayKey()) {
   const after = stretchFor(date, (await db.sessions.toArray()).sort(byDate));
   const note: RoadNote = { id: newId(), after, date, createdAt: Date.now(), ...n };
   await db.notes.add(note);
-  return after;
+  return note;
 }
 
 /** Changing a road note; a new date may move it to another stretch of road. Returns that stretch. */

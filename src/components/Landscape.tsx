@@ -144,15 +144,15 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
             );
           })}
 
-          <g className="hit" tabIndex={0} role="button" aria-label={`現在這段路上，記了 ${curCount} 件事，點一下打開`}
+          {/* today's stretch: a small pen, one tap to write down what you just thought of (no count shown) */}
+          <g className="hit" tabIndex={0} role="button" aria-label={curCount ? '現在這段路上，點一下寫下來，或看看記過的' : '現在這段路上，點一下寫下來'}
             onClick={tap({ kind: 'road', after: current, x: rx })} onKeyDown={keys({ kind: 'road', after: current, x: rx })}>
             <circle cx={rx} cy={ry} r="30" fill="transparent" />
             <circle className="dot" cx={rx} cy={ry} r="13" fill="var(--paper)" fillOpacity=".75" stroke="var(--ink)" strokeWidth="2.5" strokeDasharray="5 5" />
-            {curCount ? (
-              <text className="lbl" x={rx} y={ry + 5} textAnchor="middle" style={{ fill: '#2c3a4b' }}>{curCount}</text>
-            ) : (
-              <path d={`M${rx - 5} ${ry} h10 M${rx} ${ry - 5} v10`} stroke="var(--ink)" strokeWidth="2.2" strokeLinecap="round" />
-            )}
+            <g stroke="var(--ink)" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round">
+              <path d={`M${rx - 6} ${ry + 6} l1.4 -4.4 l7.6 -7.6 l3 3 l-7.6 7.6 Z`} fill="var(--scarf)" />
+              <path d={`M${rx - 4.6} ${ry + 1.6} l3 3`} fill="none" />
+            </g>
             <text className="lbl" x={rx} y={ry + 34} textAnchor="middle">路上</text>
           </g>
 

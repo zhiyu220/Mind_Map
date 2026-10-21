@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { homeLines, lineOfTheDay } from './lines';
-import { countdown, daysBetween, short, weekday } from './dates';
+import { addDays, countdown, daysBetween, guessNext, short, upcoming, weekday } from './dates';
 import type { RoadNote, Session } from '../types';
 
 const s = (id: string, date: string, extra: Partial<Session> = {}): Session => ({
@@ -65,5 +65,36 @@ describe('homeLines', () => {
   it('keeps one line for the whole day', () => {
     const lines = homeLines([s('a', '2026-10-15')], [], '2026-10-20');
     expect(lineOfTheDay(lines, '2026-10-20')).toBe(lineOfTheDay(lines, '2026-10-20'));
+  });
+});
+
+describe('the next session', () => {
+  it('guesses the same gap as the last two sessions', () => {
+    expect(guessNext(['2026-10-07', '2026-10-14'], '2026-10-14')).toBe('2026-10-21');
+    expect(guessNext(['2026-09-30', '2026-10-14'], '2026-10-14')).toBe('2026-10-28');
+  });
+  it('does not guess from one session or an odd gap', () => {
+    expect(guessNext(['2026-10-14'], '2026-10-14')).toBeNull();
+    expect(guessNext(['2026-06-01', '2026-10-14'], '2026-10-14')).toBeNull();
+    expect(guessNext(['2026-10-14', '2026-10-14'], '2026-10-14')).toBeNull();
+  });
+  it('never guesses a day that has already gone', () => {
+    expect(guessNext(['2026-10-07', '2026-10-14'], '2026-10-25')).toBe('2026-10-28');
+  });
+  it('lets a date more than 3 days gone go', () => {
+    expect(upcoming('2026-10-20', '2026-10-21')).toBe('2026-10-20');
+    expect(upcoming('2026-10-17', '2026-10-21')).toBeUndefined();
+    expect(upcoming(undefined, '2026-10-21')).toBeUndefined();
+    expect(addDays('2026-10-28', 7)).toBe('2026-11-04');
+  });
+});
+
+describe('先休息一陣子', () => {
+  it('counts no days and no countdown, and keeps your own sentences', () => {
+    const sessions = [s('a', '2026-06-01', { quote: '慢慢來' })];
+    const lines = homeLines(sessions, [note('a')], '2026-10-21', '2026-10-28', true).map(l => l.text).join(' ');
+    expect(lines).toContain('路先停在這裡');
+    expect(lines).toContain('慢慢來');
+    expect(lines).not.toMatch(/天|下次|又要去/);
   });
 });

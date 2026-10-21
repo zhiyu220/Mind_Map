@@ -15,8 +15,14 @@ export interface Line {
  * The words at the top of the home screen: plain facts from your own records, said gently,
  * now and then one of the sentences you wrote down. Never nudges or judges.
  */
-export function homeLines(sessions: Session[], notes: RoadNote[], today: string, nextSession?: string): Line[] {
+export function homeLines(sessions: Session[], notes: RoadNote[], today: string, nextSession?: string, resting = false): Line[] {
   const L: Line[] = [];
+  // 先休息一陣子: no days counted, no countdown; just the road waiting, and your own sentences
+  if (resting) {
+    L.push({ text: '路先停在這裡。|想回來的時候，都在。' });
+    for (const s of sessions) if (s.quote.trim()) L.push({ text: `「${s.quote.trim()}」`, small: `${short(s.date)} 記下的` });
+    return L;
+  }
   const last = sessions[sessions.length - 1];
   const onRoad = notes.filter(n => n.after === (last?.id ?? null));
   const stars = onRoad.filter(n => n.star).length;
