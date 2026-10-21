@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Settings as S } from '../types';
 import { saveSettings } from '../db';
 import { addDays, todayKey } from '../lib/dates';
+import { Helplines } from './Talk';
 import { hashPin } from '../lib/pin';
 import { canUseFaceId, checkFaceId, setUpFaceId } from '../lib/faceid';
 import { makeBackup, openBackup, readBackup, restoreBackup, shareOrDownload, type Backup } from '../lib/backup';
@@ -9,11 +10,6 @@ import type { Sealed } from '../lib/crypto';
 import { clientId, disconnect, isConnected, needsReconnect, playlistInfo, playlistUrl, startSpotifyLogin } from '../lib/spotify';
 import { useToast } from './Toast';
 
-export const HELPLINES = [
-  { name: '安心專線', number: '1925', note: '24 小時，免付費' },
-  { name: '生命線', number: '1995', note: '24 小時' },
-  { name: '張老師專線', number: '1980', note: '' }
-];
 
 const SKY_MODES: [NonNullable<S['sky']>, string][] = [['time', '晚上變成夜空'], ['phone', '跟著手機的深色模式'], ['day', '一直是白天']];
 const WALKERS: [NonNullable<S['walker']>, string][] = [['girl', '女生'], ['boy', '男生']];
@@ -40,7 +36,7 @@ export function NextSessionField({ value, onDone }: { value?: string; onDone?: (
   );
 }
 
-export default function Settings({ settings, onClose }: { settings: S; onClose: () => void }) {
+export default function Settings({ settings, onClose, onTalk }: { settings: S; onClose: () => void; onTalk?: () => void }) {
   const say = useToast();
   const [spotify, setSpotify] = useState<boolean | null>(null);
   const [reconnect, setReconnect] = useState(false);
@@ -233,15 +229,8 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
 
         <div className="group">
           <h3>需要有人說說話的時候</h3>
-          <ul className="helplines">
-            {HELPLINES.map(h => (
-              <li key={h.number}>
-                <span>{h.name}{h.note && <small>{h.note}</small>}</span>
-                <a href={`tel:${h.number}`}>{h.number}</a>
-              </li>
-            ))}
-          </ul>
-          <p className="tiny">如果有立即的危險，請打 119 或 110。</p>
+          <Helplines />
+          {onTalk && <button className="linkish small" type="button" onClick={onTalk}>想說話的時候：放上我的人、可以去的地方</button>}
         </div>
 
         <p className="tiny version">Mind Map {__APP_VERSION__}{__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}</p>

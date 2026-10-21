@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { db, getSettings, saveSettings } from '../db';
 import { makeBackup, openBackup, readBackup, restoreBackup, type Backup } from './backup';
 import { unseal } from './crypto';
-import { addNote, addPractice, addSession } from './store';
+import { addFound, addNote, addPractice, addSession } from './store';
 
 const blank = { weather: 'sun' as const, moods: ['平靜'], topics: ['自己'], quote: '慢慢來', notes: '' };
 const asFile = (x: unknown) => new File([JSON.stringify(x)], 'backup.json', { type: 'application/json' });
@@ -34,6 +34,22 @@ describe('backups', () => {
 
     expect(await snapshot()).toEqual(before);
     expect((await getSettings()).nextSession).toBe('2026-10-28');
+  });
+
+  it('carries what 3.0 adds: the first feelings, 後來我發現 and 我的人', async () => {
+    const s = await addSession({ ...blank, raw: '有點亂', takeHome: '慢慢來', leave: '媽媽的事', bringLeave: true }, true, '2026-09-03');
+    await addFound(s.id, '原來我在等別人先開口', '2026-09-10');
+    await saveSettings({ people: [{ name: '小安', phone: '0912345678', via: 'sms' }], places: '去河邊騎車' });
+    const before = await snapshot();
+    const sealed = JSON.parse(await (await makeBackup('pw')).text());
+    await db.delete();
+    await db.open();
+    await restoreBackup(await openBackup(sealed, 'pw'));
+    expect(await snapshot()).toEqual(before);
+    const back = (await db.sessions.get(s.id))!;
+    expect(back.raw).toBe('有點亂');
+    expect(back.found?.map(f => f.text)).toEqual(['原來我在等別人先開口']);
+    expect((await getSettings()).people?.[0].name).toBe('小安');
   });
 
   it('never carries the PIN or Face ID, and keeps the ones on this phone', async () => {
