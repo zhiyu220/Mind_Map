@@ -2,14 +2,14 @@ import { useState } from 'react';
 import type { RoadNote, Session, Song } from '../types';
 import { WEATHER_NAME } from '../types';
 import { long, short, weekday } from '../lib/dates';
-import { addFound, deleteFound, deleteSession } from '../lib/store';
+import { deleteSession } from '../lib/store';
 import { groupByMonth, recordYears, skyOfYear, topicsUsed } from '../lib/months';
 import { WeatherIcon } from './Weather';
 import { Cover, SongChip, SongPlayer } from './SongPicker';
 
-export type BookTab = 'all' | 'months' | 'year' | 'quotes' | 'found';
+export type BookTab = 'all' | 'months' | 'year' | 'quotes';
 
-const TABS: [BookTab, string][] = [['all', '每一次'], ['months', '每月'], ['year', '這一年'], ['quotes', '記下的話'], ['found', '了解到的事']];
+const TABS: [BookTab, string][] = [['all', '每一次'], ['months', '每月'], ['year', '這一年'], ['quotes', '記下的話']];
 
 /** 全部紀錄: every session, newest first; the same road month by month, as a year of sky, or just the sentences. */
 interface BookProps {
@@ -83,10 +83,8 @@ export function Book({ sessions, notes, tab, topic, onTab, onTopic, onOpen, onPl
           <Months sessions={sessions} notes={notes} onOpen={onOpen} onPlay={onPlay} />
         ) : tab === 'year' ? (
           <YearSky sessions={sessions} notes={notes} onOpen={onOpen} />
-        ) : tab === 'quotes' ? (
-          <Quotes sessions={sessions} notes={notes} onOpen={onOpen} />
         ) : (
-          <FoundList sessions={sessions} onOpen={onOpen} />
+          <Quotes sessions={sessions} notes={notes} onOpen={onOpen} />
         )}
       </div>
     </section>
@@ -166,6 +164,7 @@ function Quotes({ sessions, notes, onOpen }: { sessions: Session[]; notes: RoadN
 /**
  * 放在一起看: something the counsellor said, next to something you wrote, both picked by you.
  * Nothing is paired for you and there's no arrow between them: it's not a before and after.
+ * Only for looking; a thought it brings goes in through the lamp on the road.
  */
 function Together({ sessions, notes, onClose }: { sessions: Session[]; notes: RoadNote[]; onClose: () => void }) {
   const said = sessions.filter(s => s.quote.trim());
@@ -173,8 +172,7 @@ function Together({ sessions, notes, onClose }: { sessions: Session[]; notes: Ro
     ...sessions.flatMap(s => [
       s.raw && { key: `raw-${s.id}`, text: s.raw, date: s.date },
       s.notes.trim() && { key: `notes-${s.id}`, text: s.notes.trim(), date: s.date },
-      s.takeHome && { key: `home-${s.id}`, text: s.takeHome, date: s.date },
-      ...(s.found ?? []).map(f => ({ key: `found-${f.id}`, text: f.text, date: f.date }))
+      s.takeHome && { key: `home-${s.id}`, text: s.takeHome, date: s.date }
     ]),
     ...notes.filter(n => n.text.trim()).map(n => ({ key: `note-${n.id}`, text: n.text.trim(), date: n.date }))
   ]
@@ -182,16 +180,9 @@ function Together({ sessions, notes, onClose }: { sessions: Session[]; notes: Ro
     .sort((a, b) => a.date.localeCompare(b.date));
   const [left, setLeft] = useState('');
   const [right, setRight] = useState('');
-  const [text, setText] = useState('');
   const l = said.find(s => s.id === left);
   const r = mine.find(m => m.key === right);
   const cut = (t: string) => (t.length > 24 ? `${t.slice(0, 24)}…` : t);
-  const save = async () => {
-    if (!l || !text.trim()) return;
-    await addFound(l.id, text.trim());
-    setText('');
-    onClose();
-  };
   return (
     <div className="together">
       <button className="linkish small" type="button" onClick={onClose}>回到記下的話</button>
@@ -214,29 +205,6 @@ function Together({ sessions, notes, onClose }: { sessions: Session[]; notes: Ro
           {r && <blockquote className="quote small found">{r.text}<small>{long(r.date)}</small></blockquote>}
         </label>
       </div>
-      {l && r && (
-        <div className="compose">
-          <textarea id="together-text" className="field" placeholder="現在回頭看，我想說……（可以不寫）" value={text} onChange={e => setText(e.target.value)} />
-          {text.trim() && <button className="pill sm" type="button" onClick={save}>記成「後來我發現」</button>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** 了解到的事: every 「後來我發現……」, newest first, each with the session it grew out of. */
-function FoundList({ sessions, onOpen }: { sessions: Session[]; onOpen: (s: Session) => void }) {
-  const all = sessions
-    .flatMap(s => (s.found ?? []).map(f => ({ f, s })))
-    .sort((a, b) => b.f.date.localeCompare(a.f.date) || b.f.createdAt - a.f.createdAt);
-  if (!all.length) return <p className="sub">還沒有。過幾天想清楚了，可以在任何一次諮商的紀錄最下面寫「後來我發現……」，會收在這裡。</p>;
-  return (
-    <div className="quotes">
-      {all.map(({ f, s }) => (
-        <button key={f.id} className="quote-row" type="button" onClick={() => onOpen(s)}>
-          <blockquote className="quote small found">{f.text}<small>{long(f.date)} · {short(s.date)} 那次之後想到的</small></blockquote>
-        </button>
-      ))}
     </div>
   );
 }
@@ -354,7 +322,6 @@ export function Detail({ session, n, roadBefore, onEdit, onTopic, onClose }: { s
             <ul className="brought">{starred.map(r => <li key={r.id}>{short(r.date)}　{r.text || WEATHER_NAME[r.weather!]}</li>)}</ul>
           </div>
         )}
-        <FoundSection session={s} />
         <div className="danger">
           {confirm ? (
             <div className="confirm">
@@ -368,44 +335,5 @@ export function Detail({ session, n, roadBefore, onEdit, onTopic, onClose }: { s
         </div>
       </div>
     </section>
-  );
-}
-
-/** 後來我發現……: added days later, once it's been thought over. Never asked for, only offered. */
-function FoundSection({ session }: { session: Session }) {
-  const [text, setText] = useState('');
-  const [open, setOpen] = useState(false);
-  const found = session.found ?? [];
-  const save = async () => {
-    const t = text.trim();
-    if (!t) return;
-    await addFound(session.id, t);
-    setText('');
-    setOpen(false);
-  };
-  return (
-    <div className="found-section">
-      {found.length > 0 && <div className="label">後來我發現</div>}
-      {found.map(f => (
-        <div key={f.id} className="found-row">
-          <p className="notes">{f.text}</p>
-          <small>
-            {long(f.date)}
-            <button className="linkish small" type="button" onClick={() => deleteFound(session.id, f.id)}>刪除</button>
-          </small>
-        </div>
-      ))}
-      {open ? (
-        <div className="compose">
-          <textarea id="found-text" className="field" autoFocus placeholder="後來我發現……" value={text} onChange={e => setText(e.target.value)} />
-          <div className="row-buttons">
-            <button className="pill sm" type="button" onClick={save}>記下來</button>
-            <button className="ghost" type="button" onClick={() => (setText(''), setOpen(false))}>算了</button>
-          </div>
-        </div>
-      ) : (
-        <button className="linkish small" type="button" onClick={() => setOpen(true)}>後來我發現……</button>
-      )}
-    </div>
   );
 }

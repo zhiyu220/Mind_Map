@@ -17,6 +17,7 @@ import { WeatherPicker } from './components/Weather';
 import Settings, { NextSessionField } from './components/Settings';
 import Lock from './components/Lock';
 import Prep from './components/Prep';
+import { JarSheet, LampSheet } from './components/Lamp';
 import { ToastProvider, useToast } from './components/Toast';
 
 type View =
@@ -26,6 +27,9 @@ type View =
   | { kind: 'road'; after: string | null; quick?: boolean }
   // after recording today: "下次是 10/28（週二）嗎？"
   | { kind: 'askNext'; date: string; done: boolean }
+  // the lamp (write down what just made sense) and the jar at the start (where those are kept)
+  | { kind: 'lamp' }
+  | { kind: 'jar' }
   | { kind: 'book' }
   | { kind: 'detail'; id: string }
   | { kind: 'settings' }
@@ -54,6 +58,7 @@ function Main() {
   const [view, setView] = useState<View | null>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [lineIdx, setLineIdx] = useState<number | null>(null);
+  const [lampLit, setLampLit] = useState(false);
   const [today, setToday] = useState(todayKey);
   // 全部紀錄 remembers which tab and topic you were on while you look at one session
   const [bookTab, setBookTab] = useState<BookTab>('all');
@@ -281,6 +286,21 @@ function Main() {
         </div>
       </>
     );
+  } else if (view?.kind === 'lamp') {
+    sheet = (
+      <LampSheet
+        sessions={sessions}
+        onClose={close}
+        onSaved={() => {
+          close();
+          setLampLit(true);
+          setTimeout(() => setLampLit(false), 1600);
+          say('放進罐子了');
+        }}
+      />
+    );
+  } else if (view?.kind === 'jar') {
+    sheet = <JarSheet sessions={sessions} onClose={close} />;
   } else if (view?.kind === 'prep') {
     sheet = (
       <Prep
@@ -309,6 +329,9 @@ function Main() {
         onOpenRoad={after => setView({ kind: 'road', after, quick: after === current })}
         onNextSign={() => setView({ kind: 'next' })}
         look={settings.walker ?? 'girl'}
+        onLamp={() => setView({ kind: 'lamp' })}
+        lampLit={lampLit}
+        onJar={() => setView({ kind: 'jar' })}
       />
       {/* snow, petals, leaves or fireflies, in front of the land; they let taps through */}
       <div dangerouslySetInnerHTML={{ __html: SEASON_FX }} style={{ display: 'contents' }} />
