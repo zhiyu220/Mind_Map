@@ -60,6 +60,8 @@ export default defineConfig({
     })
   ],
   test: {
-    include: ['src/**/*.test.ts']
+    include: ['src/**/*.test.ts'],
+    // an in-memory IndexedDB, so the data layer (src/db.ts, store, backup) can be tested
+    setupFiles: ['fake-indexeddb/auto']
   }
 });
