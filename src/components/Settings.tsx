@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Settings as S } from '../types';
 import { saveSettings } from '../db';
 import { addDays, long, short, toKey, todayKey } from '../lib/dates';
-import { Helplines } from './Talk';
+import Helplines from './Helplines';
 import { hashPin } from '../lib/pin';
 import { canUseFaceId, checkFaceId, setUpFaceId } from '../lib/faceid';
 import { BACKUP_NAME, BadBackup, beforeRestoreAt, compareBackup, lastExport, makeBackup, openBackup, readBackup, recordExport, restoreBackup, shareOrDownload, undoRestore, type Backup } from '../lib/backup';
@@ -36,7 +36,7 @@ export function NextSessionField({ value, onDone }: { value?: string; onDone?: (
   );
 }
 
-export default function Settings({ settings, onClose, onTalk }: { settings: S; onClose: () => void; onTalk?: () => void }) {
+export default function Settings({ settings, onClose }: { settings: S; onClose: () => void }) {
   const say = useToast();
   const [spotify, setSpotify] = useState<boolean | null>(null);
   const [reconnect, setReconnect] = useState(false);
@@ -230,7 +230,6 @@ export default function Settings({ settings, onClose, onTalk }: { settings: S; o
         <div className="group">
           <h3>需要有人說說話的時候</h3>
           <Helplines />
-          {onTalk && <button className="linkish small" type="button" onClick={onTalk}>想說話的時候：放上我的人、可以去的地方</button>}
         </div>
 
         <p className="tiny version">Mind Map {__APP_VERSION__}{__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}</p>

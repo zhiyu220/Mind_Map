@@ -1,4 +1,4 @@
-import { db, getKV, getSettings, setKV } from '../db';
+import { db, getKV, getSettings, setKV, withoutRetired } from '../db';
 import { tidyRoad } from './store';
 import type { Practice, RoadNote, Session, Settings } from '../types';
 import { WEATHERS } from '../types';
@@ -152,7 +152,7 @@ async function replaceAll(data: Backup) {
     await db.sessions.bulkAdd(data.sessions);
     await db.notes.bulkAdd(data.notes);
     await db.practices.bulkAdd(data.practices ?? []);
-    await db.kv.put({ key: 'settings', value: { ...data.settings, pinHash: cur.pinHash, faceId: cur.faceId } });
+    await db.kv.put({ key: 'settings', value: { ...withoutRetired(data.settings), pinHash: cur.pinHash, faceId: cur.faceId } });
   });
   // backups from before the stretches were kept in order may carry notes on the wrong stretch
   await tidyRoad();

@@ -17,7 +17,6 @@ import { WeatherPicker } from './components/Weather';
 import Settings, { NextSessionField } from './components/Settings';
 import Lock from './components/Lock';
 import Prep from './components/Prep';
-import Talk from './components/Talk';
 import { ToastProvider, useToast } from './components/Toast';
 
 type View =
@@ -32,8 +31,6 @@ type View =
   | { kind: 'settings' }
   | { kind: 'next' }
   | { kind: 'prep' }
-  // 想說話的時候; back is where to return
-  | { kind: 'talk'; back: View | null }
   | { kind: 'song'; song: Song; back: View | null };
 
 const RELOCK_AFTER = 60_000;
@@ -210,7 +207,7 @@ function Main() {
   } else if (view?.kind === 'road') {
     const i = sessions.findIndex(s => s.id === view.after);
     const title = view.after ? `路上 · ${short(sessions[i].date)} 之後` : sessions.length ? '路上 · 第一次之前' : '路上 · 出發之前';
-    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} practices={practices} onPlay={play} onTalk={() => setView({ kind: 'talk', back: view })} onClose={close} />;
+    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} practices={practices} onPlay={play} onClose={close} />;
   } else if (view?.kind === 'book') {
     sheet = (
       <Book
@@ -242,10 +239,7 @@ function Main() {
         />
       );
   } else if (view?.kind === 'settings') {
-    sheet = <Settings settings={settings} onClose={() => setView({ kind: 'book' })} onTalk={() => setView({ kind: 'talk', back: view })} />;
-  } else if (view?.kind === 'talk') {
-    const back = view.back;
-    sheet = <Talk settings={settings} onClose={() => setView(back)} />;
+    sheet = <Settings settings={settings} onClose={() => setView({ kind: 'book' })} />;
   } else if (view?.kind === 'song') {
     const { song, back } = view;
     sheet = (

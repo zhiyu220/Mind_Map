@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { afterMiss, hashPin, loadTries, saveTries } from '../lib/pin';
 import { checkFaceId } from '../lib/faceid';
-import { Helplines } from './Talk';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
 
@@ -10,8 +9,6 @@ export default function Lock({ pinHash, faceId, onUnlock }: { pinHash: string; f
   const [wrong, setWrong] = useState(false);
   const [tries, setTries] = useState(loadTries);
   const [now, setNow] = useState(Date.now);
-  // the helplines are reachable even when the PIN is forgotten; nothing personal is shown here
-  const [help, setHelp] = useState(false);
   const waitFor = Math.max(0, Math.ceil((tries.until - now) / 1000));
 
   const face = async () => {
@@ -66,13 +63,6 @@ export default function Lock({ pinHash, faceId, onUnlock }: { pinHash: string; f
       </div>
       {faceId && (
         <button className="pill sm" type="button" onClick={face}>用 Face ID 解鎖</button>
-      )}
-      <button className="linkish small" type="button" onClick={() => setHelp(true)}>需要有人說說話</button>
-      {help && (
-        <div className="lock-help" role="dialog" aria-label="專線">
-          <Helplines />
-          <button className="ghost" type="button" onClick={() => setHelp(false)}>關閉</button>
-        </div>
       )}
     </section>
   );

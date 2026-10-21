@@ -18,13 +18,11 @@ interface Props {
   quick?: boolean;
   practices: Practice[];
   onPlay: (s: Song) => void;
-  /** 想說話的時候, always in the same corner, never lit up by what you write */
-  onTalk: () => void;
   onClose: () => void;
 }
 
 /** The dashed dot: things that happened between two sessions. */
-export default function RoadSheet({ title, after, notes, writable, quick, practices, onPlay, onTalk, onClose }: Props) {
+export default function RoadSheet({ title, after, notes, writable, quick, practices, onPlay, onClose }: Props) {
   const say = useToast();
   const [text, setText] = useState('');
   const [w, setW] = useState<Weather | null>(null);
@@ -97,7 +95,6 @@ export default function RoadSheet({ title, after, notes, writable, quick, practi
     <section className="sheet" role="dialog" aria-label="路上">
       <div className="sheet-head">
         <button className="ghost" type="button" onClick={onClose}>關閉</button>
-        <button className="ghost" type="button" onClick={onTalk}>想說話的時候</button>
       </div>
       <div className="sheet-body">
         <h2 className="q">{title}</h2>
