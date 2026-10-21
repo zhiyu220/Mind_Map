@@ -35,6 +35,7 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
         <div>
           {c && <div className="label">{c.big === '就是今天' ? '今天' : c.big} · {c.small}</div>}
           <h2 className="q" style={{ marginTop: 4 }}>去說說話之前</h2>
+          <p className="sub" style={{ margin: "8px 0 0" }}>打開背包看看。不用全部說，挑一個就好。</p>
         </div>
 
         {quoted && (
@@ -52,14 +53,8 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
         )}
 
         <div className="prep-box">
-          <div className="label prep-head">
-            想帶去說的
-            {starred.length > 0 && (
-              <span className="prep-count" aria-label={`${starred.length} 件`}>
-                <svg aria-hidden="true"><use href="#i-star" /></svg>{starred.length}
-              </span>
-            )}
-          </div>
+          {/* no count: a number makes it feel like a list still to get through */}
+          <div className="label">背包裡想帶去說的</div>
           {starred.length ? (
             <ul className="brought prep-list">
               {starred.map(n => (
@@ -100,12 +95,13 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
 
         {tried.length > 0 && (
           <div className="prep-box">
-            <div className="label">想練習的事</div>
+            <div className="label">想練習的事 · 試的時候發生了什麼？</div>
             <ul className="brought">
               {tried.map(({ p, tries }) => (
                 <li key={p.id} className="prep-practice">
                   <span>{p.text}</span>
-                  <Sprouts tries={tries} />
+                  {/* only the latest sprout: not a record of how often, just that you tried */}
+                  <Sprouts tries={tries.slice(-1)} />
                 </li>
               ))}
             </ul>

@@ -214,6 +214,15 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
 .sheet-body.talk { gap: 12px; }
 .person-row { display: grid; gap: 6px; padding-bottom: 10px; border-bottom: 1.5px dashed var(--sheet-line); }
 .lock-help { position: fixed; inset: auto 0 0 0; background: var(--sheet); color: var(--sheet-ink); border-top: 2.5px solid var(--ink); border-radius: 26px 26px 0 0; padding: 22px 22px calc(26px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; }
+.restore-compare { display: grid; gap: 8px; }
+.restore-compare small { display: block; font-size: 13px; color: var(--sheet-soft); }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.compare > div { background: var(--paper); border: 1.5px solid var(--sheet-line); border-radius: 14px; padding: 8px 10px; }
+.together { display: grid; gap: 12px; }
+.together .compare { grid-template-columns: 1fr; }
+.together label { display: grid; gap: 6px; }
+.together small { font-size: 13px; color: var(--sheet-soft); }
+@media (min-width: 560px) { .together .compare { grid-template-columns: 1fr 1fr; } }
 .saved-note { text-align: center; font-size: 13px; color: var(--sheet-soft); margin-bottom: -6px; }
 .ask-weather { display: grid; justify-items: center; gap: 6px; margin-top: 2px; }
 .ask-weather small { font-size: 13px; color: var(--sheet-soft); }
@@ -514,9 +523,6 @@ img.cover { object-fit: cover; }
 :root[data-theme="dark"] .prep-box { background: color-mix(in srgb, var(--sheet) 82%, #ffffff); }
 .prep-box .brought, .prep-box .prep-weather, .prep-box .quote { margin-top: 0; }
 .prep-box > .linkish { margin-top: 2px; }
-.prep-head { display: flex; align-items: center; justify-content: space-between; }
-.prep-count { display: inline-flex; align-items: center; gap: 3px; color: #d79a00; font-variant-numeric: tabular-nums; --star-fill: var(--sun); }
-.prep-count svg { width: 16px; height: 16px; }
 /* date in its own column, so a long line wraps under its words, not under the date */
 .prep-list li { display: grid; grid-template-columns: 3.4em 1fr; gap: 8px; align-items: baseline; }
 .prep-list li > span:last-child { white-space: pre-wrap; overflow-wrap: anywhere; }
