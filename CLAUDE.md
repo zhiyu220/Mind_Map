@@ -35,4 +35,5 @@
 ## 不要動的東西
 - 資料庫名稱和儲存用的 key 都還是 `my-sky`（`src/db.ts`、`src/lib/pin.ts`、備份格式裡的 `app: 'my-sky'`）。改了會讓使用者的紀錄、密碼和舊備份讀不到。
 - 改資料表要加新的 Dexie 版本（`db.version(n)`），不要改舊版本的定義。
-- 備份裡不能放 `pinHash` 和 `faceId`。
+- 備份裡不能放 `pinHash`、`faceId` 和 kv 裡的 `lockbox`（解開手機紀錄的鑰匙）。
+- 設了密碼時，紀錄經過 `src/lib/seal.ts` 加密存放。新增 Dexie 索引時，那個欄位要加進 `OPEN_FIELDS`（加密的欄位不能當索引）。

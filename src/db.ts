@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Practice, RoadNote, Session, Settings } from './types';
+import { sealing } from './lib/seal';
 
 interface KV {
   key: string;
@@ -19,6 +20,8 @@ db.version(1).stores({
   kv: 'key'
 });
 db.version(2).stores({ practices: 'id, createdAt' });
+// with a PIN set, records are sealed on the way in and opened on the way out (src/lib/seal.ts)
+db.use(sealing);
 
 export const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
