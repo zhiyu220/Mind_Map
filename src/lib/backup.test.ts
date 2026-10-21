@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { db, getSettings, saveSettings } from '../db';
+import { db, dropRetiredSettings, getSettings, saveSettings } from '../db';
 import { BACKUP_NAME, BadBackup, beforeRestoreAt, compareBackup, lastExport, makeBackup, openBackup, readBackup, recordExport, restoreBackup, undoRestore, type Backup } from './backup';
 import { unseal } from './crypto';
 import { addFound, addNote, addPractice, addSession } from './store';
@@ -40,10 +40,9 @@ describe('backups', () => {
     expect((await getSettings()).nextSession).toBe('2026-10-28');
   });
 
-  it('carries what 3.0 adds: the first feelings, 後來我發現 and 我的人', async () => {
+  it('carries the first feelings and 後來我發現, and leaves 我的人 behind', async () => {
     const s = await addSession({ ...blank, raw: '有點亂', takeHome: '慢慢來', leave: '媽媽的事', bringLeave: true }, true, '2026-09-03');
     await addFound(s.id, '原來我在等別人先開口', '2026-09-10');
-    await saveSettings({ people: [{ name: '小安', phone: '0912345678', via: 'sms' }], places: '去河邊騎車' });
     const before = await snapshot();
     const sealed = JSON.parse(await (await makeBackup('pw')).text());
     await db.delete();
@@ -53,7 +52,20 @@ describe('backups', () => {
     const back = (await db.sessions.get(s.id))!;
     expect(back.raw).toBe('有點亂');
     expect(back.found?.map(f => f.text)).toEqual(['原來我在等別人先開口']);
-    expect((await getSettings()).people?.[0].name).toBe('小安');
+
+    // a 2.0.0 backup still holding 想說話的時候 restores without the names and numbers
+    const old = { ...oldBackup([ses('a', '2026-09-03')]), settings: { customTopics: [], people: [{ name: '小安', phone: '0912', via: 'sms' }], places: '河邊' } };
+    const read = await readBackup(asFile(old));
+    if (read.locked) throw new Error('should be unlocked');
+    await restoreBackup(read.data);
+    const kept = (await db.kv.get('settings'))!.value as Record<string, unknown>;
+    expect('people' in kept || 'places' in kept).toBe(false);
+  });
+
+  it('clears what 想說話的時候 left on the phone', async () => {
+    await db.kv.put({ key: 'settings', value: { customTopics: ['貓'], people: [{ name: '小安', phone: '0912', via: 'sms' }], places: '河邊' } });
+    await dropRetiredSettings();
+    expect((await db.kv.get('settings'))!.value).toEqual({ customTopics: ['貓'] });
   });
 
   it('never carries the PIN or Face ID, and keeps the ones on this phone', async () => {

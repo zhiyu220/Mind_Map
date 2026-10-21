@@ -34,6 +34,20 @@ export async function saveSettings(patch: Partial<Settings>) {
   await db.kv.put({ key: 'settings', value: { ...cur, ...patch } });
 }
 
+// Settings of features that were taken out. Their data goes too: people's names and phone numbers
+// (from 想說話的時候, removed in 2.0.1) shouldn't stay on the phone or in backups once unused.
+export const RETIRED_SETTINGS = ['people', 'places'];
+
+export const withoutRetired = (value: object) =>
+  Object.fromEntries(Object.entries(value).filter(([k]) => !RETIRED_SETTINGS.includes(k)));
+
+/** Once on start: clears what removed features left in the settings. */
+export async function dropRetiredSettings() {
+  const row = await db.kv.get('settings');
+  const value = row?.value as Record<string, unknown> | undefined;
+  if (value && RETIRED_SETTINGS.some(k => k in value)) await db.kv.put({ key: 'settings', value: withoutRetired(value) });
+}
+
 export async function getKV<T>(key: string): Promise<T | undefined> {
   return (await db.kv.get(key))?.value as T | undefined;
 }

@@ -12,6 +12,8 @@ const BLEED = 400;
 export const pathY = (x: number) => 418 + 9 * Math.sin(x / 95);
 export const groundY = (x: number) => 360 + 12 * Math.sin(x / 140 + 1);
 const hillY = (x: number) => 292 + 26 * Math.sin(x / 230) + 12 * Math.sin(x / 83 + 2);
+/** Where the house at the start stands on the hill (its doorstep). */
+export const houseBase = () => ({ x: HOUSE_X, y: hillY(HOUSE_X) + 6 });
 
 // Milestones: the road changes as you go. Not rewards, just how far you've come.
 export const BENCH_AT = 10; // a bench by the road

@@ -3,7 +3,7 @@ import type { RoadNote, Session, Song } from '../types';
 import { WEATHER_NAME } from '../types';
 import { SongChip } from './SongPicker';
 import { long, short } from '../lib/dates';
-import { AHEAD, blob, groundY, H, landMarkup, HOUSE_X, pathY, STEP, X0 } from '../lib/scenery';
+import { AHEAD, blob, groundY, H, HOUSE_X, houseBase, landMarkup, pathY, STEP, X0 } from '../lib/scenery';
 
 interface Props {
   sessions: Session[];
@@ -14,13 +14,19 @@ interface Props {
   onNextSign: () => void;
   onPlay: (s: Song) => void;
   look: 'girl' | 'boy';
+  /** the lamp by the walker: write down something that just made sense */
+  onLamp: () => void;
+  /** lit for a moment right after something was put in the jar */
+  lampLit: boolean;
+  /** the jar by the house at the start, holding every 後來我發現 */
+  onJar: () => void;
 }
 
 type Picked = { kind: 'session'; i: number } | { kind: 'road'; after: string | null; x: number };
 
 const dotX = (i: number) => X0 + i * STEP;
 
-export default function Landscape({ sessions, notes, nextSession, onOpenSession, onOpenRoad, onNextSign, onPlay, look }: Props) {
+export default function Landscape({ sessions, notes, nextSession, onOpenSession, onOpenRoad, onNextSign, onPlay, look, onLamp, lampLit, onJar }: Props) {
   const N = sessions.length;
   const walkerX = N ? dotX(N - 1) : X0 - 50;
   // the land always reaches past the right edge of the screen, even with only a few dots
@@ -131,6 +137,7 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
           <g dangerouslySetInnerHTML={{ __html: land.back }} />
 
           {sign(HOUSE_X, '起點', 50)}
+          <Jar lights={sessions.reduce((k, s) => k + (s.found?.length ?? 0), 0)} onOpen={onJar} />
           {sign(walkerX + 200, nextSession ? '下次' : '下次？', nextSession ? 50 : 60, onNextSign, nextSession ? `下次 ${short(nextSession)}` : '下次？')}
 
           {pastRoads.map(r => {
@@ -169,6 +176,7 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
             );
           })}
 
+          {N > 0 && <Lamp x={walkerX - 62} lit={lampLit} onOpen={onLamp} />}
           <Walker x={walkerX} look={look} />
 
           <g dangerouslySetInnerHTML={{ __html: land.front }} />
@@ -208,6 +216,46 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
 
 /** The walker, side on, facing the road ahead. Clothes follow the season (styles.css sets the colours,
  *  .s-* and .no-* pieces show only in their season); `look` picks the girl or the boy. */
+/** The lamp: always the same, whatever you've written; it only glows for a moment after you put something away. */
+function Lamp({ x, lit, onOpen }: { x: number; lit: boolean; onOpen: () => void }) {
+  const y = pathY(x) - 22;
+  return (
+    <g className={`hit lamp${lit ? ' lit' : ''}`} tabIndex={0} role="button" aria-label="路燈：突然想通什麼，點一下寫下來"
+      onClick={e => (e.stopPropagation(), onOpen())} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onOpen()}>
+      <rect x={x - 22} y={y - 112} width="44" height="118" fill="transparent" />
+      <circle className="lamp-halo" cx={x} cy={y - 92} r="22" fill="var(--lamp-glow)" />
+      <g stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round">
+        <path d={`M${x} ${y} V${y - 80}`} stroke="var(--ink)" strokeWidth="6" />
+        <path d={`M${x} ${y} V${y - 80}`} stroke="var(--fence)" strokeWidth="2.5" />
+        <path d={`M${x - 7} ${y} h14`} />
+        <rect x={x - 8} y={y - 101} width="16" height="19" rx="3" fill="var(--lamp-glass)" />
+        <path d={`M${x - 11} ${y - 101} L${x} ${y - 110} L${x + 11} ${y - 101} Z`} fill="var(--roof)" />
+      </g>
+    </g>
+  );
+}
+
+/** The jar by the house at the start. Its lights pile up into a glow; it never says how many. */
+function Jar({ lights, onOpen }: { lights: number; onOpen: () => void }) {
+  const { x: hx, y: hy } = houseBase();
+  const x = hx + 33, y = hy;
+  const spots: [number, number][] = [[-3, -6], [3, -9], [-1, -13], [4, -4], [-4, -11], [1, -7], [3, -14], [-3, -3], [0, -10]];
+  return (
+    <g className="hit" tabIndex={0} role="button" aria-label="起點的玻璃罐，點一下打開"
+      onClick={e => (e.stopPropagation(), onOpen())} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onOpen()}>
+      <circle cx={x} cy={y - 10} r="22" fill="transparent" />
+      {lights > 0 && <circle cx={x} cy={y - 9} r="10" fill="var(--lamp-glow)" />}
+      <g stroke="var(--ink)" strokeWidth="2" strokeLinejoin="round">
+        <path d={`M${x - 7} ${y - 17} C ${x - 10} ${y - 12}, ${x - 10} ${y - 2}, ${x - 7} ${y} H${x + 7} C ${x + 10} ${y - 2}, ${x + 10} ${y - 12}, ${x + 7} ${y - 17} Z`} fill="var(--paper)" fillOpacity=".55" />
+        <rect x={x - 6} y={y - 21} width="12" height="4" rx="1.5" fill="var(--trunk)" />
+      </g>
+      {spots.slice(0, Math.min(lights, spots.length)).map(([dx, dy], i) => (
+        <circle key={i} cx={x + dx} cy={y + dy} r="1.8" fill="#ffd95a" />
+      ))}
+    </g>
+  );
+}
+
 function Walker({ x, look }: { x: number; look: 'girl' | 'boy' }) {
   const girl = look === 'girl';
   // limbs are an ink stroke with a narrower colour stroke on top, so they read as outlined shapes
