@@ -52,3 +52,27 @@ export function countdown(today: string, next?: string): { big: string; small: s
   if (k === 1) return { big: '還有 1 天', small: `明天，${when}` };
   return { big: `還有 ${k} 天`, small: when };
 }
+
+/** key + n days */
+export function addDays(key: string, n: number): string {
+  const d = fromKey(key);
+  d.setDate(d.getDate() + n);
+  return toKey(d);
+}
+
+/**
+ * A guess at the next session from the gap between the last two (dates oldest first), only to ask
+ * about: "下次是 10/28 嗎？". Null when there's nothing sensible to guess.
+ */
+export function guessNext(dates: string[], today: string): string | null {
+  if (dates.length < 2) return null;
+  const [prev, last] = dates.slice(-2);
+  const gap = daysBetween(prev, last);
+  if (gap < 1 || gap > 42) return null;
+  let next = addDays(last, gap);
+  while (next <= today) next = addDays(next, gap);
+  return next;
+}
+
+/** The next-session date as the app shows it: one more than 3 days gone is treated as not set. */
+export const upcoming = (next: string | undefined, today: string) => (next && daysBetween(today, next) >= -3 ? next : undefined);
