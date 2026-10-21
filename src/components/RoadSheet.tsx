@@ -3,6 +3,7 @@ import type { Practice, RoadNote, Song, Weather } from '../types';
 import { WEATHER_NAME } from '../types';
 import { short, todayKey } from '../lib/dates';
 import { addNote, deleteNote, toggleStar, updateNote } from '../lib/store';
+import { focusInPlace } from '../lib/viewport';
 import { StarIcon, WeatherIcon, WeatherPicker } from './Weather';
 import { useToast } from './Toast';
 import SongPicker, { SongChip } from './SongPicker';
@@ -102,7 +103,7 @@ export default function RoadSheet({ title, after, notes, writable, quick, practi
           <>
             <p className="sub">兩次諮商之間的事。一句話、只點天氣，都可以。以前的事也能補記，選那天的日期，就會放到那段路上。</p>
             <div className="compose">
-              <textarea id="road-text" className="field" placeholder="發生了什麼，或想到什麼" value={text} onChange={e => setText(e.target.value)} autoFocus={quick} />
+              <textarea id="road-text" className="field" placeholder="發生了什麼，或想到什麼" value={text} onChange={e => setText(e.target.value)} ref={quick ? focusInPlace : undefined} />
               <WeatherPicker small value={w} onChange={setW} />
               <NoteSong value={song} onChange={setSong} />
               <label className="date-row">

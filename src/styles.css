@@ -237,7 +237,7 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
 .big small { display: block; font-size: 13px; color: var(--sheet-soft); }
 @keyframes rise { from { transform: translateY(100%); } }
 
-.sheet { position: absolute; inset: 0; z-index: 20; background: var(--sheet); color: var(--sheet-ink); display: flex; flex-direction: column; animation: rise .32s ease-out; }
+.sheet { position: absolute; inset: 0; top: var(--seen-top, 0px); bottom: auto; height: var(--seen-h, 100%); z-index: 20; background: var(--sheet); color: var(--sheet-ink); display: flex; flex-direction: column; animation: rise .32s ease-out; }
 .sheet-head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px));
@@ -280,7 +280,7 @@ textarea.field { min-height: 150px; }
 /* iOS Safari gives date inputs a built-in minimum width that ignores width: 100% and pushes the page sideways */
 input[type="date"].field { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; min-height: 52px; text-align: left; }
 input[type="date"].field::-webkit-date-and-time-value { text-align: left; }
-textarea.field.tall { min-height: 260px; }
+textarea.field.tall { min-height: min(260px, calc(var(--seen-h, 100vh) * .35)); }
 
 .search { position: relative; }
 .search svg { position: absolute; left: 14px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: #7a8491; }
