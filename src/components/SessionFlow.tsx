@@ -5,12 +5,12 @@ import { headerDate, todayKey } from '../lib/dates';
 import { WeatherPicker } from './Weather';
 import SongPicker from './SongPicker';
 
-export type Draft = Pick<Session, 'moods' | 'topics' | 'quote' | 'notes'> & { weather: Weather | null; song?: Song; date?: string };
+export type Draft = Pick<Session, 'moods' | 'topics' | 'quote' | 'notes' | 'raw' | 'takeHome' | 'leave' | 'bringLeave'> & { weather: Weather | null; song?: Song; date?: string };
 
 /** today: a new record for today; past: filling in an earlier session; edit: changing one */
 export type FlowMode = 'today' | 'past' | 'edit';
 
-const STEPS = ['weather', 'mood', 'topic', 'quote', 'notes', 'song'] as const;
+const STEPS = ['weather', 'mood', 'topic', 'quote', 'notes', 'song', 'closing'] as const;
 const DATED_STEPS = ['date', ...STEPS] as const;
 const DRAFT_KEY = 'my-sky:draft';
 
@@ -106,6 +106,13 @@ export default function SessionFlow({ initial, mode, takenDates = [], customTopi
             <h2 className="q">{past ? '那天的天氣是？' : '今天的天氣是？'}</h2>
             <p className="sub">選一個最接近的就好。</p>
             <WeatherPicker value={d.weather} onChange={w => set({ weather: w })} />
+            {/* right after the session, before thinking it over: as it is, no tidying up */}
+            {!past && (
+              <label className="raw">
+                <span>剛走出來，現在的感受</span>
+                <textarea id="raw" className="field" placeholder="不用整理，想到什麼就寫。也可以按鍵盤的麥克風用說的。" value={d.raw ?? ''} onChange={e => set({ raw: e.target.value })} />
+              </label>
+            )}
           </>
         )}
         {k === 'mood' && (
@@ -170,10 +177,38 @@ export default function SessionFlow({ initial, mode, takenDates = [], customTopi
             <SongPicker value={d.song} onChange={song => set({ song })} />
           </>
         )}
+        {k === 'closing' && (
+          <>
+            <h2 className="q">帶走一句，留下一句</h2>
+            <p className="sub">一句就好，也可以都不寫。</p>
+            <label className="raw">
+              <span>今天想帶回家的一句</span>
+              <input id="take-home" className="field" value={d.takeHome ?? ''} onChange={e => set({ takeHome: e.target.value })} />
+            </label>
+            <label className="raw">
+              <span>今天先留在諮商室的</span>
+              <input id="leave" className="field" value={d.leave ?? ''} onChange={e => set({ leave: e.target.value })} />
+            </label>
+            {/* what stays in the room stays there, unless you choose to bring it next time */}
+            {d.leave?.trim() && (
+              <label className="toggle">
+                <input type="checkbox" checked={!!d.bringLeave} onChange={e => set({ bringLeave: e.target.checked || undefined })} />
+                <span>下次要帶去嗎？<small>勾了，下次「去說說話之前」會放這一句。</small></span>
+              </label>
+            )}
+          </>
+        )}
       </div>
 
       <div className="sheet-foot">
-        {k === 'weather' || k === 'date' ? <span /> : <button className="ghost" type="button" onClick={next}>跳過</button>}
+        {k === 'date' ? (
+          <span />
+        ) : k === 'weather' ? (
+          // only the weather is needed: once it's chosen, that's a whole record, not an unfinished one
+          d.weather && !editing ? <button className="ghost" type="button" onClick={() => save(true)}>這樣就好</button> : <span />
+        ) : (
+          <button className="ghost" type="button" onClick={next}>跳過</button>
+        )}
         <button className="pill" type="button" disabled={!canGo} onClick={next}>
           {last ? '完成' : '下一題'}
         </button>

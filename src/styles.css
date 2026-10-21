@@ -186,6 +186,10 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
 
 .toast { position: absolute; left: 50%; bottom: calc(110px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 8px); opacity: 0; transition: .3s; z-index: 40; background: var(--paper); color: #2c3a4b; border: 2px solid var(--ink); padding: 8px 16px; border-radius: 999px; font-size: 14px; width: max-content; max-width: calc(100% - 40px); text-align: center; pointer-events: none; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+/* with 收回 the toast takes taps, but only while it shows */
+.toast.with-undo { display: flex; align-items: center; gap: 12px; }
+.toast.with-undo.show { pointer-events: auto; }
+.toast button { border: 0; background: none; padding: 2px 0; color: #2c3a4b; text-decoration: underline; text-underline-offset: 3px; font-size: 14px; }
 
 /* ---------- sheets ---------- */
 .scrim { position: absolute; inset: 0; z-index: 10; background: rgba(20, 30, 50, .28); }
@@ -201,6 +205,29 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
 .countdown span { font-size: 16px; color: var(--sheet-soft); }
 .change-date { font-size: 13px; color: var(--sheet-soft); margin: 6px 0 -4px; }
 .ask h3 { margin: 0 0 4px; font-size: 22px; font-weight: 400; text-align: center; }
+.raw { display: grid; gap: 6px; margin-top: 14px; font-size: 15px; }
+.raw span { color: var(--sheet-ink); }
+.found-section { display: grid; gap: 8px; }
+.found-row { display: grid; gap: 2px; }
+.found-row small { display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--sheet-soft); }
+.quote.found { border-left-color: var(--w-partly); }
+.sheet-body.talk { gap: 12px; }
+.person-row { display: grid; gap: 6px; padding-bottom: 10px; border-bottom: 1.5px dashed var(--sheet-line); }
+.lock-help { position: fixed; inset: auto 0 0 0; background: var(--sheet); color: var(--sheet-ink); border-top: 2.5px solid var(--ink); border-radius: 26px 26px 0 0; padding: 22px 22px calc(26px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; }
+.restore-compare { display: grid; gap: 8px; }
+.restore-compare small { display: block; font-size: 13px; color: var(--sheet-soft); }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.compare > div { background: var(--paper); border: 1.5px solid var(--sheet-line); border-radius: 14px; padding: 8px 10px; }
+.together { display: grid; gap: 12px; }
+.together .compare { grid-template-columns: 1fr; }
+.together label { display: grid; gap: 6px; }
+.together small { font-size: 13px; color: var(--sheet-soft); }
+@media (min-width: 560px) { .together .compare { grid-template-columns: 1fr 1fr; } }
+.saved-note { text-align: center; font-size: 13px; color: var(--sheet-soft); margin-bottom: -6px; }
+.ask-weather { display: grid; justify-items: center; gap: 6px; margin-top: 2px; }
+.ask-weather small { font-size: 13px; color: var(--sheet-soft); }
+.row-buttons.even { justify-content: center; }
+.row-buttons.even .pill { min-width: 120px; }
 .big { display: flex; align-items: center; gap: 14px; width: 100%; max-width: 480px; margin: 0 auto; border: 2.5px solid var(--ink); background: var(--chip); border-radius: 20px; padding: 14px 18px; text-align: left; font-size: 18px; color: var(--sheet-ink); }
 .big svg { width: 40px; height: 40px; flex: none; }
 .big small { display: block; font-size: 13px; color: var(--sheet-soft); }
@@ -239,7 +266,8 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
 .chip { border: 2px solid var(--ink); background: var(--chip); color: var(--sheet-ink); border-radius: 999px; padding: 7px 15px; font-size: 16px; }
 .chip[aria-pressed="true"] { background: var(--chip-on); color: #1f2d3d; }
 .chip.add { border-style: dashed; background: transparent; }
-.addrow { display: flex; gap: 8px; }
+.addrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.quick-dates { display: flex; gap: 8px; flex-basis: 100%; }
 .addrow input { flex: 1; min-width: 0; }
 
 .field { width: 100%; border: 2px solid var(--sheet-line); background: var(--paper); color: #2c3a4b; border-radius: 18px; padding: 14px 16px; font-size: 17px; line-height: 1.7; resize: none; }
@@ -411,7 +439,9 @@ img.cover { object-fit: cover; }
 .sub.center { text-align: center; margin-top: -6px; }
 
 /* 全部紀錄 tabs and 每月回顧 */
-.tabs-row { display: flex; gap: 6px; background: var(--chip); border-radius: 999px; padding: 4px; align-self: flex-start; }
+.tabs-row { display: flex; gap: 6px; background: var(--chip); border-radius: 999px; padding: 4px; align-self: flex-start; max-width: 100%; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+.tabs-row::-webkit-scrollbar { display: none; }
+.tabs-row button { flex: none; }
 .tabs-row button { border: 0; background: none; border-radius: 999px; padding: 6px 12px; font-size: 15px; color: var(--sheet-soft); white-space: nowrap; }
 .tabs-row button[aria-selected="true"] { background: var(--paper); color: #2c3a4b; box-shadow: 0 1px 0 var(--sheet-line); }
 .months { display: grid; gap: 18px; }
@@ -493,9 +523,6 @@ img.cover { object-fit: cover; }
 :root[data-theme="dark"] .prep-box { background: color-mix(in srgb, var(--sheet) 82%, #ffffff); }
 .prep-box .brought, .prep-box .prep-weather, .prep-box .quote { margin-top: 0; }
 .prep-box > .linkish { margin-top: 2px; }
-.prep-head { display: flex; align-items: center; justify-content: space-between; }
-.prep-count { display: inline-flex; align-items: center; gap: 3px; color: #d79a00; font-variant-numeric: tabular-nums; --star-fill: var(--sun); }
-.prep-count svg { width: 16px; height: 16px; }
 /* date in its own column, so a long line wraps under its words, not under the date */
 .prep-list li { display: grid; grid-template-columns: 3.4em 1fr; gap: 8px; align-items: baseline; }
 .prep-list li > span:last-child { white-space: pre-wrap; overflow-wrap: anywhere; }

@@ -101,11 +101,12 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
   };
   const isOn = (p: Picked) => !!picked && JSON.stringify(picked) === JSON.stringify(p);
 
-  const sign = (x: number, text: string, w: number, onClick?: () => void) => {
+  // the signs carry just a word; the dates live in the line at the top and the sheets (and the label below)
+  const sign = (x: number, text: string, w: number, onClick?: () => void, label = text) => {
     const y = groundY(x) + 6;
     return (
       <g className={onClick ? 'hit' : undefined} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
-        onKeyDown={onClick ? e => (e.key === 'Enter' || e.key === ' ') && onClick() : undefined} aria-label={onClick ? `${text}，點一下設定下次諮商` : undefined}>
+        onKeyDown={onClick ? e => (e.key === 'Enter' || e.key === ' ') && onClick() : undefined} aria-label={onClick ? `${label}，點一下設定下次諮商` : undefined}>
         <g stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round">
           <path d={`M${x} ${y + 30} v-44`} stroke="var(--fence)" strokeWidth="5" />
           <rect x={x - w / 2} y={y - 40} width={w} height="26" rx="5" fill="var(--paper)" />
@@ -129,8 +130,8 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
           </defs>
           <g dangerouslySetInnerHTML={{ __html: land.back }} />
 
-          {sign(HOUSE_X, N ? `起點 ${short(sessions[0].date)}` : '起點', N ? 76 : 50)}
-          {sign(walkerX + 200, nextSession ? `下次 ${short(nextSession)}` : '下次？', nextSession ? 86 : 60, onNextSign)}
+          {sign(HOUSE_X, '起點', 50)}
+          {sign(walkerX + 200, nextSession ? '下次' : '下次？', nextSession ? 50 : 60, onNextSign, nextSession ? `下次 ${short(nextSession)}` : '下次？')}
 
           {pastRoads.map(r => {
             const p: Picked = { kind: 'road', after: r.after, x: r.x };
@@ -143,15 +144,15 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
             );
           })}
 
-          <g className="hit" tabIndex={0} role="button" aria-label={`現在這段路上，記了 ${curCount} 件事，點一下打開`}
+          {/* today's stretch: a small pen, one tap to write down what you just thought of (no count shown) */}
+          <g className="hit" tabIndex={0} role="button" aria-label={curCount ? '現在這段路上，點一下寫下來，或看看記過的' : '現在這段路上，點一下寫下來'}
             onClick={tap({ kind: 'road', after: current, x: rx })} onKeyDown={keys({ kind: 'road', after: current, x: rx })}>
             <circle cx={rx} cy={ry} r="30" fill="transparent" />
             <circle className="dot" cx={rx} cy={ry} r="13" fill="var(--paper)" fillOpacity=".75" stroke="var(--ink)" strokeWidth="2.5" strokeDasharray="5 5" />
-            {curCount ? (
-              <text className="lbl" x={rx} y={ry + 5} textAnchor="middle" style={{ fill: '#2c3a4b' }}>{curCount}</text>
-            ) : (
-              <path d={`M${rx - 5} ${ry} h10 M${rx} ${ry - 5} v10`} stroke="var(--ink)" strokeWidth="2.2" strokeLinecap="round" />
-            )}
+            <g stroke="var(--ink)" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round">
+              <path d={`M${rx - 6} ${ry + 6} l1.4 -4.4 l7.6 -7.6 l3 3 l-7.6 7.6 Z`} fill="var(--scarf)" />
+              <path d={`M${rx - 4.6} ${ry + 1.6} l3 3`} fill="none" />
+            </g>
             <text className="lbl" x={rx} y={ry + 34} textAnchor="middle">路上</text>
           </g>
 

@@ -14,11 +14,13 @@ export function stretchFor(date: string, sessionsByDate: Session[]): string | nu
 }
 
 /**
- * When a session is added on an earlier date, it splits the stretch it lands in:
- * notes from that day on move behind the new dot. Returns the notes to move.
+ * Which stretch every note belongs on, given the sessions as they are now. Returns only the notes
+ * whose stretch changed. Run it after a session is added, deleted or moved to another date, after a
+ * restore, and once on start (it also mends notes left behind a session that no longer exists).
  */
-export function notesToMove(newSession: Session, sessionsByDate: Session[], notes: RoadNote[]): RoadNote[] {
-  const before = sessionsByDate.filter(s => s.id !== newSession.id);
-  const split = stretchFor(newSession.date, before);
-  return notes.filter(n => n.after === split && n.date >= newSession.date);
+export function restretch(sessionsByDate: Session[], notes: RoadNote[]): { id: string; after: string | null }[] {
+  return notes.flatMap(n => {
+    const after = stretchFor(n.date, sessionsByDate);
+    return after === n.after ? [] : [{ id: n.id, after }];
+  });
 }

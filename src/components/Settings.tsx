@@ -1,19 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Settings as S } from '../types';
 import { saveSettings } from '../db';
-import { todayKey } from '../lib/dates';
+import { addDays, long, short, toKey, todayKey } from '../lib/dates';
+import { Helplines } from './Talk';
 import { hashPin } from '../lib/pin';
 import { canUseFaceId, checkFaceId, setUpFaceId } from '../lib/faceid';
-import { makeBackup, openBackup, readBackup, restoreBackup, shareOrDownload, type Backup } from '../lib/backup';
+import { BACKUP_NAME, BadBackup, beforeRestoreAt, compareBackup, lastExport, makeBackup, openBackup, readBackup, recordExport, restoreBackup, shareOrDownload, undoRestore, type Backup } from '../lib/backup';
 import type { Sealed } from '../lib/crypto';
 import { clientId, disconnect, isConnected, needsReconnect, playlistInfo, playlistUrl, startSpotifyLogin } from '../lib/spotify';
 import { useToast } from './Toast';
 
-export const HELPLINES = [
-  { name: '安心專線', number: '1925', note: '24 小時，免付費' },
-  { name: '生命線', number: '1995', note: '24 小時' },
-  { name: '張老師專線', number: '1980', note: '' }
-];
 
 const SKY_MODES: [NonNullable<S['sky']>, string][] = [['time', '晚上變成夜空'], ['phone', '跟著手機的深色模式'], ['day', '一直是白天']];
 const WALKERS: [NonNullable<S['walker']>, string][] = [['girl', '女生'], ['boy', '男生']];
@@ -32,11 +28,15 @@ export function NextSessionField({ value, onDone }: { value?: string; onDone?: (
     >
       <input id="next-session" className="field" type="date" min={todayKey()} value={v} onChange={e => setV(e.target.value)} />
       <button className="pill sm" type="submit">好</button>
+      <div className="quick-dates">
+        <button className="chip" type="button" onClick={() => setV(addDays(todayKey(), 7))}>一週後</button>
+        <button className="chip" type="button" onClick={() => setV(addDays(todayKey(), 14))}>兩週後</button>
+      </div>
     </form>
   );
 }
 
-export default function Settings({ settings, onClose }: { settings: S; onClose: () => void }) {
+export default function Settings({ settings, onClose, onTalk }: { settings: S; onClose: () => void; onTalk?: () => void }) {
   const say = useToast();
   const [spotify, setSpotify] = useState<boolean | null>(null);
   const [reconnect, setReconnect] = useState(false);
@@ -102,6 +102,13 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
           <h3>下次諮商</h3>
           <p className="tiny">小路上的「下次」路牌和首頁的話會用到。去過之後會自動清掉。</p>
           <NextSessionField value={settings.nextSession} onDone={() => say('記住了')} />
+          <label className="toggle">
+            <input type="checkbox" checked={!!settings.resting} onChange={e => saveSettings({ resting: e.target.checked || undefined })} />
+            <span>
+              先休息一陣子
+              <small>暫停諮商的時候打開。首頁不數天數、不倒數，下次記下諮商時會自動關掉。</small>
+            </span>
+          </label>
         </div>
 
         <div className="group">
@@ -148,14 +155,14 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
                 <button className="pill sm" type="button" onClick={() => disconnect().then(() => { setSpotify(false); setReconnect(false); })}>取消連結</button>
               </div>
               <label className="toggle">
-                <input type="checkbox" checked={settings.spotifyPlaylist !== false} onChange={e => saveSettings({ spotifyPlaylist: e.target.checked })} />
+                <input type="checkbox" checked={settings.spotifyPlaylist === true} onChange={e => saveSettings({ spotifyPlaylist: e.target.checked })} />
                 <span>
                   自動整理成「Mind Map」歌單
-                  <small>每次紀錄附上的歌，照諮商的日期排進你 Spotify 裡的一個私人歌單。</small>
+                  <small>每次紀錄附上的歌，照日期排進你 Spotify 裡的一個私人歌單。打開後，Spotify 會看得到這份歌單和歌的順序。</small>
                 </span>
               </label>
               <div className="row-buttons">
-                {playlist && settings.spotifyPlaylist !== false && <a className="linkish" href={playlistUrl(playlist)} target="_blank" rel="noreferrer">在 Spotify 打開歌單</a>}
+                {playlist && settings.spotifyPlaylist === true && <a className="linkish" href={playlistUrl(playlist)} target="_blank" rel="noreferrer">在 Spotify 打開歌單</a>}
               </div>
             </>
           ) : hasClientId ? (
@@ -222,15 +229,8 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
 
         <div className="group">
           <h3>需要有人說說話的時候</h3>
-          <ul className="helplines">
-            {HELPLINES.map(h => (
-              <li key={h.number}>
-                <span>{h.name}{h.note && <small>{h.note}</small>}</span>
-                <a href={`tel:${h.number}`}>{h.number}</a>
-              </li>
-            ))}
-          </ul>
-          <p className="tiny">如果有立即的危險，請打 119 或 110。</p>
+          <Helplines />
+          {onTalk && <button className="linkish small" type="button" onClick={onTalk}>想說話的時候：放上我的人、可以去的地方</button>}
         </div>
 
         <p className="tiny version">Mind Map {__APP_VERSION__}{__APP_COMMIT__ && ` · ${__APP_COMMIT__}`}</p>
@@ -249,45 +249,73 @@ function BackupGroup() {
   const [busy, setBusy] = useState(false);
   const [locked, setLocked] = useState<Sealed | null>(null);
   const [openPw, setOpenPw] = useState('');
-  const [restore, setRestore] = useState<Backup | null>(null);
+  const [restore, setRestore] = useState<{ data: Backup; diff: Awaited<ReturnType<typeof compareBackup>> } | null>(null);
+  const [last, setLast] = useState<Awaited<ReturnType<typeof lastExport>>>(null);
+  const [kept, setKept] = useState<boolean | null>(null);
+  const [before, setBefore] = useState<number | null>(null);
+
+  // facts only: when you last exported, and whether the phone promised to keep the data
+  const refresh = () => {
+    lastExport().then(setLast);
+    beforeRestoreAt().then(setBefore);
+    navigator.storage?.persisted?.().then(setKept).catch(() => setKept(null));
+  };
+  useEffect(refresh, []);
 
   const doExport = async () => {
     if (pw.length < 6) return say('密碼至少 6 個字');
     if (pw !== pw2) return say('兩次輸入的密碼不一樣');
     setBusy(true);
     try {
-      await shareOrDownload(await makeBackup(pw));
-      setMaking(false);
-      setPw('');
-      setPw2('');
+      navigator.storage?.persist?.().catch(() => {});
+      if (await shareOrDownload(await makeBackup(pw))) {
+        await recordExport();
+        setMaking(false);
+        setPw('');
+        setPw2('');
+        refresh();
+      }
     } finally {
       setBusy(false);
     }
   };
 
+  const ask = async (data: Backup) => setRestore({ data, diff: await compareBackup(data) });
+
   const doOpen = async () => {
     if (!locked) return;
     setBusy(true);
     try {
-      setRestore(await openBackup(locked, openPw));
+      await ask(await openBackup(locked, openPw));
       setLocked(null);
       setOpenPw('');
-    } catch {
-      say('密碼不對，打不開這份備份');
+    } catch (e) {
+      say(e instanceof BadBackup ? `這份備份有地方壞了（${e.message}），沒有還原` : '密碼不對，打不開這份備份');
     } finally {
       setBusy(false);
     }
+  };
+
+  const back = async () => {
+    await undoRestore();
+    refresh();
+    say('回到還原前了');
   };
 
   return (
     <div className="group">
       <h3>備份</h3>
       <p className="tiny">資料只存在這支手機。換手機、或怕被清掉時，存一份備份檔到「檔案」。備份檔會用你設的密碼鎖起來，別人拿到檔案也看不到內容。</p>
+      <p className="tiny">
+        {last ? `上次匯出：${long(toKey(new Date(last.at)))}${last.sessions || last.notes ? `，之後又記了 ${[last.sessions && `${last.sessions} 次`, last.notes && `${last.notes} 則路上的事`].filter(Boolean).join('、')}` : ''}` : '還沒有匯出過備份。'}
+        {kept === false && <><br />這支手機沒有答應一定保留資料，備份檔是最穩的。</>}
+      </p>
       {making ? (
         <div className="backup-form">
           <input id="backup-pw" className="field" type="password" autoComplete="new-password" placeholder="備份密碼（至少 6 個字）" value={pw} onChange={e => setPw(e.target.value)} />
           <input id="backup-pw2" className="field" type="password" autoComplete="new-password" placeholder="再輸入一次" value={pw2} onChange={e => setPw2(e.target.value)} />
           <p className="tiny">忘記這組密碼，這份備份就打不開了。它跟開 App 的 4 位數密碼是分開的。</p>
+          <p className="tiny">檔名都是「{BACKUP_NAME}」。存到同一個資料夾時選「取代」，就只會留一份最新的。</p>
           <div className="row-buttons">
             <button className="pill sm" type="button" disabled={busy} onClick={doExport}>{busy ? '加密中…' : '匯出'}</button>
             <button className="ghost" type="button" onClick={() => (setMaking(false), setPw(''), setPw2(''))}>算了</button>
@@ -298,6 +326,11 @@ function BackupGroup() {
           <button className="pill sm" type="button" onClick={() => setMaking(true)}>匯出備份</button>
           <button className="pill sm" type="button" onClick={() => file.current?.click()}>從備份還原</button>
         </div>
+      )}
+      {before && !restore && (
+        <button className="linkish small" type="button" onClick={back}>
+          回到還原前（{long(toKey(new Date(before)))} 還原之前的樣子，保留 7 天）
+        </button>
       )}
       <input
         ref={file}
@@ -311,9 +344,9 @@ function BackupGroup() {
           try {
             const b = await readBackup(f);
             if (b.locked) setLocked(b.sealed);
-            else setRestore(b.data);
-          } catch {
-            say('這個檔案不是「Mind Map」的備份');
+            else await ask(b.data);
+          } catch (err) {
+            say(err instanceof BadBackup ? `這份備份有地方壞了（${err.message}），沒有還原` : '這個檔案不是「Mind Map」的備份');
           }
         }}
       />
@@ -327,10 +360,30 @@ function BackupGroup() {
         </div>
       )}
       {restore && (
-        <div className="confirm">
-          用這份備份（{restore.sessions.length} 次諮商、{restore.notes.length} 則路上的事）取代手機上現在的紀錄？
-          <button type="button" onClick={async () => { await restoreBackup(restore); setRestore(null); say('還原好了'); }}>取代</button>
-          <button type="button" onClick={() => setRestore(null)}>不要</button>
+        <div className="confirm restore-compare">
+          <div className="compare">
+            <div>
+              <b>這份備份</b>
+              <small>匯出於 {long(toKey(new Date(restore.diff.file.exportedAt)))}</small>
+              <small>{restore.diff.file.sessions} 次{restore.diff.file.latest && ` · 最近一次 ${short(restore.diff.file.latest)}`}</small>
+            </div>
+            <div>
+              <b>手機上現在</b>
+              <small>&nbsp;</small>
+              <small>{restore.diff.here.sessions} 次{restore.diff.here.latest && ` · 最近一次 ${short(restore.diff.here.latest)}`}</small>
+            </div>
+          </div>
+          {restore.diff.onlyHere && (
+            <small>
+              手機上有 {restore.diff.onlyHere.count} 次（{short(restore.diff.onlyHere.from)}
+              {restore.diff.onlyHere.to !== restore.diff.onlyHere.from && ` 到 ${short(restore.diff.onlyHere.to)}`}）不在這份備份裡，還原後會不見，7 天內可以回到還原前。
+            </small>
+          )}
+          <small>用這份備份取代手機上現在的紀錄？密碼鎖照舊；換了手機的話，Face ID 要重新設定。</small>
+          <div>
+            <button type="button" onClick={async () => { await restoreBackup(restore.data); setRestore(null); refresh(); say('還原好了', back); }}>取代</button>
+            <button type="button" onClick={() => setRestore(null)}>不要</button>
+          </div>
         </div>
       )}
     </div>

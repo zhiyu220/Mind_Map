@@ -14,13 +14,17 @@ interface Props {
   notes: RoadNote[];
   /** only the stretch you're walking now takes new notes */
   writable: boolean;
+  /** opened to write one thing: start in the text box, and close quietly once it's saved */
+  quick?: boolean;
   practices: Practice[];
   onPlay: (s: Song) => void;
+  /** 想說話的時候, always in the same corner, never lit up by what you write */
+  onTalk: () => void;
   onClose: () => void;
 }
 
 /** The dashed dot: things that happened between two sessions. */
-export default function RoadSheet({ title, after, notes, writable, practices, onPlay, onClose }: Props) {
+export default function RoadSheet({ title, after, notes, writable, quick, practices, onPlay, onTalk, onClose }: Props) {
   const say = useToast();
   const [text, setText] = useState('');
   const [w, setW] = useState<Weather | null>(null);
@@ -37,7 +41,12 @@ export default function RoadSheet({ title, after, notes, writable, practices, on
   const save = async () => {
     const t = text.trim();
     if (!t && !w && !song) return say('寫一句、點一個天氣，或加一首歌');
-    const landed = await addNote({ text: t, weather: w ?? undefined, star, song }, date);
+    const { after: landed } = await addNote({ text: t, weather: w ?? undefined, star, song }, date);
+    // written and put down: back to the road, with no count and no comfort, just a quiet end
+    if (quick && landed === after) {
+      onClose();
+      return say('先放在這裡');
+    }
     setText('');
     setW(null);
     setStar(false);
@@ -88,6 +97,7 @@ export default function RoadSheet({ title, after, notes, writable, practices, on
     <section className="sheet" role="dialog" aria-label="路上">
       <div className="sheet-head">
         <button className="ghost" type="button" onClick={onClose}>關閉</button>
+        <button className="ghost" type="button" onClick={onTalk}>想說話的時候</button>
       </div>
       <div className="sheet-body">
         <h2 className="q">{title}</h2>
@@ -95,7 +105,7 @@ export default function RoadSheet({ title, after, notes, writable, practices, on
           <>
             <p className="sub">兩次諮商之間的事。一句話、只點天氣，都可以。以前的事也能補記，選那天的日期，就會放到那段路上。</p>
             <div className="compose">
-              <textarea id="road-text" className="field" placeholder="發生了什麼，或想到什麼" value={text} onChange={e => setText(e.target.value)} />
+              <textarea id="road-text" className="field" placeholder="發生了什麼，或想到什麼" value={text} onChange={e => setText(e.target.value)} autoFocus={quick} />
               <WeatherPicker small value={w} onChange={setW} />
               <NoteSong value={song} onChange={setSong} />
               <label className="date-row">
@@ -106,7 +116,7 @@ export default function RoadSheet({ title, after, notes, writable, practices, on
                 <button className="star" type="button" aria-pressed={star} aria-label="想帶去說" onClick={() => setStar(!star)}>
                   <StarIcon />
                 </button>
-                <span className="tiny" style={{ flex: 1 }}>加星星，下次諮商前會拿出來給你看</span>
+                <span className="tiny" style={{ flex: 1 }}>加星星，放進背包，下次帶去</span>
                 <button className="pill sm" type="button" onClick={save}>記下來</button>
               </div>
             </div>
