@@ -3,8 +3,9 @@ import type { Settings as S } from '../types';
 import { saveSettings } from '../db';
 import { addDays, long, short, toKey, todayKey } from '../lib/dates';
 import Helplines from './Helplines';
-import { hashPin } from '../lib/pin';
-import { canUseFaceId, checkFaceId, setUpFaceId } from '../lib/faceid';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { canUseFaceId } from '../lib/faceid';
+import { addFace, changePin, getLockbox, removeFace, removePin, setPin as lockWith } from '../lib/lockbox';
 import { BACKUP_NAME, BadBackup, beforeRestoreAt, compareBackup, lastExport, makeBackup, openBackup, readBackup, recordExport, restoreBackup, shareOrDownload, undoRestore, type Backup } from '../lib/backup';
 import type { Sealed } from '../lib/crypto';
 import { clientId, disconnect, isConnected, needsReconnect, playlistInfo, playlistUrl, startSpotifyLogin } from '../lib/spotify';
@@ -46,6 +47,11 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
   const [pinStep, setPinStep] = useState<'idle' | 'set' | 'again'>('idle');
   const [pin, setPin] = useState('');
   const [first, setFirst] = useState('');
+  const [digits, setDigits] = useState(6);
+  const [busy, setBusy] = useState(false);
+  const box = useLiveQuery(getLockbox, []);
+  // a PIN from before 2.1, not yet entered since: the records get sealed the next time it is
+  const oldPin = !box && !!settings.pinHash;
   const [faceOk, setFaceOk] = useState(false);
   const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone;
 
@@ -60,29 +66,35 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
   }, []);
 
   const turnOnFace = async () => {
-    const id = await setUpFaceId();
-    // make sure it really answers before relying on it
-    if (id && (await checkFaceId(id))) {
-      await saveSettings({ faceId: id });
-      say('好了，下次打開用 Face ID 就好');
-    } else say('沒有設好，可以再試一次');
+    // asks for Face ID twice: once to make the key, once to get its secret
+    const r = await addFace();
+    if (r === 'ok') say('好了，下次打開用 Face ID 就好');
+    else if (r === 'unsupported') say('這支手機的 Face ID 還不能解開加密的紀錄（要 iOS 18 以上），先用密碼');
+    else say('沒有設好，可以再試一次');
   };
 
   const pinInput = async (v: string) => {
-    if (pin.length === 4) return; // four digits in: moving on
-    const digits = v.replace(/\D/g, '').slice(0, 4);
-    setPin(digits);
-    if (digits.length < 4) return;
-    await new Promise(r => setTimeout(r, 200)); // let the fourth dot show before moving on
+    if (pin.length === digits || busy) return; // all digits in: moving on
+    const typed = v.replace(/\D/g, '').slice(0, digits);
+    setPin(typed);
+    if (typed.length < digits) return;
+    await new Promise(r => setTimeout(r, 200)); // let the last dot show before moving on
     if (pinStep === 'set') {
-      setFirst(digits);
+      setFirst(typed);
       setPin('');
       setPinStep('again');
-    } else if (digits === first) {
-      await saveSettings({ pinHash: await hashPin(digits) });
+    } else if (typed === first) {
+      setBusy(true);
+      try {
+        if (box) await changePin(typed);
+        else await lockWith(typed);
+        say(box ? '換好了' : '設好了，紀錄都加密了。下次打開要輸入密碼');
+      } catch {
+        say('沒有設好，可以再試一次');
+      }
+      setBusy(false);
       setPin('');
       setPinStep('idle');
-      say('設好了，下次打開要輸入密碼');
     } else {
       setPin('');
       setPinStep('set');
@@ -186,30 +198,43 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
 
         <div className="group">
           <h3>密碼鎖</h3>
-          {pinStep === 'idle' ? (
-            settings.pinHash ? (
-              <div className="row-buttons">
-                <button className="pill sm" type="button" onClick={() => setPinStep('set')}>換一組</button>
-                <button className="pill sm" type="button" onClick={() => saveSettings({ pinHash: undefined, faceId: undefined }).then(() => say('密碼鎖關掉了'))}>關掉</button>
-              </div>
+          {busy ? (
+            <p className="tiny">正在把紀錄加密……</p>
+          ) : pinStep === 'idle' ? (
+            box || oldPin ? (
+              <>
+                {box && <p className="tiny">手機裡的紀錄是加密存放的，輸入密碼才解得開。</p>}
+                {oldPin && <p className="tiny">下次用密碼打開時，手機裡的紀錄會一起加密。</p>}
+                {box?.digits === 4 && <p className="tiny">現在是 4 位數，換成 6 位數會安全很多。</p>}
+                <div className="row-buttons">
+                  <button className="pill sm" type="button" onClick={() => { setDigits(6); setPinStep('set'); }}>換一組</button>
+                  <button className="pill sm" type="button"
+                    onClick={() => (box ? removePin() : saveSettings({ pinHash: undefined, faceId: undefined })).then(() => say('密碼鎖關掉了，紀錄不再加密'), () => say('沒有關掉，可以再試一次'))}>關掉</button>
+                </div>
+              </>
             ) : (
               <>
-                <p className="tiny">打開 App 時要先輸入 4 位數字。</p>
-                <button className="pill sm" type="button" onClick={() => setPinStep('set')}>設定密碼</button>
+                <p className="tiny">打開 App 時要先輸入密碼，手機裡的紀錄也會加密存放。</p>
+                <button className="pill sm" type="button" onClick={() => { setDigits(6); setPinStep('set'); }}>設定密碼</button>
               </>
             )
           ) : (
             <>
-              <p className="tiny">{pinStep === 'set' ? '輸入 4 位數字' : '再輸入一次'}</p>
+              <p className="tiny">{pinStep === 'set' ? `輸入 ${digits} 位數字` : '再輸入一次'}</p>
               <input id="pin-new" className="field pin" inputMode="numeric" autoComplete="off" autoFocus type="password" value={pin} onChange={e => pinInput(e.target.value)} />
+              {pinStep === 'set' && (
+                <button className="linkish" type="button" onClick={() => { setDigits(digits === 6 ? 4 : 6); setPin(''); }}>
+                  {digits === 6 ? '用 4 位數就好' : '改用 6 位數（比較安全）'}
+                </button>
+              )}
               <button className="linkish" type="button" onClick={() => { setPinStep('idle'); setPin(''); }}>算了</button>
             </>
           )}
-          {settings.pinHash && pinStep === 'idle' && faceOk && (
-            settings.faceId ? (
+          {box && pinStep === 'idle' && !busy && faceOk && (
+            box.face ? (
               <p className="tiny">
                 Face ID 已開啟。認不出來的時候，還是可以輸入密碼。{' '}
-                <button className="linkish small" type="button" style={{ display: 'inline' }} onClick={() => saveSettings({ faceId: undefined }).then(() => say('Face ID 關掉了'))}>不用 Face ID</button>
+                <button className="linkish small" type="button" style={{ display: 'inline' }} onClick={() => removeFace().then(() => say('Face ID 關掉了'))}>不用 Face ID</button>
               </p>
             ) : (
               <button className="pill sm" type="button" onClick={turnOnFace}>改用 Face ID 解鎖</button>
