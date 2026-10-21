@@ -53,13 +53,6 @@ export interface Found {
   createdAt: number;
 }
 
-/** Someone to call or message from 想說話的時候. Stays on this phone and in your locked backups. */
-export interface Person {
-  name: string;
-  phone: string;
-  via: 'call' | 'sms';
-}
-
 /** Something written on the road between two sessions (the dashed dot). */
 export interface RoadNote {
   id: string;
@@ -97,9 +90,6 @@ export interface Settings {
   sky?: 'time' | 'phone' | 'day';
   /** the season's picture: follows the calendar ('auto', the default) or stays on one season */
   season?: 'auto' | 'spring' | 'summer' | 'autumn' | 'winter';
-  /** 想說話的時候: up to three people of your own, and places or things that help */
-  people?: Person[];
-  places?: string;
   /** 先休息一陣子: sessions are paused, so the home screen counts no days */
   resting?: boolean;
   /** the walker on the road */

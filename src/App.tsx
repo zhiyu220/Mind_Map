@@ -17,7 +17,7 @@ import { WeatherPicker } from './components/Weather';
 import Settings, { NextSessionField } from './components/Settings';
 import Lock from './components/Lock';
 import Prep from './components/Prep';
-import Talk from './components/Talk';
+import { JarSheet, LampSheet } from './components/Lamp';
 import { ToastProvider, useToast } from './components/Toast';
 
 type View =
@@ -27,13 +27,14 @@ type View =
   | { kind: 'road'; after: string | null; quick?: boolean }
   // after recording today: "下次是 10/28（週二）嗎？"
   | { kind: 'askNext'; date: string; done: boolean }
+  // the lamp (write down what just made sense) and the jar at the start (where those are kept)
+  | { kind: 'lamp' }
+  | { kind: 'jar' }
   | { kind: 'book' }
   | { kind: 'detail'; id: string }
   | { kind: 'settings' }
   | { kind: 'next' }
   | { kind: 'prep' }
-  // 想說話的時候; back is where to return
-  | { kind: 'talk'; back: View | null }
   | { kind: 'song'; song: Song; back: View | null };
 
 const RELOCK_AFTER = 60_000;
@@ -57,6 +58,7 @@ function Main() {
   const [view, setView] = useState<View | null>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [lineIdx, setLineIdx] = useState<number | null>(null);
+  const [lampLit, setLampLit] = useState(false);
   const [today, setToday] = useState(todayKey);
   // 全部紀錄 remembers which tab and topic you were on while you look at one session
   const [bookTab, setBookTab] = useState<BookTab>('all');
@@ -210,7 +212,7 @@ function Main() {
   } else if (view?.kind === 'road') {
     const i = sessions.findIndex(s => s.id === view.after);
     const title = view.after ? `路上 · ${short(sessions[i].date)} 之後` : sessions.length ? '路上 · 第一次之前' : '路上 · 出發之前';
-    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} practices={practices} onPlay={play} onTalk={() => setView({ kind: 'talk', back: view })} onClose={close} />;
+    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} practices={practices} onPlay={play} onClose={close} />;
   } else if (view?.kind === 'book') {
     sheet = (
       <Book
@@ -242,10 +244,7 @@ function Main() {
         />
       );
   } else if (view?.kind === 'settings') {
-    sheet = <Settings settings={settings} onClose={() => setView({ kind: 'book' })} onTalk={() => setView({ kind: 'talk', back: view })} />;
-  } else if (view?.kind === 'talk') {
-    const back = view.back;
-    sheet = <Talk settings={settings} onClose={() => setView(back)} />;
+    sheet = <Settings settings={settings} onClose={() => setView({ kind: 'book' })} />;
   } else if (view?.kind === 'song') {
     const { song, back } = view;
     sheet = (
@@ -287,6 +286,21 @@ function Main() {
         </div>
       </>
     );
+  } else if (view?.kind === 'lamp') {
+    sheet = (
+      <LampSheet
+        sessions={sessions}
+        onClose={close}
+        onSaved={() => {
+          close();
+          setLampLit(true);
+          setTimeout(() => setLampLit(false), 1600);
+          say('放進罐子了');
+        }}
+      />
+    );
+  } else if (view?.kind === 'jar') {
+    sheet = <JarSheet sessions={sessions} onClose={close} />;
   } else if (view?.kind === 'prep') {
     sheet = (
       <Prep
@@ -315,6 +329,9 @@ function Main() {
         onOpenRoad={after => setView({ kind: 'road', after, quick: after === current })}
         onNextSign={() => setView({ kind: 'next' })}
         look={settings.walker ?? 'girl'}
+        onLamp={() => setView({ kind: 'lamp' })}
+        lampLit={lampLit}
+        onJar={() => setView({ kind: 'jar' })}
       />
       {/* snow, petals, leaves or fireflies, in front of the land; they let taps through */}
       <div dangerouslySetInnerHTML={{ __html: SEASON_FX }} style={{ display: 'contents' }} />
