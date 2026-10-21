@@ -1,9 +1,18 @@
 import { db, newId, getSettings, saveSettings } from '../db';
 import type { Practice, RoadNote, Session, Song, Weather } from '../types';
 import { todayKey } from './dates';
-import { notesToMove, stretchFor } from './stretch';
+import { restretch, stretchFor } from './stretch';
 
 export const byDate = (a: Session, b: Session) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
+
+/** Puts every road note back on the stretch its date belongs to. Call inside a transaction on sessions and notes. */
+async function tidyStretches() {
+  const sessions = (await db.sessions.toArray()).sort(byDate);
+  for (const { id, after } of restretch(sessions, await db.notes.toArray())) await db.notes.update(id, { after });
+}
+
+/** Once on start: mends notes left on the wrong stretch by earlier versions. */
+export const tidyRoad = () => db.transaction('rw', db.sessions, db.notes, tidyStretches);
 
 /** Adds a session for today, or for an earlier day when filling in the past. */
 export async function addSession(d: { weather: Weather; moods: string[]; topics: string[]; quote: string; notes: string; song?: Song }, done: boolean, date = todayKey()) {
@@ -12,9 +21,7 @@ export async function addSession(d: { weather: Weather; moods: string[]; topics:
   await db.transaction('rw', db.sessions, db.notes, db.kv, async () => {
     await db.sessions.add(s);
     // a dot added in the middle of the road splits that stretch: later notes move behind it
-    const all = (await db.sessions.toArray()).sort(byDate);
-    const move = notesToMove(s, all, await db.notes.toArray());
-    for (const n of move) await db.notes.update(n.id, { after: s.id });
+    await tidyStretches();
     // today's session reached: the "next session" sign moves on
     const st = await getSettings();
     if (st.nextSession && st.nextSession <= s.date) await saveSettings({ nextSession: undefined });
@@ -23,17 +30,18 @@ export async function addSession(d: { weather: Weather; moods: string[]; topics:
 }
 
 export async function updateSession(id: string, patch: Partial<Session>) {
-  await db.sessions.update(id, { ...patch, updatedAt: Date.now() });
+  await db.transaction('rw', db.sessions, db.notes, async () => {
+    await db.sessions.update(id, { ...patch, updatedAt: Date.now() });
+    // a new date moves the dot along the road, and the notes around it change stretch
+    if (patch.date) await tidyStretches();
+  });
 }
 
 /** Removing a session keeps the road notes: they join the stretch before it. */
 export async function deleteSession(id: string) {
   await db.transaction('rw', db.sessions, db.notes, async () => {
-    const all = (await db.sessions.toArray()).sort(byDate);
-    const i = all.findIndex(s => s.id === id);
-    const prev = i > 0 ? all[i - 1].id : null;
-    await db.notes.where('after').equals(id).modify({ after: prev });
     await db.sessions.delete(id);
+    await tidyStretches();
   });
 }
 

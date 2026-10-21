@@ -1,4 +1,5 @@
 import { db, getSettings } from '../db';
+import { tidyRoad } from './store';
 import type { Practice, RoadNote, Session, Settings } from '../types';
 import { todayKey } from './dates';
 import { isSealed, seal, unseal, type Sealed } from './crypto';
@@ -70,4 +71,6 @@ export async function restoreBackup(data: Backup) {
     await db.practices.bulkAdd(data.practices ?? []);
     await db.kv.put({ key: 'settings', value: { ...data.settings, pinHash: cur.pinHash, faceId: cur.faceId } });
   });
+  // backups from before the stretches were kept in order may carry notes on the wrong stretch
+  await tidyRoad();
 }

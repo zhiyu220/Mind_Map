@@ -101,11 +101,12 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
   };
   const isOn = (p: Picked) => !!picked && JSON.stringify(picked) === JSON.stringify(p);
 
-  const sign = (x: number, text: string, w: number, onClick?: () => void) => {
+  // the signs carry just a word; the dates live in the line at the top and the sheets (and the label below)
+  const sign = (x: number, text: string, w: number, onClick?: () => void, label = text) => {
     const y = groundY(x) + 6;
     return (
       <g className={onClick ? 'hit' : undefined} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
-        onKeyDown={onClick ? e => (e.key === 'Enter' || e.key === ' ') && onClick() : undefined} aria-label={onClick ? `${text}，點一下設定下次諮商` : undefined}>
+        onKeyDown={onClick ? e => (e.key === 'Enter' || e.key === ' ') && onClick() : undefined} aria-label={onClick ? `${label}，點一下設定下次諮商` : undefined}>
         <g stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round">
           <path d={`M${x} ${y + 30} v-44`} stroke="var(--fence)" strokeWidth="5" />
           <rect x={x - w / 2} y={y - 40} width={w} height="26" rx="5" fill="var(--paper)" />
@@ -129,8 +130,8 @@ export default function Landscape({ sessions, notes, nextSession, onOpenSession,
           </defs>
           <g dangerouslySetInnerHTML={{ __html: land.back }} />
 
-          {sign(HOUSE_X, N ? `起點 ${short(sessions[0].date)}` : '起點', N ? 76 : 50)}
-          {sign(walkerX + 200, nextSession ? `下次 ${short(nextSession)}` : '下次？', nextSession ? 86 : 60, onNextSign)}
+          {sign(HOUSE_X, '起點', 50)}
+          {sign(walkerX + 200, nextSession ? '下次' : '下次？', nextSession ? 50 : 60, onNextSign, nextSession ? `下次 ${short(nextSession)}` : '下次？')}
 
           {pastRoads.map(r => {
             const p: Picked = { kind: 'road', after: r.after, x: r.x };

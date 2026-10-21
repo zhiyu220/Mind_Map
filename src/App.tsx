@@ -7,7 +7,7 @@ import { countdown, daysBetween, headerDate, short, todayKey } from './lib/dates
 import { homeLines, lineOfTheDay } from './lib/lines';
 import { followSky } from './lib/sky';
 import { addSession, byDate, updateSession } from './lib/store';
-import { playlistUris, syncPlaylist } from './lib/spotify';
+import { playlistUris, quietPlaylist, syncPlaylist } from './lib/spotify';
 import Landscape from './components/Landscape';
 import SessionFlow, { clearDraft, emptyDraft, loadDraft, type Draft } from './components/SessionFlow';
 import RoadSheet from './components/RoadSheet';
@@ -80,7 +80,9 @@ function Main() {
   // the 「Mind Map」 playlist follows the road: any added, changed or removed song updates it
   const songKey = useMemo(() => (sessions ? playlistUris(sessions).join(',') : null), [sessions]);
   useEffect(() => {
-    if (songKey === null || loaded?.spotifyPlaylist === false) return;
+    if (songKey === null) return;
+    // off: still take 諮商 out of the description of a playlist an earlier version made
+    if (loaded?.spotifyPlaylist !== true) return void quietPlaylist().catch(() => {});
     const t = setTimeout(() => syncPlaylist(songKey ? songKey.split(',') : []).catch(() => {}), 1500);
     return () => clearTimeout(t);
   }, [songKey, loaded?.spotifyPlaylist]);

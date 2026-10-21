@@ -181,7 +181,12 @@ interface PlaylistState {
   id: string;
   /** the track list last written, to skip writing when nothing changed */
   synced: string;
+  /** the description has been rewritten without the word 諮商 (older playlists had it) */
+  quiet?: boolean;
 }
+
+// Spotify can read this; it says nothing about what the songs were for
+const PLAYLIST_DESCRIPTION = '照日期排的歌。由「Mind Map」整理。';
 
 /** Every session's song in the order of the road (oldest first). */
 export function playlistUris(sessions: { date: string; createdAt: number; song?: Song }[]): string[] {
@@ -195,6 +200,27 @@ export const playlistUrl = (id: string) => `https://open.spotify.com/playlist/${
 
 export async function playlistInfo() {
   return getKV<PlaylistState>('spotify-playlist');
+}
+
+/**
+ * A playlist made by an earlier version says 諮商 in its description: rewrite it once, whether or not
+ * the playlist is still kept in sync. Returns the updated state, or undefined when nothing was done.
+ */
+export async function quietPlaylist(): Promise<PlaylistState | undefined> {
+  const st = await playlistInfo();
+  if (!st || st.quiet || !(await hasScope('playlist-modify-private'))) return;
+  const t = await token();
+  if (!t) return;
+  const res = await fetch(`https://api.spotify.com/v1/playlists/${st.id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ description: PLAYLIST_DESCRIPTION })
+  });
+  // gone from Spotify: nothing left to fix
+  if (!res.ok && res.status !== 404) return;
+  const next = { ...st, quiet: true };
+  await setKV('spotify-playlist', next);
+  return next;
 }
 
 /**
@@ -213,7 +239,10 @@ export async function syncPlaylist(uris: string[]): Promise<string | null> {
   if (st) {
     const check = await api(`/playlists/${st.id}?fields=id`);
     if (check.status === 404) st = undefined;
-    else if (st.synced === signature) return st.id;
+    else {
+      if (!st.quiet) st = (await quietPlaylist()) ?? st;
+      if (st.synced === signature) return st.id;
+    }
   }
   if (!st) {
     if (!uris.length) return null; // no songs yet: don't make an empty playlist
@@ -222,10 +251,10 @@ export async function syncPlaylist(uris: string[]): Promise<string | null> {
     const { id: userId } = (await me.json()) as { id: string };
     const made = await api(`/users/${encodeURIComponent(userId)}/playlists`, {
       method: 'POST',
-      body: JSON.stringify({ name: 'Mind Map', public: false, description: '每一次諮商的歌，照日期排。由「Mind Map」自動整理。' })
+      body: JSON.stringify({ name: 'Mind Map', public: false, description: PLAYLIST_DESCRIPTION })
     });
     if (!made.ok) return null;
-    st = { id: ((await made.json()) as { id: string }).id, synced: '' };
+    st = { id: ((await made.json()) as { id: string }).id, synced: '', quiet: true };
   }
 
   // replace everything with the first 100, then add the rest 100 at a time
@@ -235,7 +264,7 @@ export async function syncPlaylist(uris: string[]): Promise<string | null> {
     const more = await api(`/playlists/${st.id}/tracks`, { method: 'POST', body: JSON.stringify({ uris: uris.slice(i, i + 100) }) });
     if (!more.ok) return null;
   }
-  await setKV('spotify-playlist', { id: st.id, synced: signature });
+  await setKV('spotify-playlist', { id: st.id, synced: signature, quiet: st.quiet });
   return st.id;
 }
 

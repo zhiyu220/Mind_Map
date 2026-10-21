@@ -148,14 +148,14 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
                 <button className="pill sm" type="button" onClick={() => disconnect().then(() => { setSpotify(false); setReconnect(false); })}>取消連結</button>
               </div>
               <label className="toggle">
-                <input type="checkbox" checked={settings.spotifyPlaylist !== false} onChange={e => saveSettings({ spotifyPlaylist: e.target.checked })} />
+                <input type="checkbox" checked={settings.spotifyPlaylist === true} onChange={e => saveSettings({ spotifyPlaylist: e.target.checked })} />
                 <span>
                   自動整理成「Mind Map」歌單
-                  <small>每次紀錄附上的歌，照諮商的日期排進你 Spotify 裡的一個私人歌單。</small>
+                  <small>每次紀錄附上的歌，照日期排進你 Spotify 裡的一個私人歌單。打開後，Spotify 會看得到這份歌單和歌的順序。</small>
                 </span>
               </label>
               <div className="row-buttons">
-                {playlist && settings.spotifyPlaylist !== false && <a className="linkish" href={playlistUrl(playlist)} target="_blank" rel="noreferrer">在 Spotify 打開歌單</a>}
+                {playlist && settings.spotifyPlaylist === true && <a className="linkish" href={playlistUrl(playlist)} target="_blank" rel="noreferrer">在 Spotify 打開歌單</a>}
               </div>
             </>
           ) : hasClientId ? (

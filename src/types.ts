@@ -67,7 +67,7 @@ export interface Settings {
   /** id of this phone's Face ID key (WebAuthn); never goes into a backup */
   faceId?: string;
   spotifyClientId?: string;
-  /** keep a private 「Mind Map」 playlist of every session's song; on unless turned off */
+  /** keep a private 「Mind Map」 playlist of every session's song; off unless turned on (Spotify can see it) */
   spotifyPlaylist?: boolean;
   /** night sky after dark ('time', the default), with the phone's dark mode, or always day */
   sky?: 'time' | 'phone' | 'day';
