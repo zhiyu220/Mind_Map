@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'node:child_process';
-import pkg from './package.json';
+import pkg from './package.json' with { type: 'json' };
 
 // GitHub Pages serves the app from /<repo>/; local dev serves it from /.
 const base = process.env.BASE_PATH ?? '/';
