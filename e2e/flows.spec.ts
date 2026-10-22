@@ -87,6 +87,8 @@ test('with a PIN, what you wrote is sealed on the phone and opens with the right
   await expect(page.locator('.pin-dots i')).toHaveCount(6);
   await typePin(page, '123456');
   await expect(page.getByRole('heading', { name: '再試一次' })).toBeVisible();
+  // the dots empty a moment after a wrong PIN; keys pressed before that don't count
+  await expect(page.locator('.pin-dots i.on')).toHaveCount(0);
   await typePin(page, '135790');
   await expect(page.locator('.lock')).toHaveCount(0);
   await page.locator('[aria-label^="現在這段路上"]').click();
