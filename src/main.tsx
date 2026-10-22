@@ -7,13 +7,12 @@ import { askPersist, dropRetiredSettings } from './db';
 import { finishSpotifyLogin } from './lib/spotify';
 import { keepUpToDate } from './lib/update';
 import { coverWhenHidden } from './lib/privacy';
-import { tidyRoad } from './lib/store';
+import { fitSheetsToKeyboard } from './lib/viewport';
 
 askPersist();
 keepUpToDate();
 coverWhenHidden();
-// mend road notes an earlier version left on the wrong stretch (it changes nothing when all is in order)
-tidyRoad().catch(() => {});
+fitSheetsToKeyboard();
 // clear what removed features left behind (想說話的時候: names and phone numbers)
 dropRetiredSettings().catch(() => {});
 

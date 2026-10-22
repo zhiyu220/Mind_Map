@@ -3,6 +3,7 @@ import type { Session } from '../types';
 import { WEATHER_NAME } from '../types';
 import { long, short } from '../lib/dates';
 import { addFound, deleteFound } from '../lib/store';
+import { focusInPlace } from '../lib/viewport';
 
 /**
  * The lamp by the walker: for the moment something suddenly makes sense, days after a session.
@@ -29,7 +30,7 @@ export function LampSheet({ sessions, onSaved, onClose }: { sessions: Session[];
         {step === 'write' ? (
           <>
             <h2 className="q">想通了什麼？</h2>
-            <textarea id="lamp-text" className="field tall" autoFocus placeholder="後來我發現……" value={text} onChange={e => setText(e.target.value)} />
+            <textarea id="lamp-text" className="field tall" ref={focusInPlace} placeholder="後來我發現……" value={text} onChange={e => setText(e.target.value)} />
           </>
         ) : (
           <>

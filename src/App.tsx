@@ -6,7 +6,8 @@ import { DEFS, SEASON_FX, SKY } from './drawings';
 import { countdown, daysBetween, guessNext, headerDate, long, short, todayKey, upcoming, weekday } from './lib/dates';
 import { homeLines, lineOfTheDay } from './lib/lines';
 import { followSky } from './lib/sky';
-import { addNote, addSession, byDate, deleteNote, updateSession } from './lib/store';
+import { addNote, addSession, byDate, deleteNote, tidyRoad, updateSession } from './lib/store';
+import { getLockbox } from './lib/lockbox';
 import { playlistUris, quietPlaylist, syncPlaylist } from './lib/spotify';
 import Landscape from './components/Landscape';
 import SessionFlow, { clearDraft, emptyDraft, loadDraft, type Draft } from './components/SessionFlow';
@@ -43,8 +44,66 @@ export default function App() {
   return (
     <ToastProvider>
       <div dangerouslySetInnerHTML={{ __html: DEFS }} />
-      <Main />
+      <Gate />
     </ToastProvider>
+  );
+}
+
+/**
+ * The lock in front of everything. With a PIN set, nothing is read until it's entered: that's when
+ * the key that opens the records is there. Locking again later keeps what's open underneath.
+ */
+function Gate() {
+  const say = useToast();
+  const settings = useLiveQuery(getSettings, []);
+  const box = useLiveQuery(getLockbox, []);
+  const [unlocked, setUnlocked] = useState(false);
+  const [opened, setOpened] = useState(false);
+  const locked = !!box || !!settings?.pinHash;
+  const ready = settings !== undefined && box !== undefined && (!locked || unlocked);
+
+  // lock again after the app has been in the background for a while
+  useEffect(() => {
+    let hiddenAt = 0;
+    const onVis = () => {
+      if (document.hidden) hiddenAt = Date.now();
+      else if (hiddenAt && Date.now() - hiddenAt > RELOCK_AFTER) setUnlocked(false);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
+  // with no lock set, stay open (setting a PIN now locks from the next time on)
+  useEffect(() => {
+    if (settings !== undefined && box !== undefined && !locked) setUnlocked(true);
+  }, [settings, box, locked]);
+
+  useEffect(() => {
+    if (!ready) return;
+    setOpened(true);
+    // mend road notes an earlier version left on the wrong stretch (it changes nothing when all is in order)
+    tidyRoad().catch(() => {});
+  }, [ready]);
+
+  if (settings === undefined || box === undefined) return <div className="page" />;
+  const lock = !ready && (
+    <Lock
+      digits={box?.digits ?? 4}
+      face={box ? !!box.face : !!settings.faceId}
+      onUnlock={how => {
+        setUnlocked(true);
+        if (how === 'faceAgain') say('紀錄加密好了。Face ID 要到設定裡再開一次');
+      }}
+    />
+  );
+  if (!opened) return lock || <div className="page" />;
+  return (
+    <>
+      <div hidden={!ready}>
+        <Main />
+      </div>
+      {lock}
+    </>
   );
 }
 
@@ -56,7 +115,6 @@ function Main() {
   const loaded = useLiveQuery(getSettings, []);
   const settings = loaded ?? DEFAULT_SETTINGS;
   const [view, setView] = useState<View | null>(null);
-  const [unlocked, setUnlocked] = useState(false);
   const [lineIdx, setLineIdx] = useState<number | null>(null);
   const [lampLit, setLampLit] = useState(false);
   const [today, setToday] = useState(todayKey);
@@ -64,15 +122,10 @@ function Main() {
   const [bookTab, setBookTab] = useState<BookTab>('all');
   const [topic, setTopic] = useState<string | null>(null);
 
-  // lock again after the app has been in the background for a while; notice a new day
+  // notice a new day
   useEffect(() => {
-    let hiddenAt = 0;
     const onVis = () => {
-      if (document.hidden) hiddenAt = Date.now();
-      else {
-        if (hiddenAt && Date.now() - hiddenAt > RELOCK_AFTER) setUnlocked(false);
-        setToday(todayKey());
-      }
+      if (!document.hidden) setToday(todayKey());
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
@@ -80,11 +133,6 @@ function Main() {
 
   // night sky after dark, and the meadow's season
   useEffect(() => followSky(settings.sky ?? 'time', settings.season), [settings.sky, settings.season]);
-
-  // with no lock set, stay open (setting a PIN now locks from the next time on)
-  useEffect(() => {
-    if (loaded && !loaded.pinHash) setUnlocked(true);
-  }, [loaded]);
 
   // the 「Mind Map」 playlist follows the road: any added, changed or removed song updates it
   const songKey = useMemo(() => (sessions ? playlistUris(sessions).join(',') : null), [sessions]);
@@ -101,7 +149,6 @@ function Main() {
   const lines = useMemo(() => homeLines(sessions ?? [], notes ?? [], today, next, settings.resting), [sessions, notes, today, next, settings.resting]);
 
   if (!sessions || !notes || !practices || !loaded) return <div className="page" />;
-  if (settings.pinHash && !unlocked) return <Lock pinHash={settings.pinHash} faceId={settings.faceId} onUnlock={() => setUnlocked(true)} />;
 
   const current = sessions.length ? sessions[sessions.length - 1].id : null;
   const roadOf = (after: string | null) => notes.filter(n => n.after === after);
