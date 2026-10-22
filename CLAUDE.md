@@ -30,6 +30,7 @@
 
 ## 合併前
 - `npm test` 和 `npm run build` 都要過。
+- 動到記錄、密碼、加密、備份的，也跑 `npm run e2e`（Playwright 跑主要流程；在 Claude 的環境要加 `PW_CHROMIUM=/opt/pw-browsers/chromium`）。CI 每個 PR 都會跑。
 - 動到畫面的，用 Playwright 截圖看過（Chromium 在 `/opt/pw-browsers/chromium`）。
 
 ## 不要動的東西
