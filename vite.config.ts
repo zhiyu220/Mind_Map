@@ -26,6 +26,14 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    {
+      // every iPhone this runs on reads woff2: leave out the woff copies (half the font files)
+      name: 'woff2-only',
+      enforce: 'pre',
+      transform(code, id) {
+        if (id.includes('@fontsource/huninn') && id.endsWith('.css')) return code.replace(/,\s*url\([^)]*\.woff\) format\('woff'\)/g, '');
+      }
+    },
     VitePWA({
       registerType: 'prompt', // we choose when to switch to a new version (see src/lib/update.ts)
       includeAssets: ['icons/apple-touch-icon.png', 'icons/favicon.svg'],
