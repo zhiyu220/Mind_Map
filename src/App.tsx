@@ -24,8 +24,8 @@ import { ToastProvider, useToast } from './components/Toast';
 type View =
   | { kind: 'ask' }
   | { kind: 'flow'; edit?: Session; past?: boolean }
-  // quick: opened to write one thing; the sheet closes once it's saved
-  | { kind: 'road'; after: string | null; quick?: boolean }
+  // quick: opened to write one thing; the sheet closes once it's saved. write: starts with the text box open
+  | { kind: 'road'; after: string | null; quick?: boolean; write?: boolean }
   // after recording today: "下次是 10/28（週二）嗎？"
   | { kind: 'askNext'; date: string; done: boolean }
   // the lamp (write down what just made sense) and the jar at the start (where those are kept)
@@ -259,7 +259,7 @@ function Main() {
   } else if (view?.kind === 'road') {
     const i = sessions.findIndex(s => s.id === view.after);
     const title = view.after ? `路上 · ${short(sessions[i].date)} 之後` : sessions.length ? '路上 · 第一次之前' : '路上 · 出發之前';
-    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} practices={practices} onPlay={play} onClose={close} />;
+    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} write={view.write} practices={practices} onPlay={play} onClose={close} />;
   } else if (view?.kind === 'book') {
     sheet = (
       <Book
@@ -272,7 +272,7 @@ function Main() {
         onPlay={play}
         onOpen={s => setView({ kind: 'detail', id: s.id })}
         onBackfill={() => setView({ kind: 'flow', past: true })}
-        onBackfillRoad={() => setView({ kind: 'road', after: current })}
+        onBackfillRoad={() => setView({ kind: 'road', after: current, write: true })}
         onSettings={() => setView({ kind: 'settings' })}
         onClose={() => (setTopic(null), close())}
       />
@@ -373,7 +373,7 @@ function Main() {
         nextSession={next}
         onOpenSession={s => setView({ kind: 'detail', id: s.id })}
         onPlay={play}
-        onOpenRoad={after => setView({ kind: 'road', after, quick: after === current })}
+        onOpenRoad={after => setView({ kind: 'road', after })}
         onNextSign={() => setView({ kind: 'next' })}
         look={settings.walker ?? 'girl'}
         onLamp={() => setView({ kind: 'lamp' })}

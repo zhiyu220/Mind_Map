@@ -17,13 +17,15 @@ interface Props {
   writable: boolean;
   /** opened to write one thing: start in the text box, and close quietly once it's saved */
   quick?: boolean;
+  /** start with the text box open (but no keyboard yet); otherwise it opens with 寫一筆, so looking doesn't bring up the keyboard */
+  write?: boolean;
   practices: Practice[];
   onPlay: (s: Song) => void;
   onClose: () => void;
 }
 
 /** The dashed dot: things that happened between two sessions. */
-export default function RoadSheet({ title, after, notes, writable, quick, practices, onPlay, onClose }: Props) {
+export default function RoadSheet({ title, after, notes, writable, quick, write, practices, onPlay, onClose }: Props) {
   const say = useToast();
   const [text, setText] = useState('');
   const [w, setW] = useState<Weather | null>(null);
@@ -32,6 +34,9 @@ export default function RoadSheet({ title, after, notes, writable, quick, practi
   const [song, setSong] = useState<Song | undefined>();
   const [confirm, setConfirm] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [composing, setComposing] = useState(!!(quick || write));
+  // the keyboard comes up only when you asked to write: from 「沒有，記在路上」 or by tapping 寫一筆
+  const [focus, setFocus] = useState(!!quick);
   // oldest first, so the newest note is at the bottom
   const list = [...notes].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
   const starred = list.filter(n => n.star);
@@ -52,6 +57,7 @@ export default function RoadSheet({ title, after, notes, writable, quick, practi
     setSong(undefined);
     say(landed === after ? '記下來了' : `記在 ${short(date)} 那段路上了`);
     setDate(todayKey());
+    if (!write) setComposing(false);
   };
 
   const row = (n: RoadNote) =>
@@ -99,11 +105,14 @@ export default function RoadSheet({ title, after, notes, writable, quick, practi
       </div>
       <div className="sheet-body">
         <h2 className="q">{title}</h2>
-        {writable && (
+        {writable && !composing && (
+          <button className="pill sm write-one" type="button" onClick={() => (setComposing(true), setFocus(true))}>寫一筆</button>
+        )}
+        {writable && composing && (
           <>
             <p className="sub">兩次諮商之間的事。一句話、只點天氣，都可以。以前的事也能補記，選那天的日期，就會放到那段路上。</p>
             <div className="compose">
-              <textarea id="road-text" className="field" placeholder="發生了什麼，或想到什麼" value={text} onChange={e => setText(e.target.value)} ref={quick ? focusInPlace : undefined} />
+              <textarea id="road-text" className="field" placeholder="發生了什麼，或想到什麼" value={text} onChange={e => setText(e.target.value)} ref={focus ? focusInPlace : undefined} />
               <WeatherPicker small value={w} onChange={setW} />
               <NoteSong value={song} onChange={setSong} />
               <label className="date-row">
@@ -117,10 +126,13 @@ export default function RoadSheet({ title, after, notes, writable, quick, practi
                 <span className="tiny" style={{ flex: 1 }}>加星星，放進背包，下次帶去</span>
                 <button className="pill sm" type="button" onClick={save}>記下來</button>
               </div>
+              {!quick && !write && (
+                <button className="ghost" type="button" onClick={() => (setComposing(false), setFocus(false))}>先不寫</button>
+              )}
             </div>
-            <Practices practices={practices} />
           </>
         )}
+        {writable && <Practices practices={practices} />}
         {starred.length > 0 && (
           <>
             <div className="label">想帶去說的</div>
