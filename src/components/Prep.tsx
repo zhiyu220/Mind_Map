@@ -1,5 +1,6 @@
 import type { Practice, RoadNote, Session } from '../types';
 import { WEATHER_NAME } from '../types';
+import { firstLine } from './Book';
 import { countdown, long, short } from '../lib/dates';
 import { WeatherIcon } from './Weather';
 import { Sprouts } from './Practices';
@@ -20,7 +21,7 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
   const last = sessions[sessions.length - 1];
   const quoted = [...sessions].reverse().find(s => s.quote.trim());
   const notes = [...road].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
-  const starred = notes.filter(n => n.star);
+  const written = notes.filter(n => firstLine(n));
   const weathers = notes.filter(n => n.weather);
   const since = last?.date ?? '';
   const tried = practices.filter(p => !p.archived).map(p => ({ p, tries: p.tries.filter(d => d > since) }));
@@ -54,21 +55,21 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
 
         <div className="prep-box">
           {/* no count: a number makes it feel like a list still to get through */}
-          <div className="label">背包裡想帶去說的</div>
-          {starred.length ? (
+          <div className="label">這段路上的日記</div>
+          {written.length ? (
             <ul className="brought prep-list">
-              {starred.map(n => (
+              {written.map(n => (
                 <li key={n.id}>
                   <span className="tiny">{short(n.date)}</span>
-                  <span>{n.text || WEATHER_NAME[n.weather!]}</span>
+                  <span>{firstLine(n)}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="tiny">這段路上還沒有加星星的事。</p>
+            <p className="tiny">這段路上還沒有寫日記。</p>
           )}
           <button className="linkish small" type="button" onClick={onOpenRoad}>
-            {starred.length ? '打開路上，再加一點' : '打開路上，寫下想說的'}
+            打開路上，看看每一天
           </button>
         </div>
 

@@ -1,5 +1,5 @@
 import { db, newId, getSettings, saveSettings } from '../db';
-import type { Found, Practice, RoadNote, Session, Song, Weather } from '../types';
+import type { DayFields, Found, Practice, RoadNote, Session } from '../types';
 import { todayKey } from './dates';
 import { restretch, stretchFor } from './stretch';
 
@@ -11,8 +11,38 @@ async function tidyStretches() {
   for (const { id, after } of restretch(sessions, await db.notes.toArray())) await db.notes.update(id, { after });
 }
 
-/** Once on start: mends notes left on the wrong stretch by earlier versions. */
-export const tidyRoad = () => db.transaction('rw', db.sessions, db.notes, tidyStretches);
+/**
+ * One page a day: notes from before 2.2 that share a day become one page, written in the order they were.
+ * Weather and song: the day's last; moods: all of them.
+ */
+async function mergeDays() {
+  const byDay = new Map<string, RoadNote[]>();
+  for (const n of (await db.notes.toArray()).sort((a, b) => a.createdAt - b.createdAt)) byDay.set(n.date, [...(byDay.get(n.date) ?? []), n]);
+  for (const list of byDay.values()) {
+    if (list.length < 2) continue;
+    const join = (k: 'text' | 'happened' | 'felt') => list.map(n => n[k]?.trim()).filter(Boolean).join('\n\n');
+    const latest = [...list].reverse();
+    const moods = [...new Set(list.flatMap(n => n.moods ?? []))];
+    const page: RoadNote = {
+      ...list[0],
+      text: join('text'),
+      happened: join('happened') || undefined,
+      felt: join('felt') || undefined,
+      weather: latest.find(n => n.weather)?.weather,
+      song: latest.find(n => n.song)?.song,
+      moods: moods.length ? moods : undefined
+    };
+    await db.notes.put(page);
+    await db.notes.bulkDelete(list.slice(1).map(n => n.id));
+  }
+}
+
+/** Once on start (and after a restore): one page a day, each on the stretch its date belongs to. */
+export const tidyRoad = () =>
+  db.transaction('rw', db.sessions, db.notes, async () => {
+    await mergeDays();
+    await tidyStretches();
+  });
 
 /** Adds a session for today, or for an earlier day when filling in the past. */
 type SessionFields = Pick<Session, 'weather' | 'moods' | 'topics' | 'quote' | 'notes' | 'song' | 'raw' | 'takeHome' | 'leave' | 'bringLeave'>;
@@ -48,19 +78,26 @@ export async function deleteSession(id: string) {
   });
 }
 
-/** Adds a road note; its date decides which stretch of road it lands on. Returns the note. */
-export async function addNote(n: { text: string; weather?: Weather; star: boolean; song?: Song }, date = todayKey()) {
-  const after = stretchFor(date, (await db.sessions.toArray()).sort(byDate));
-  const note: RoadNote = { id: newId(), after, date, createdAt: Date.now(), ...n };
-  await db.notes.add(note);
-  return note;
-}
+/** The page for a day on the road, if it's been written. */
+export const getDay = (date: string) => db.notes.filter(n => n.date === date).first();
 
-/** Changing a road note; a new date may move it to another stretch of road. Returns that stretch. */
-export async function updateNote(id: string, patch: { text: string; weather?: Weather; star: boolean; date: string; song?: Song }) {
-  const after = stretchFor(patch.date, (await db.sessions.toArray()).sort(byDate));
-  await db.notes.update(id, { ...patch, after });
-  return after;
+/**
+ * Writes on a day's page: the first time makes it (its date decides the stretch of road), later times change it.
+ * Returns the page, and what it was before (for 收回).
+ */
+export async function saveDay(d: Partial<DayFields>, date = todayKey()): Promise<{ note: RoadNote; was?: RoadNote }> {
+  return db.transaction('rw', db.sessions, db.notes, async () => {
+    const was = await getDay(date);
+    if (was) {
+      const note = { ...was, ...d };
+      await db.notes.put(note);
+      return { note, was };
+    }
+    const after = stretchFor(date, (await db.sessions.toArray()).sort(byDate));
+    const note: RoadNote = { id: newId(), after, date, createdAt: Date.now(), text: '', ...d };
+    await db.notes.add(note);
+    return { note };
+  });
 }
 
 /** 後來我發現: a sentence added to a session later on. */
@@ -72,7 +109,6 @@ export async function addFound(sessionId: string, text: string, date = todayKey(
 export const deleteFound = (sessionId: string, id: string) =>
   db.sessions.where('id').equals(sessionId).modify(s => void (s.found = (s.found ?? []).filter(f => f.id !== id)));
 
-export const toggleStar = (n: RoadNote) => db.notes.update(n.id, { star: !n.star });
 export const deleteNote = (id: string) => db.notes.delete(id);
 
 /** 想練習的事 */

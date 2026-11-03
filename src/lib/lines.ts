@@ -25,12 +25,11 @@ export function homeLines(sessions: Session[], notes: RoadNote[], today: string,
   }
   const last = sessions[sessions.length - 1];
   const onRoad = notes.filter(n => n.after === (last?.id ?? null));
-  const stars = onRoad.filter(n => n.star).length;
 
   if (!last) {
     L.push({ text: '這裡是起點。' });
-    if (nextSession) L.push(nextLine(today, nextSession, stars));
-    if (onRoad.length) L.push({ text: `出發之前，|記下了 ${onRoad.length} 件事。` });
+    if (nextSession) L.push(nextLine(today, nextSession));
+    if (onRoad.length) L.push({ text: `出發之前，|寫了 ${onRoad.length} 天的日記。` });
     return L;
   }
 
@@ -41,8 +40,8 @@ export function homeLines(sessions: Session[], notes: RoadNote[], today: string,
     const d = daysBetween(last.date, today);
     if (d > 0) L.push({ text: `${short(last.date)} 之後，|已經走了 ${d} 天。` });
     L.push({ text: `上次走完的那天，|是${WEATHER_NAME[last.weather]}。` });
-    if (nextSession && daysBetween(today, nextSession) >= 0) L.push(nextLine(today, nextSession, stars));
-    if (onRoad.length) L.push({ text: `這幾天在路上，|記下了 ${onRoad.length} 件事。` });
+    if (nextSession && daysBetween(today, nextSession) >= 0) L.push(nextLine(today, nextSession));
+    if (onRoad.length) L.push({ text: `這幾天在路上，|寫了 ${onRoad.length} 天的日記。` });
   }
   L.push({ text: `這條路上，|有 ${sessions.length} 個點了。` });
   // for a few sessions after a milestone, a word about what changed along the road
@@ -54,9 +53,9 @@ export function homeLines(sessions: Session[], notes: RoadNote[], today: string,
   return L;
 }
 
-function nextLine(today: string, next: string, stars: number): Line {
+function nextLine(today: string, next: string): Line {
   const k = daysBetween(today, next);
-  if (k === 0) return { text: stars ? `今天要去諮商。|路上有 ${stars} 件想說的事。` : '今天要去諮商。' };
+  if (k === 0) return { text: '今天要去諮商。' };
   if (k === 1) return { text: `明天就是${weekday(next)}，|又要去說說話了。` };
   if (k <= 7) return { text: `再 ${k} 天就是${weekday(next)}，|又要去說說話了。` };
   return { text: `下次諮商是 ${short(next)}。` };

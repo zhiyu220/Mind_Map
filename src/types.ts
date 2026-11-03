@@ -53,18 +53,34 @@ export interface Found {
   createdAt: number;
 }
 
-/** Something written on the road between two sessions (the dashed dot). */
+/**
+ * A day on the road between two sessions (the dashed dot): one diary page a day.
+ * Before 2.2 there could be several notes a day, each with a star; they're merged into one page (store.ts).
+ */
 export interface RoadNote {
   id: string;
   /** the session this note comes after; null = before the first session */
   after: string | null;
   date: string; // YYYY-MM-DD
   weather?: Weather;
+  moods?: string[];
+  /** 今天發生了什麼 */
+  happened?: string;
+  /** 心裡的感覺 */
+  felt?: string;
+  /** 其他想寫的 (and everything written before the diary had sections) */
   text: string;
-  star: boolean;
+  /** 想帶去說, from before 2.2; no longer used */
+  star?: boolean;
   song?: Song;
   createdAt: number;
 }
+
+/** The parts of a day's page you write. */
+export type DayFields = Pick<RoadNote, 'weather' | 'moods' | 'happened' | 'felt' | 'text' | 'song'>;
+
+/** Everything written on a day's page, in order, for lists and look-backs. */
+export const dayWords = (n: RoadNote) => [n.happened, n.felt, n.text].map(t => t?.trim()).filter(Boolean).join('\n');
 
 /** 想練習的事: a small thing to try between sessions. No checkbox, just a mark each day you tried. */
 export interface Practice {

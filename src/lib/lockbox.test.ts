@@ -5,7 +5,7 @@ import { _forget, changePin, getLockbox, openWithPin, removePin, setPin } from '
 import { Locked } from './seal';
 import { hashPin } from './pin';
 import { lastExport, makeBackup, openBackup, readBackup, recordExport, restoreBackup, undoRestore } from './backup';
-import { addFound, addNote, addPractice, addSession } from './store';
+import { addFound, saveDay, addPractice, addSession } from './store';
 
 const blank = { weather: 'sun' as const, moods: ['平靜'], topics: ['自己'], quote: '其實我很害怕', notes: '說不出口的事' };
 
@@ -22,7 +22,7 @@ async function onDisk() {
 async function write() {
   const s = await addSession(blank, true, '2026-09-03');
   await addFound(s.id, '原來我在等別人先開口');
-  await addNote({ text: '路上想到媽媽', star: true }, '2026-09-05');
+  await saveDay({ text: '路上想到媽媽' }, '2026-09-05');
   await addPractice('睡前寫三件小事');
   return s;
 }
@@ -119,7 +119,7 @@ describe('records sealed with a PIN', () => {
     expect(data.sessions[0].quote).toBe('其實我很害怕');
     expect(JSON.stringify(data)).not.toContain('lockbox');
 
-    await addNote({ text: '還原前寫的', star: false }, '2026-09-20');
+    await saveDay({ text: '還原前寫的' }, '2026-09-20');
     await restoreBackup(data);
     expect(await onDisk()).not.toContain('還原前寫的');
     expect(await onDisk()).not.toContain('其實我很害怕');
