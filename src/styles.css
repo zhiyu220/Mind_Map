@@ -299,6 +299,17 @@ textarea.field.tall { min-height: min(260px, calc(var(--seen-h, 100vh) * .35)); 
 
 /* road (between sessions) */
 .entries { display: grid; gap: 10px; }
+.days { display: grid; gap: 14px; }
+.day { display: grid; gap: 8px; border-bottom: 1.5px dashed var(--sheet-line); padding-bottom: 14px; }
+.day header { display: flex; align-items: center; gap: 10px; }
+.day header svg.w { width: 30px; height: 30px; flex: none; }
+.day-date { font-size: 15px; color: var(--sheet-soft); }
+.day .notes { margin: 2px 0 0; }
+.day .chips.static { margin-top: 0; }
+.compose.diary { gap: 8px; }
+.compose.diary .label { margin-top: 6px; }
+.part { display: grid; gap: 10px; }
+.part textarea.field { min-height: 76px; }
 .entry { display: flex; gap: 12px; align-items: flex-start; border-bottom: 1.5px dashed var(--sheet-line); padding-bottom: 12px; }
 .entry svg.w { width: 34px; height: 34px; flex: none; }
 .entry .txt { flex: 1; min-width: 0; font-size: 16px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }

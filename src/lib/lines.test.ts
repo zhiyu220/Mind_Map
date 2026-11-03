@@ -42,18 +42,18 @@ describe('homeLines', () => {
     expect(lines).toContain('10/15 之後，|已經走了 5 天。');
     expect(lines).toContain('上次走完的那天，|是有點雲。');
     expect(lines).toContain('再 2 天就是週四，|又要去說說話了。');
-    expect(lines).toContain('這幾天在路上，|記下了 2 件事。');
+    expect(lines).toContain('這幾天在路上，|寫了 2 天的日記。');
     expect(lines).toContain('「慢慢來」');
   });
 
-  it('mentions starred notes on the day of the session', () => {
-    const lines = homeLines([s('a', '2026-10-15')], [note('a', true)], '2026-10-22', '2026-10-22').map(l => l.text);
-    expect(lines).toContain('今天要去諮商。|路上有 1 件想說的事。');
+  it('says plainly when the session is today', () => {
+    const lines = homeLines([s('a', '2026-10-15')], [note('a')], '2026-10-22', '2026-10-22').map(l => l.text);
+    expect(lines).toContain('今天要去諮商。');
   });
 
   it('only counts notes on the current stretch of road', () => {
     const lines = homeLines([s('a', '2026-10-08'), s('b', '2026-10-15')], [note('a')], '2026-10-20').map(l => l.text);
-    expect(lines.some(t => t.includes('記下了'))).toBe(false);
+    expect(lines.some(t => t.includes('日記'))).toBe(false);
   });
 
   it('now and then brings back the song of a day', () => {

@@ -31,7 +31,7 @@ async function writeOnTheRoad(page: Page, text: string) {
   await page.locator('[aria-label^="現在這段路上"]').click();
   // looking first: the text box (and the keyboard) only once you ask to write
   await expect(page.locator('#road-text')).toHaveCount(0);
-  await page.getByRole('button', { name: '寫一筆' }).click();
+  await page.getByRole('button', { name: '寫今天' }).click();
   await expect(page.locator('#road-text')).toBeFocused();
   await page.locator('#road-text').fill(text);
   await page.getByRole('button', { name: '記下來' }).click();
