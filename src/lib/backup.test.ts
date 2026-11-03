@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db, dropRetiredSettings, getSettings, saveSettings } from '../db';
 import { BACKUP_NAME, BadBackup, beforeRestoreAt, compareBackup, lastExport, makeBackup, openBackup, readBackup, recordExport, restoreBackup, undoRestore, type Backup } from './backup';
 import { unseal } from './crypto';
-import { addFound, addNote, addPractice, addSession } from './store';
+import { addFound, saveDay, addPractice, addSession } from './store';
 
 const blank = { weather: 'sun' as const, moods: ['平靜'], topics: ['自己'], quote: '慢慢來', notes: '' };
 const asFile = (x: unknown) => new File([JSON.stringify(x)], 'backup.json', { type: 'application/json' });
@@ -24,7 +24,7 @@ const ses = (id: string, date: string, extra = {}) => ({ id, date, weather: 'sun
 describe('backups', () => {
   it('comes back the same after export, unlock and restore', async () => {
     await addSession(blank, true, '2026-09-03');
-    await addNote({ text: '想說的', star: true, weather: 'rain' }, '2026-09-05');
+    await saveDay({ text: '想說的', weather: 'rain' }, '2026-09-05');
     await addPractice('散步');
     await saveSettings({ nextSession: '2026-10-28', customTopics: ['貓'] });
     const before = await snapshot();
@@ -181,7 +181,7 @@ describe('backups', () => {
     expect(await lastExport()).toBeNull();
     await recordExport(Date.now() - 1000);
     await addSession(blank, true, '2026-10-14');
-    await addNote({ text: 'x', star: false }, '2026-10-15');
+    await saveDay({ text: 'x' }, '2026-10-15');
     expect(await lastExport()).toMatchObject({ sessions: 1, notes: 1 });
     const inside = await unseal<Backup>(JSON.parse(await (await makeBackup('pw')).text()), 'pw');
     expect(JSON.stringify(inside)).not.toContain('lastBackup');

@@ -6,7 +6,7 @@ import { DEFS, SEASON_FX, SKY } from './drawings';
 import { countdown, daysBetween, guessNext, headerDate, long, short, todayKey, upcoming, weekday } from './lib/dates';
 import { homeLines, lineOfTheDay } from './lib/lines';
 import { followSky } from './lib/sky';
-import { addNote, addSession, byDate, deleteNote, tidyRoad, updateSession } from './lib/store';
+import { addSession, byDate, deleteNote, saveDay, tidyRoad, updateSession } from './lib/store';
 import { getLockbox } from './lib/lockbox';
 import { playlistUris, quietPlaylist, syncPlaylist } from './lib/spotify';
 import Landscape from './components/Landscape';
@@ -24,8 +24,8 @@ import { ToastProvider, useToast } from './components/Toast';
 type View =
   | { kind: 'ask' }
   | { kind: 'flow'; edit?: Session; past?: boolean }
-  // quick: opened to write one thing; the sheet closes once it's saved
-  | { kind: 'road'; after: string | null; quick?: boolean }
+  // quick: opened to write one thing; the sheet closes once it's saved. write: starts with the text box open
+  | { kind: 'road'; after: string | null; quick?: boolean; write?: boolean }
   // after recording today: "下次是 10/28（週二）嗎？"
   | { kind: 'askNext'; date: string; done: boolean }
   // the lamp (write down what just made sense) and the jar at the start (where those are kept)
@@ -188,7 +188,7 @@ function Main() {
 
   let sheet = null;
   if (view?.kind === 'ask') {
-    const stars = roadOf(current).filter(n => n.star).length;
+    const wroteToday = roadOf(current).some(n => n.date === today);
     sheet = (
       <>
         <div className="scrim" onClick={close} />
@@ -207,16 +207,16 @@ function Main() {
           )}
           <button className="big" type="button" onClick={() => setView({ kind: 'road', after: current, quick: true })}>
             <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="13" fill="none" stroke="var(--sheet-ink)" strokeWidth="2.5" strokeDasharray="5 5" /></svg>
-            <span>沒有，記在路上<small>{stars ? `路上有 ${stars} 件加了星星的事` : '兩次諮商之間的事'}</small></span>
+            <span>沒有，寫今天的日記<small>{wroteToday ? '今天寫過了，可以接著寫' : '兩次諮商之間的事'}</small></span>
           </button>
           {/* one tap: today's weather goes on the road, and 收回 takes it back */}
           <div className="ask-weather">
             <small>或只點一下今天的天氣</small>
             <WeatherPicker small value={null} onChange={async w => {
               if (!w) return;
-              const n = await addNote({ text: '', weather: w, star: false });
+              const { note, was } = await saveDay({ weather: w });
               close();
-              say('記在路上了', () => deleteNote(n.id));
+              say('記在今天的日記了', () => (was ? db.notes.put(was) : deleteNote(note.id)));
             }} />
           </div>
         </div>
@@ -259,7 +259,7 @@ function Main() {
   } else if (view?.kind === 'road') {
     const i = sessions.findIndex(s => s.id === view.after);
     const title = view.after ? `路上 · ${short(sessions[i].date)} 之後` : sessions.length ? '路上 · 第一次之前' : '路上 · 出發之前';
-    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} practices={practices} onPlay={play} onClose={close} />;
+    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} write={view.write} practices={practices} onPlay={play} onClose={close} />;
   } else if (view?.kind === 'book') {
     sheet = (
       <Book
@@ -272,7 +272,7 @@ function Main() {
         onPlay={play}
         onOpen={s => setView({ kind: 'detail', id: s.id })}
         onBackfill={() => setView({ kind: 'flow', past: true })}
-        onBackfillRoad={() => setView({ kind: 'road', after: current })}
+        onBackfillRoad={() => setView({ kind: 'road', after: current, write: true })}
         onSettings={() => setView({ kind: 'settings' })}
         onClose={() => (setTopic(null), close())}
       />
@@ -373,7 +373,7 @@ function Main() {
         nextSession={next}
         onOpenSession={s => setView({ kind: 'detail', id: s.id })}
         onPlay={play}
-        onOpenRoad={after => setView({ kind: 'road', after, quick: after === current })}
+        onOpenRoad={after => setView({ kind: 'road', after })}
         onNextSign={() => setView({ kind: 'next' })}
         look={settings.walker ?? 'girl'}
         onLamp={() => setView({ kind: 'lamp' })}

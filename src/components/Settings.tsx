@@ -338,7 +338,7 @@ function BackupGroup() {
         <div className="backup-form">
           <input id="backup-pw" className="field" type="password" autoComplete="new-password" placeholder="備份密碼（至少 6 個字）" value={pw} onChange={e => setPw(e.target.value)} />
           <input id="backup-pw2" className="field" type="password" autoComplete="new-password" placeholder="再輸入一次" value={pw2} onChange={e => setPw2(e.target.value)} />
-          <p className="tiny">忘記這組密碼，這份備份就打不開了。它跟開 App 的 4 位數密碼是分開的。</p>
+          <p className="tiny">忘記這組密碼，這份備份就打不開了。它跟開 App 的密碼是分開的。</p>
           <p className="tiny">檔名都是「{BACKUP_NAME}」。存到同一個資料夾時選「取代」，就只會留一份最新的。</p>
           <div className="row-buttons">
             <button className="pill sm" type="button" disabled={busy} onClick={doExport}>{busy ? '加密中…' : '匯出'}</button>

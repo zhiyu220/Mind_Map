@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { RoadNote, Session, Song } from '../types';
-import { WEATHER_NAME } from '../types';
+import { WEATHER_NAME, dayWords } from '../types';
 import { long, short, weekday } from '../lib/dates';
 import { deleteSession } from '../lib/store';
 import { groupByMonth, recordYears, skyOfYear, topicsUsed } from '../lib/months';
@@ -174,7 +174,7 @@ function Together({ sessions, notes, onClose }: { sessions: Session[]; notes: Ro
       s.notes.trim() && { key: `notes-${s.id}`, text: s.notes.trim(), date: s.date },
       s.takeHome && { key: `home-${s.id}`, text: s.takeHome, date: s.date }
     ]),
-    ...notes.filter(n => n.text.trim()).map(n => ({ key: `note-${n.id}`, text: n.text.trim(), date: n.date }))
+    ...notes.filter(n => dayWords(n)).map(n => ({ key: `note-${n.id}`, text: dayWords(n), date: n.date }))
   ]
     .filter((x): x is { key: string; text: string; date: string } => !!x)
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -258,11 +258,14 @@ function Months({ sessions, notes, onOpen, onPlay }: { sessions: Session[]; note
   );
 }
 
+/** A day's page in one line, for lists. */
+export const firstLine = (r: RoadNote) => dayWords(r).split('\n')[0] || (r.weather ? WEATHER_NAME[r.weather] : '');
+
 /** One session, in full. */
 export function Detail({ session, n, roadBefore, onEdit, onTopic, onClose }: { session: Session; n: number; roadBefore: RoadNote[]; onEdit: () => void; onTopic: (t: string) => void; onClose: () => void }) {
   const [confirm, setConfirm] = useState(false);
   const s = session;
-  const starred = roadBefore.filter(r => r.star);
+  const before = [...roadBefore].sort((a, b) => a.date.localeCompare(b.date)).filter(r => dayWords(r) || r.weather);
   return (
     <section className="sheet" role="dialog" aria-label={`第 ${n} 次諮商`}>
       <div className="sheet-head">
@@ -316,10 +319,10 @@ export function Detail({ session, n, roadBefore, onEdit, onTopic, onClose }: { s
             <SongPlayer song={s.song} />
           </div>
         )}
-        {starred.length > 0 && (
+        {before.length > 0 && (
           <div>
-            <div className="label">那時想帶去說的</div>
-            <ul className="brought">{starred.map(r => <li key={r.id}>{short(r.date)}　{r.text || WEATHER_NAME[r.weather!]}</li>)}</ul>
+            <div className="label">去之前，路上的日記</div>
+            <ul className="brought">{before.map(r => <li key={r.id}>{short(r.date)}　{firstLine(r)}</li>)}</ul>
           </div>
         )}
         <div className="danger">
