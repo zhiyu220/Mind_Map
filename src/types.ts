@@ -110,4 +110,6 @@ export interface Settings {
   resting?: boolean;
   /** the walker on the road */
   walker?: 'girl' | 'boy';
+  /** 時間鎖: opens only from `from` to `to` (HH:MM; 00:00 as the end is midnight), except on session days */
+  timeLock?: { on: boolean; from: string; to: string };
 }
