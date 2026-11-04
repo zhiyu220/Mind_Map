@@ -3,6 +3,7 @@ import type { Settings as S } from '../types';
 import { saveSettings } from '../db';
 import { addDays, long, short, toKey, todayKey } from '../lib/dates';
 import Helplines from './Helplines';
+import { TimeLockGroup } from './TimeLock';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { canUseFaceId } from '../lib/faceid';
 import { addFace, changePin, getLockbox, removeFace, removePin, setPin as lockWith } from '../lib/lockbox';
@@ -242,6 +243,8 @@ export default function Settings({ settings, onClose }: { settings: S; onClose: 
           )}
           <p className="tiny">忘記密碼就打不開了（資料只在這支手機裡），記得也做備份。</p>
         </div>
+
+        <TimeLockGroup settings={settings} />
 
         <BackupGroup />
 

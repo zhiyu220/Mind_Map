@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, DEFAULT_SETTINGS, getSettings, saveSettings } from './db';
 import type { Session, Song } from './types';
@@ -8,6 +8,8 @@ import { homeLines, lineOfTheDay } from './lib/lines';
 import { followSky } from './lib/sky';
 import { addSession, byDate, deleteNote, saveDay, tidyRoad, updateSession } from './lib/store';
 import { getLockbox } from './lib/lockbox';
+import { closedNow } from './lib/timelock';
+import { TimeClosed, TimeLockSheet } from './components/TimeLock';
 import { playlistUris, quietPlaylist, syncPlaylist } from './lib/spotify';
 import Landscape from './components/Landscape';
 import SessionFlow, { clearDraft, emptyDraft, loadDraft, type Draft } from './components/SessionFlow';
@@ -59,6 +61,14 @@ function Gate() {
   const box = useLiveQuery(getLockbox, []);
   const [unlocked, setUnlocked] = useState(false);
   const [opened, setOpened] = useState(false);
+  // 時間鎖: checked on opening and on coming back, never while you're in the middle of something
+  const [closed, setClosed] = useState<boolean | null>(null);
+  const [adjusting, setAdjusting] = useState(false);
+  const latest = useRef(settings);
+  latest.current = settings;
+  const check = useCallback(() => {
+    if (latest.current) closedNow(latest.current).then(setClosed, () => setClosed(false));
+  }, []);
   const locked = !!box || !!settings?.pinHash;
   const ready = settings !== undefined && box !== undefined && (!locked || unlocked);
 
@@ -67,11 +77,18 @@ function Gate() {
     let hiddenAt = 0;
     const onVis = () => {
       if (document.hidden) hiddenAt = Date.now();
-      else if (hiddenAt && Date.now() - hiddenAt > RELOCK_AFTER) setUnlocked(false);
+      else {
+        if (hiddenAt && Date.now() - hiddenAt > RELOCK_AFTER) setUnlocked(false);
+        check();
+      }
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, []);
+  }, [check]);
+
+  useEffect(() => {
+    if (settings !== undefined && closed === null) check();
+  }, [settings, closed, check]);
 
   // with no lock set, stay open (setting a PIN now locks from the next time on)
   useEffect(() => {
@@ -85,7 +102,7 @@ function Gate() {
     tidyRoad().catch(() => {});
   }, [ready]);
 
-  if (settings === undefined || box === undefined) return <div className="page" />;
+  if (settings === undefined || box === undefined || closed === null) return <div className="page" />;
   const lock = !ready && (
     <Lock
       digits={box?.digits ?? 4}
@@ -96,13 +113,23 @@ function Gate() {
       }}
     />
   );
-  if (!opened) return lock || <div className="page" />;
+  // closed by the time lock: before the PIN. 調整時間鎖 asks for the PIN (if set), then shows only the time lock
+  const front = closed
+    ? adjusting
+      ? lock || (
+          <div className="page">
+            <TimeLockSheet settings={settings} onDone={() => (setAdjusting(false), check())} />
+          </div>
+        )
+      : <TimeClosed settings={settings} onAdjust={() => setAdjusting(true)} />
+    : lock;
+  if (!opened) return front || <div className="page" />;
   return (
     <>
-      <div hidden={!ready}>
+      <div hidden={!ready || closed}>
         <Main />
       </div>
-      {lock}
+      {front}
     </>
   );
 }
