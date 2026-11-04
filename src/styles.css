@@ -388,6 +388,11 @@ img.cover { object-fit: cover; }
 /* 密碼鎖 */
 .lock { position: fixed; inset: 0; background: var(--sky); color: var(--text); display: grid; place-content: center; justify-items: center; gap: 24px; padding: env(safe-area-inset-top, 0px) 24px env(safe-area-inset-bottom, 0px); }
 .lock h2 { margin: 0; font-size: 24px; font-weight: 400; }
+.time-closed { gap: 10px; text-align: center; }
+.time-closed p { margin: 0 0 18px; font-size: 17px; }
+.time-closed .linkish { color: var(--text); opacity: .7; justify-self: center; font-size: 14px; }
+.time-range { display: flex; align-items: center; gap: 10px; }
+.time-range .field { flex: 1; min-width: 0; }
 .pin-dots { display: flex; gap: 16px; }
 .pin-dots i { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--paper); opacity: .6; }
 .pin-dots i.on { background: var(--ink); opacity: 1; }
