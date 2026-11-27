@@ -13,7 +13,7 @@ const onDisk = (page: Page) =>
     const req = indexedDB.open('my-sky');
     const db = await new Promise<IDBDatabase>(r => (req.onsuccess = () => r(req.result)));
     const all = (st: string) => new Promise<unknown[]>(r => { const q = db.transaction(st).objectStore(st).getAll(); q.onsuccess = () => r(q.result); });
-    const text = JSON.stringify({ s: await all('sessions'), n: await all('notes'), p: await all('practices'), kv: await all('kv') });
+    const text = JSON.stringify({ s: await all('sessions'), n: await all('notes'), p: await all('practices'), b: await all('pack'), kv: await all('kv') });
     db.close();
     return text;
   });
@@ -220,4 +220,61 @@ test('the mood wheel: a word from a family, one of your own, and the same as las
   await expect(page.locator('.toast')).toContainText('記下來了');
   await expect(page.locator('.day .chips.static')).toContainText('擔心');
   await expect(page.locator('.day .chips.static')).toContainText('搬家好累');
+});
+
+/** Selects some of the words shown on a page, as a finger would. */
+const selectWords = (page: Page, words: string) =>
+  page.evaluate(w => {
+    const el = [...document.querySelectorAll('[data-pack]')].find(e => e.textContent?.includes(w))!;
+    const node = el.firstChild!;
+    const at = node.textContent!.indexOf(w);
+    const r = document.createRange();
+    r.setStart(node, at);
+    r.setEnd(node, at + w.length);
+    document.getSelection()!.removeAllRanges();
+    document.getSelection()!.addRange(r);
+  }, words);
+
+test('想帶去說: words from the diary go in the backpack, sealed, and only the ticked ones are shown', async ({ page }) => {
+  await page.locator('[aria-label^="現在這段路上"]').click();
+  await page.getByRole('button', { name: '寫今天' }).click();
+  await page.locator('#road-text').fill('開會時先道歉了。是一直在想別人會不會不高興。');
+  await page.locator('#road-text').blur();
+  await page.getByRole('button', { name: '＋ 選心情' }).click();
+  await page.getByRole('tab', { name: '沉沉的' }).click();
+  await page.getByRole('button', { name: '疲累', exact: true }).click();
+  await page.getByRole('button', { name: '收起來' }).click();
+  await page.getByRole('button', { name: '記下來' }).click();
+  await expect(page.locator('.toast')).toContainText('記下來了');
+
+  await selectWords(page, '是一直在想別人會不會不高興。');
+  await page.getByRole('button', { name: '放進背包' }).click();
+  await expect(page.locator('.toast')).toContainText('放進背包了，放在「沉沉的」');
+
+  await page.getByRole('button', { name: '想帶去說的背包 ›' }).click();
+  await expect(page.locator('.pack-group', { hasText: '沉沉的' })).toContainText('是一直在想別人會不會不高興。');
+  await page.getByRole('button', { name: '＋ 自己寫一句' }).click();
+  await page.locator('#pack-text').fill('媽媽那通電話');
+  await page.getByRole('button', { name: '放進去' }).click();
+  await page.getByRole('radio', { name: '依時間' }).click();
+  await expect(page.locator('.pack-item')).toHaveCount(2);
+  await page.getByRole('button', { name: '關閉' }).click();
+  await page.getByRole('button', { name: '關閉' }).click();
+
+  await setPin(page, '135790');
+  expect(await onDisk(page)).not.toContain('媽媽那通電話');
+
+  // the day before: 去說說話之前, tick one, show it
+  await page.getByRole('button', { name: /點一下設定下次諮商/ }).click();
+  const d = new Date(Date.now() + 86400000);
+  await page.locator('#next-session').fill(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  await page.getByRole('button', { name: '好' }).click();
+  await page.getByRole('button', { name: /明天要去說說話了/ }).click();
+  await page.getByRole('checkbox', { name: /媽媽那通電話/ }).check();
+  await page.getByRole('button', { name: '拿給諮商師看（1 則）' }).click();
+  const shown = page.locator('section[aria-label="這次想說的"]');
+  await expect(shown).toContainText('媽媽那通電話');
+  await expect(shown).not.toContainText('是一直在想別人會不會不高興');
+  await page.getByRole('button', { name: '看完了，還給我' }).click();
+  await expect(page.locator('section[aria-label="去說說話之前"]')).toBeVisible();
 });

@@ -53,15 +53,16 @@ const use = (key: Uint8Array | null) => {
 export const getLockbox = async () => (await getKV<Lockbox>('lockbox')) ?? null;
 const saveLockbox = (box: Lockbox) => db.kv.put({ key: 'lockbox', value: box });
 
-const TABLES = () => [db.sessions, db.notes, db.practices, db.kv];
+const TABLES = () => [db.sessions, db.notes, db.practices, db.pack, db.kv];
 
 /** Writes every record again: sealed with the key in use, or readable when there's none. Inside a transaction. */
 async function rewriteAll(before: () => void = () => {}) {
-  const rows = { sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), practices: await db.practices.toArray(), kept: await db.kv.bulkGet(SEALED_KV) };
+  const rows = { sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), practices: await db.practices.toArray(), pack: await db.pack.toArray(), kept: await db.kv.bulkGet(SEALED_KV) };
   before();
   await db.sessions.bulkPut(rows.sessions);
   await db.notes.bulkPut(rows.notes);
   await db.practices.bulkPut(rows.practices);
+  await db.pack.bulkPut(rows.pack);
   for (const row of rows.kept) if (row) await db.kv.put(row);
 }
 

@@ -1,4 +1,8 @@
-import type { Practice, RoadNote, Session } from '../types';
+import { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import type { PackItem, Practice, RoadNote, Session } from '../types';
+import { chooseLeave, choosePack, leaveChosen } from '../lib/store';
+import { fromLine } from './Pack';
 import { WEATHER_NAME } from '../types';
 import { firstLine } from './Book';
 import { countdown, long, short } from '../lib/dates';
@@ -12,12 +16,17 @@ interface Props {
   practices: Practice[];
   today: string;
   nextSession?: string;
+  /** what's in the backpack now */
+  pack: PackItem[];
   onOpenRoad: () => void;
+  onOpenPack: () => void;
+  /** 拿給諮商師看, with the ticked sentences */
+  onShow: (lines: string[]) => void;
   onClose: () => void;
 }
 
 /** 去說說話之前: a look back at this stretch of road, so you know what you'd like to say. */
-export default function Prep({ sessions, road, practices, today, nextSession, onOpenRoad, onClose }: Props) {
+export default function Prep({ sessions, road, practices, today, nextSession, pack, onOpenRoad, onOpenPack, onShow, onClose }: Props) {
   const last = sessions[sessions.length - 1];
   const quoted = [...sessions].reverse().find(s => s.quote.trim());
   const notes = [...road].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
@@ -26,6 +35,15 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
   const since = last?.date ?? '';
   const tried = practices.filter(p => !p.archived).map(p => ({ p, tries: p.tries.filter(d => d > since) }));
   const c = countdown(today, nextSession);
+  const leave = last?.bringLeave && last.leave?.trim() ? last.leave.trim() : null;
+  // ticks show at once; the database catches up a moment later
+  const [ticks, setTicks] = useState<Record<string, boolean>>({});
+  const tick = (id: string, on: boolean) => setTicks(t => ({ ...t, [id]: on }));
+  const savedLeave = useLiveQuery(leaveChosen, []);
+  const leaveOn = !!leave && (ticks.leave ?? savedLeave === last?.id);
+  const items = [...pack].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+  const isOn = (p: PackItem) => ticks[p.id] ?? !!p.chosen;
+  const chosen = [...(leaveOn ? [leave!] : []), ...items.filter(isOn).map(p => p.text)];
 
   return (
     <section className="sheet" role="dialog" aria-label="去說說話之前">
@@ -39,6 +57,33 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
           <p className="sub" style={{ margin: "8px 0 0" }}>打開背包看看。不用全部說，挑一個就好。</p>
         </div>
 
+        <div className="prep-box">
+          <div className="label">想帶去說 · 勾想說的</div>
+          {leave || items.length ? (
+            <ul className="pack-check">
+              {leave && (
+                <li>
+                  <label className="toggle">
+                    <input type="checkbox" checked={leaveOn} onChange={e => (tick('leave', e.target.checked), chooseLeave(e.target.checked ? last!.id : null))} />
+                    <span>{leave}<small>上次留在諮商室、說好要帶來的</small></span>
+                  </label>
+                </li>
+              )}
+              {items.map(p => (
+                <li key={p.id}>
+                  <label className="toggle">
+                    <input type="checkbox" checked={isOn(p)} onChange={e => (tick(p.id, e.target.checked), choosePack(p.id, e.target.checked))} />
+                    <span>{p.text}<small>{fromLine(p)}</small></span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="tiny">背包還是空的。在日記裡選一段字，按「放進背包」。</p>
+          )}
+          <button className="linkish small" type="button" onClick={onOpenPack}>打開背包，再放一句</button>
+        </div>
+
         {quoted && (
           <div className="prep-box">
             <div className="label">{quoted === last ? '上次記下的一句話' : `${short(quoted.date)} 記下的一句話`}</div>
@@ -46,12 +91,6 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
           </div>
         )}
 
-        {last?.bringLeave && last.leave && (
-          <div className="prep-box">
-            <div className="label">上次留在諮商室、說好要帶來的</div>
-            <p className="notes">{last.leave}</p>
-          </div>
-        )}
 
         <div className="prep-box">
           {/* no count: a number makes it feel like a list still to get through */}
@@ -109,6 +148,12 @@ export default function Prep({ sessions, road, practices, today, nextSession, on
           </div>
         )}
       </div>
+      {chosen.length > 0 && (
+        <div className="sheet-foot center">
+          <button className="pill" type="button" onClick={() => onShow(chosen)}>拿給諮商師看（{chosen.length} 則）</button>
+          <small className="tiny">只顯示勾起來的，不會存成檔案</small>
+        </div>
+      )}
     </section>
   );
 }
