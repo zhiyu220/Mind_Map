@@ -282,13 +282,16 @@ input[type="date"].field { -webkit-appearance: none; appearance: none; display: 
 input[type="date"].field::-webkit-date-and-time-value { text-align: left; }
 textarea.field.tall { min-height: min(260px, calc(var(--seen-h, 100vh) * .35)); }
 
-/* keyboard up (src/lib/viewport.ts): the sheet is only the strip above the keyboard.
-   Give it to the text box: less padding (the home bar is behind the keyboard anyway),
-   and a box short enough to fit whole, so the line you're typing never hides behind the buttons */
-html.keyboard-up .sheet-head { padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
-html.keyboard-up .sheet-body { padding-block: 10px; gap: 12px; }
-html.keyboard-up .sheet-foot { padding-block: 8px; }
-html.keyboard-up .sheet-body textarea.field { min-height: 0; height: max(96px, calc(var(--seen-h, 100vh) * .4)); }
+/* typing in a sheet (src/lib/viewport.ts): the sheet is only the strip above the keyboard, and that can be
+   very little. Give it to the text box: the top bar folds away, the buttons shrink to one slim row,
+   the question gets smaller, and the box fills what's left, so the line you're typing is always in sight */
+html.typing .sheet-head { display: none; }
+html.typing .sheet-body { padding-block: calc(8px + env(safe-area-inset-top, 0px)) 6px; gap: 8px; }
+html.typing .sheet-body > .q { font-size: 18px; margin: 0; }
+html.typing .sheet-body > .sub { display: none; }
+html.typing .sheet-body textarea.field { flex: 1 0 84px; min-height: 84px; height: 84px; padding: 10px 14px; }
+html.typing .sheet-foot { padding-block: 4px 6px; }
+html.typing .sheet-foot .pill { font-size: 16px; padding: 6px 22px; box-shadow: 0 3px 0 var(--ink); }
 
 .search { position: relative; }
 .search svg { position: absolute; left: 14px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: #7a8491; }

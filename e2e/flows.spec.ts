@@ -146,10 +146,16 @@ test('with the keyboard up, the whole text box stays above the buttons', async (
     vv.dispatchEvent(new Event('resize'));
   });
   await page.keyboard.insertText('今天談到很多小時候的事，說著說著就哭了。諮商師說那不是我的錯，我一直記得這句話。回家的路上想了很久。');
+  await expect(page.locator('html')).toHaveClass(/typing/);
   await expect(page.locator('html')).toHaveClass(/keyboard-up/);
+  // the top bar folds away while typing; the box sits fully between the top of the screen and the buttons
+  await expect(page.locator('.sheet-head')).toBeHidden();
+  await page.waitForTimeout(400);
   const box = await page.locator('#raw').boundingBox();
   const foot = await page.locator('.sheet-foot').boundingBox();
-  const head = await page.locator('.sheet-head').boundingBox();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
   expect(box!.y + box!.height).toBeLessThanOrEqual(foot!.y);
-  expect(box!.y).toBeGreaterThanOrEqual(head!.y + head!.height);
+  // and 下一題 still works with the keyboard up
+  await page.getByRole('button', { name: '下一題' }).click();
+  await expect(page.getByRole('heading', { name: /心情/ })).toBeVisible();
 });

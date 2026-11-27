@@ -4,16 +4,17 @@
 //
 // With the sheet that short, a tall text box still ran on behind the buttons at the bottom,
 // and what you were typing (always the last line) was the part you couldn't see.
-// So while the keyboard is up: html gets .keyboard-up (the CSS gives the box less height
-// and the sheet less padding), and the box you're in is scrolled fully into view.
+// So while you type in a sheet: html gets .typing (and .keyboard-up once the keyboard is measured),
+// the CSS gives the box the room, and the box you're in is scrolled fully into view.
 
 /** the visible part shrinking by more than this means a keyboard, not the toolbar hiding */
 const KEYBOARD_MIN = 120;
 const GAP = 10;
 
+/** boxes you type into with the keyboard (not date or time pickers, which bring up their own wheel) */
+const TYPED = ['text', 'search', 'email', 'url', 'tel', 'password', 'number'];
 const isTextField = (el: Element | null): el is HTMLElement =>
-  el instanceof HTMLTextAreaElement ||
-  (el instanceof HTMLInputElement && !['checkbox', 'radio', 'button', 'submit', 'range', 'color', 'file'].includes(el.type));
+  el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && TYPED.includes(el.type));
 
 /** Scroll the sheet so the whole text box you're typing in sits between the top bar and the buttons. */
 export function keepFieldInView() {
@@ -40,8 +41,24 @@ export function fitSheetsToKeyboard() {
   };
   vv.addEventListener('resize', fit);
   vv.addEventListener('scroll', fit);
-  // the keyboard may already be up (moving from one box to the next): the resize won't come
-  document.addEventListener('focusin', () => requestAnimationFrame(keepFieldInView));
+  // Typing in a sheet (html.typing): the CSS folds the top bar away, slims the buttons and lets the box
+  // take whatever is left. This goes by focus, not by measuring, because the iPhone doesn't always tell.
+  let leaving = 0;
+  document.addEventListener('focusin', e => {
+    if (!isTextField(e.target as Element) || !(e.target as Element).closest('.sheet-body')) return;
+    clearTimeout(leaving);
+    root.classList.add('typing');
+    requestAnimationFrame(keepFieldInView);
+    // again once the keyboard has finished sliding up
+    setTimeout(keepFieldInView, 350);
+  });
+  // a moment's wait, so a tap on 下一題 lands on 下一題 and not on whatever slides under the finger
+  document.addEventListener('focusout', () => {
+    clearTimeout(leaving);
+    leaving = window.setTimeout(() => {
+      if (!isTextField(document.activeElement)) root.classList.remove('typing');
+    }, 250);
+  });
   fit();
 }
 
