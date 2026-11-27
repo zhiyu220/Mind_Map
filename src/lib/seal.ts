@@ -16,8 +16,8 @@ export const OPEN_FIELDS: Record<string, string[]> = {
   practices: ['id', 'createdAt'],
   kv: ['key']
 };
-/** kv rows that hold what you wrote (the copy kept before a restore); settings and the like stay readable */
-const SEALED_KV = ['beforeRestore'];
+/** kv rows that hold what you wrote (the copy kept before a restore, the session half written); settings and the like stay readable */
+export const SEALED_KV = ['beforeRestore', 'draft'];
 
 let key: Uint8Array | null = null;
 

@@ -10,6 +10,12 @@ describe('sealed backups', () => {
     expect(await unseal(s, '我的密碼')).toEqual(diary);
   });
 
+  it('seals a diary far larger than the stack can spread', async () => {
+    const diary = { text: '今天的心情'.repeat(100_000) }; // about 1.5 MB
+    const s = await seal(diary, 'pw', 1000);
+    expect(await unseal(s, 'pw')).toEqual(diary);
+  });
+
   it('refuses a wrong password', async () => {
     const s = await seal({ a: 1 }, 'right', 1000);
     await expect(unseal(s, 'wrong')).rejects.toThrow();

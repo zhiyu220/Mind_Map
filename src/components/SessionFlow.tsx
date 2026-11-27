@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Session, Song, Weather } from '../types';
 import { MOODS, TOPICS } from '../types';
 import { headerDate, todayKey } from '../lib/dates';
+import { saveDraft } from '../lib/draft';
 import { WeatherPicker } from './Weather';
 import SongPicker from './SongPicker';
 
@@ -12,26 +13,7 @@ export type FlowMode = 'today' | 'past' | 'edit';
 
 const STEPS = ['weather', 'mood', 'topic', 'quote', 'notes', 'song', 'closing'] as const;
 const DATED_STEPS = ['date', ...STEPS] as const;
-const DRAFT_KEY = 'my-sky:draft';
-
 export const emptyDraft = (): Draft => ({ weather: null, moods: [], topics: [], quote: '', notes: '' });
-
-/** A draft survives the app being closed halfway (only for new records, not edits). */
-export function loadDraft(): Draft | null {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    return raw ? (JSON.parse(raw) as Draft) : null;
-  } catch {
-    return null;
-  }
-}
-export function clearDraft() {
-  try {
-    localStorage.removeItem(DRAFT_KEY);
-  } catch {
-    /* storage may be unavailable */
-  }
-}
 
 interface Props {
   initial: Draft;
@@ -60,11 +42,7 @@ export default function SessionFlow({ initial, mode, takenDates = [], customTopi
 
   useEffect(() => {
     if (mode !== 'today') return;
-    try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
-    } catch {
-      /* storage may be unavailable */
-    }
+    saveDraft(d).catch(() => {});
   }, [d, mode]);
 
   const save = (done: boolean) => {

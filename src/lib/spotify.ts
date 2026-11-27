@@ -6,6 +6,7 @@
 
 import { getKV, getSettings, setKV } from '../db';
 import type { Song } from '../types';
+import { toB64url as b64url } from './b64';
 
 interface Tokens {
   access: string;
@@ -37,10 +38,10 @@ async function hasScope(x: string) {
 }
 
 const VERIFIER = 'my-sky:spotify-verifier';
+/** A random value sent to Spotify and expected back, so only a login this app started is finished */
+const STATE = 'my-sky:spotify-state';
 const redirectUri = () => location.origin + location.pathname;
 
-const b64url = (buf: ArrayBuffer) =>
-  btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 export async function clientId(): Promise<string | undefined> {
   return (await getSettings()).spotifyClientId || import.meta.env.VITE_SPOTIFY_CLIENT_ID || undefined;
@@ -50,7 +51,9 @@ export async function startSpotifyLogin() {
   const id = await clientId();
   if (!id) throw new Error('no client id');
   const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)).buffer);
+  const state = b64url(crypto.getRandomValues(new Uint8Array(16)));
   sessionStorage.setItem(VERIFIER, verifier);
+  sessionStorage.setItem(STATE, state);
   const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
   const q = new URLSearchParams({
     client_id: id,
@@ -58,6 +61,7 @@ export async function startSpotifyLogin() {
     redirect_uri: redirectUri(),
     code_challenge_method: 'S256',
     code_challenge: challenge,
+    state,
     scope: SCOPES
   });
   location.assign(`https://accounts.spotify.com/authorize?${q}`);
@@ -70,9 +74,10 @@ export async function finishSpotifyLogin() {
   if (!code && !params.get('error')) return;
   history.replaceState(null, '', location.pathname);
   const verifier = sessionStorage.getItem(VERIFIER);
+  const state = sessionStorage.getItem(STATE);
   const id = await clientId();
-  if (!code || !verifier || !id) return;
   try {
+    if (!code || !verifier || !id || !state || params.get('state') !== state) return;
     const res = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -81,6 +86,7 @@ export async function finishSpotifyLogin() {
     if (res.ok) await keep(await res.json());
   } finally {
     sessionStorage.removeItem(VERIFIER);
+    sessionStorage.removeItem(STATE);
   }
 }
 
