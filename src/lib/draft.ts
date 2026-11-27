@@ -1,6 +1,6 @@
 // The session you're halfway through writing survives the app being closed (only new records for today).
 // It's kept in the database next to the records, so with a PIN set it's sealed like them (src/lib/seal.ts).
-// Before 2.1.3 it sat in localStorage as plain text: moveOldDraft() brings it over once the app is open.
+// Before 2.2.0 it sat in localStorage as plain text: moveOldDraft() brings it over once the app is open.
 
 import { getKV, setKV } from '../db';
 import type { Draft } from '../components/SessionFlow';

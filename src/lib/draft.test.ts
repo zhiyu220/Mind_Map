@@ -59,7 +59,7 @@ describe('the half-written session', () => {
     expect(await kvOnDisk()).toContain('寫到一半');
   });
 
-  it('moves out of localStorage (plain text before 2.1.3) into the sealed database', async () => {
+  it('moves out of localStorage (plain text before 2.2.0) into the sealed database', async () => {
     await setPin('123456');
     store.set('my-sky:draft', JSON.stringify(draft));
     await moveOldDraft();

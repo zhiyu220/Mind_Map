@@ -106,7 +106,7 @@ function Gate() {
     setOpened(true);
     // mend road notes an earlier version left on the wrong stretch (it changes nothing when all is in order)
     tidyRoad().catch(() => {});
-    // a half-written session from before 2.1.3 sat in localStorage in plain text: into the database, sealed
+    // a half-written session from before 2.2.0 sat in localStorage in plain text: into the database, sealed
     moveOldDraft().catch(() => {});
   }, [ready]);
 
