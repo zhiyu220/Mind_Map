@@ -75,7 +75,7 @@ export interface RoadNote {
   star?: boolean;
   song?: Song;
   createdAt: number;
-  /** when the page was last written on; pages from before 2.1.3 have none */
+  /** when the page was last written on; pages from before 2.2.0 have none */
   updatedAt?: number;
 }
 
