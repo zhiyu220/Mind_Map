@@ -18,6 +18,16 @@ const onDisk = (page: Page) =>
     return text;
   });
 
+/** How many bytes the sealed half-written session takes in the database (0 when there's none). */
+const sealedDraftSize = (page: Page) =>
+  page.evaluate(async () => {
+    const req = indexedDB.open('my-sky');
+    const db = await new Promise<IDBDatabase>(r => (req.onsuccess = () => r(req.result)));
+    const row = await new Promise<{ $?: Uint8Array } | undefined>(r => { const q = db.transaction('kv').objectStore('kv').get('draft'); q.onsuccess = () => r(q.result); });
+    db.close();
+    return row?.$?.length ?? 0;
+  });
+
 async function recordToday(page: Page) {
   await page.getByRole('button', { name: '記下今天' }).click();
   await page.getByRole('button', { name: '有，今天去了' }).click();
@@ -132,4 +142,27 @@ test('a backup made with a PIN set restores what was written', async ({ page }) 
   await expect(page.getByText('備份之後寫的')).toHaveCount(0);
   // still sealed on the phone after the restore
   expect(await onDisk(page)).not.toContain('要帶去說的事');
+});
+
+test('with a PIN, a session closed halfway is sealed too, and picked up again', async ({ page }) => {
+  await setPin(page, '135790');
+  await page.getByRole('button', { name: '記下今天' }).click();
+  await page.getByRole('button', { name: '有，今天去了' }).click();
+  await page.locator('.weathers .wbtn').first().click();
+  await expect.poll(() => sealedDraftSize(page)).toBeGreaterThan(0);
+  const before = await sealedDraftSize(page);
+  await page.locator('#raw').fill('剛走出來眼睛還是熱的');
+  // the draft reaches the database a moment after typing (sealed, so only its size shows): let it land before closing
+  await expect.poll(() => sealedDraftSize(page)).toBeGreaterThan(before + 25);
+
+  // the app closed halfway through
+  await page.reload();
+  await typePin(page, '135790');
+  await expect(page.locator('.lock')).toHaveCount(0);
+  expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).not.toContain('剛走出來');
+  expect(await onDisk(page)).not.toContain('剛走出來');
+
+  await page.getByRole('button', { name: '記下今天' }).click();
+  await page.getByRole('button', { name: '有，今天去了' }).click();
+  await expect(page.locator('#raw')).toHaveValue('剛走出來眼睛還是熱的');
 });

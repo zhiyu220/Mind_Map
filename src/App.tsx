@@ -12,7 +12,8 @@ import { closedNow } from './lib/timelock';
 import { TimeClosed, TimeLockSheet } from './components/TimeLock';
 import { playlistUris, quietPlaylist, syncPlaylist } from './lib/spotify';
 import Landscape from './components/Landscape';
-import SessionFlow, { clearDraft, emptyDraft, loadDraft, type Draft } from './components/SessionFlow';
+import SessionFlow, { emptyDraft, type Draft } from './components/SessionFlow';
+import { clearDraft, loadDraft, moveOldDraft } from './lib/draft';
 import RoadSheet from './components/RoadSheet';
 import { Book, Detail, type BookTab } from './components/Book';
 import { SongPlayer } from './components/SongPicker';
@@ -25,7 +26,8 @@ import { ToastProvider, useToast } from './components/Toast';
 
 type View =
   | { kind: 'ask' }
-  | { kind: 'flow'; edit?: Session; past?: boolean }
+  // draft: what was half written for today, picked up where it was left
+  | { kind: 'flow'; edit?: Session; past?: boolean; draft?: Draft }
   // quick: opened to write one thing; the sheet closes once it's saved. write: starts with the text box open
   | { kind: 'road'; after: string | null; quick?: boolean; write?: boolean }
   // after recording today: "下次是 10/28（週二）嗎？"
@@ -100,6 +102,8 @@ function Gate() {
     setOpened(true);
     // mend road notes an earlier version left on the wrong stretch (it changes nothing when all is in order)
     tidyRoad().catch(() => {});
+    // a half-written session from before 2.1.3 sat in localStorage in plain text: into the database, sealed
+    moveOldDraft().catch(() => {});
   }, [ready]);
 
   if (settings === undefined || box === undefined || closed === null) return <div className="page" />;
@@ -201,7 +205,7 @@ function Main() {
       say(`補記好了，放在 ${short(date)} 的位置`);
     } else {
       const s = await addSession({ weather, moods, topics, quote, notes: text, song, ...more }, done);
-      clearDraft();
+      clearDraft().catch(() => {});
       setLineIdx(null);
       // ask once whether the next one keeps the same gap; nothing is saved unless you say so
       const guess = settings.resting || upcoming(settings.nextSession, today) ? null : guessNext([...sessions, s].sort(byDate).map(x => x.date), today);
@@ -227,7 +231,7 @@ function Main() {
               <span>今天已經記了一次<small>回去修改或補一點</small></span>
             </button>
           ) : (
-            <button className="big" type="button" onClick={() => setView({ kind: 'flow' })}>
+            <button className="big" type="button" onClick={async () => setView({ kind: 'flow', draft: (await loadDraft().catch(() => null)) ?? undefined })}>
               <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="13" fill="var(--w-partly)" stroke="var(--ink)" strokeWidth="2.5" /></svg>
               <span>有，今天去了<small>在路上放一個新的點</small></span>
             </button>
@@ -273,14 +277,14 @@ function Main() {
             ? { weather: e.weather, moods: e.moods, topics: e.topics, quote: e.quote, notes: e.notes, song: e.song, date: e.date, raw: e.raw, takeHome: e.takeHome, leave: e.leave, bringLeave: e.bringLeave }
             : past
               ? emptyDraft()
-              : (loadDraft() ?? emptyDraft())
+              : (view.draft ?? emptyDraft())
         }
         mode={e ? 'edit' : past ? 'past' : 'today'}
         takenDates={sessions.map(s => s.date)}
         customTopics={settings.customTopics}
         onAddTopic={t => saveSettings({ customTopics: [...settings.customTopics, t] })}
         onSave={(d, done) => saveFlow(d, done, e, past)}
-        onClose={() => (e ? setView({ kind: 'detail', id: e.id }) : past ? setView({ kind: 'book' }) : (clearDraft(), close()))}
+        onClose={() => (e ? setView({ kind: 'detail', id: e.id }) : past ? setView({ kind: 'book' }) : (clearDraft().catch(() => {}), close()))}
       />
     );
   } else if (view?.kind === 'road') {

@@ -4,10 +4,8 @@
 // With the records sealed, Face ID also has to hand over a secret to open them: the passkey's PRF
 // (iOS 18 and later), a value the phone gives out only after checking your face.
 
-const b64url = (buf: ArrayBuffer | Uint8Array) =>
-  btoa(String.fromCharCode(...new Uint8Array(buf instanceof Uint8Array ? buf : new Uint8Array(buf))))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-const fromB64url = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+import { fromB64url, toB64url as b64url } from './b64';
+
 const random = (n: number) => crypto.getRandomValues(new Uint8Array(n));
 
 /** True on a phone that can check Face ID (or Touch ID) for this page. */

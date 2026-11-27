@@ -7,7 +7,7 @@
 
 import { gcm } from '@noble/ciphers/aes.js';
 import { db, getKV, getSettings } from '../db';
-import { setKey } from './seal';
+import { SEALED_KV, setKey } from './seal';
 import { checkFaceId, faceSecret, setUpFaceId } from './faceid';
 import { hashPin } from './pin';
 
@@ -57,12 +57,12 @@ const TABLES = () => [db.sessions, db.notes, db.practices, db.kv];
 
 /** Writes every record again: sealed with the key in use, or readable when there's none. Inside a transaction. */
 async function rewriteAll(before: () => void = () => {}) {
-  const rows = { sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), practices: await db.practices.toArray(), kept: await db.kv.get('beforeRestore') };
+  const rows = { sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), practices: await db.practices.toArray(), kept: await db.kv.bulkGet(SEALED_KV) };
   before();
   await db.sessions.bulkPut(rows.sessions);
   await db.notes.bulkPut(rows.notes);
   await db.practices.bulkPut(rows.practices);
-  if (rows.kept) await db.kv.put(rows.kept);
+  for (const row of rows.kept) if (row) await db.kv.put(row);
 }
 
 /** Sets a PIN: a new key seals everything from now on. Face ID (from before) has to be set up again. */
