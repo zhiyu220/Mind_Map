@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { DayFields, Practice, RoadNote, Song } from '../types';
-import { MOODS, WEATHER_NAME } from '../types';
+import { WEATHER_NAME } from '../types';
 import { long, short, todayKey, weekday } from '../lib/dates';
 import { deleteNote, getDay, saveDay } from '../lib/store';
 import { focusInPlace } from '../lib/viewport';
@@ -8,6 +8,7 @@ import { WeatherIcon, WeatherPicker } from './Weather';
 import { useToast } from './Toast';
 import SongPicker, { SongChip } from './SongPicker';
 import Practices from './Practices';
+import MoodPicker from './MoodPicker';
 
 interface Props {
   title: string;
@@ -122,6 +123,7 @@ function DayEditor({ date: start, fixed, focus, onSaved, onCancel }: { date: str
   const [date, setDate] = useState(start);
   const [d, setD] = useState<Partial<DayFields>>({});
   const [ready, setReady] = useState(false);
+  const [moodsOpen, setMoodsOpen] = useState(false);
   const set = (patch: Partial<DayFields>) => setD(cur => ({ ...cur, ...patch }));
 
   useEffect(() => {
@@ -155,14 +157,17 @@ function DayEditor({ date: start, fixed, focus, onSaved, onCancel }: { date: str
       <div className="label">天氣</div>
       <WeatherPicker small value={d.weather ?? null} onChange={w => set({ weather: w ?? undefined })} />
       <div className="label">心情</div>
-      <div className="chips small">
-        {MOODS.map(m => (
-          <button key={m} className="chip" type="button" aria-pressed={!!d.moods?.includes(m)}
-            onClick={() => set({ moods: d.moods?.includes(m) ? d.moods.filter(x => x !== m) : [...(d.moods ?? []), m] })}>
-            {m}
-          </button>
-        ))}
-      </div>
+      {moodsOpen ? (
+        <>
+          <MoodPicker value={d.moods ?? []} onChange={moods => set({ moods: moods.length ? moods : undefined })} skip={{ day: date }} />
+          <button className="linkish small" type="button" onClick={() => setMoodsOpen(false)}>收起來</button>
+        </>
+      ) : (
+        <div className="chips small">
+          {d.moods?.map(m => <span key={m} className="chip picked">{m}</span>)}
+          <button className="chip add" type="button" onClick={() => setMoodsOpen(true)}>{d.moods?.length ? '改心情' : '＋ 選心情'}</button>
+        </div>
+      )}
       {PARTS.map(([k, label], i) => (
         <label key={k} className="part">
           <span className="label">{label}</span>
