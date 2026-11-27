@@ -96,6 +96,28 @@ export interface Practice {
   createdAt: number;
 }
 
+/**
+ * 想帶去說: a sentence in the backpack, to bring to the next session.
+ * Picked out of a diary page or a 後來我發現, or written in the backpack itself.
+ */
+export interface PackItem {
+  id: string;
+  text: string;
+  from: 'diary' | 'found' | 'own';
+  /** the day it was written (the diary page's, or the 後來我發現's) */
+  date: string;
+  /** which part of the diary page it came from */
+  part?: 'happened' | 'felt' | 'text';
+  /** the group it sits in: a mood family's name (lib/moods.ts), 'lamp', or none yet */
+  group?: string;
+  /** ticked in 去說說話之前, to bring this time */
+  chosen?: boolean;
+  /** the session day it was brought to: then it's put away, out of the backpack */
+  brought?: string;
+  createdAt: number;
+  updatedAt?: number;
+}
+
 export interface Settings {
   nextSession?: string; // YYYY-MM-DD
   customTopics: string[];

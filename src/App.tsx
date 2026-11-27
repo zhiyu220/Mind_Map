@@ -6,7 +6,7 @@ import { DEFS, SEASON_FX, SKY } from './drawings';
 import { countdown, daysBetween, guessNext, headerDate, long, short, todayKey, upcoming, weekday } from './lib/dates';
 import { homeLines, lineOfTheDay } from './lib/lines';
 import { followSky } from './lib/sky';
-import { addSession, byDate, deleteNote, saveDay, tidyRoad, updateSession } from './lib/store';
+import { addSession, byDate, deleteNote, packNow, saveDay, tidyRoad, updateSession } from './lib/store';
 import { getLockbox } from './lib/lockbox';
 import { closedNow } from './lib/timelock';
 import { TimeClosed, TimeLockSheet } from './components/TimeLock';
@@ -23,6 +23,7 @@ import Lock from './components/Lock';
 import Prep from './components/Prep';
 import { JarSheet, LampSheet } from './components/Lamp';
 import { ToastProvider, useToast } from './components/Toast';
+import { PackSheet, ShowSheet } from './components/Pack';
 
 type View =
   | { kind: 'ask' }
@@ -40,6 +41,9 @@ type View =
   | { kind: 'settings' }
   | { kind: 'next' }
   | { kind: 'prep' }
+  // 想帶去說: the backpack, and the ticked sentences shown large to the therapist
+  | { kind: 'pack'; back: View | null }
+  | { kind: 'show'; lines: string[] }
   | { kind: 'song'; song: Song; back: View | null };
 
 const RELOCK_AFTER = 60_000;
@@ -143,6 +147,7 @@ function Main() {
   const sessions = useLiveQuery(async () => (await db.sessions.toArray()).sort(byDate), []);
   const notes = useLiveQuery(() => db.notes.toArray(), []);
   const practices = useLiveQuery(() => db.practices.toArray(), []);
+  const pack = useLiveQuery(packNow, []);
   const loaded = useLiveQuery(getSettings, []);
   const settings = loaded ?? DEFAULT_SETTINGS;
   const [view, setView] = useState<View | null>(null);
@@ -179,7 +184,7 @@ function Main() {
   const next = upcoming(settings.nextSession, today);
   const lines = useMemo(() => homeLines(sessions ?? [], notes ?? [], today, next, settings.resting), [sessions, notes, today, next, settings.resting]);
 
-  if (!sessions || !notes || !practices || !loaded) return <div className="page" />;
+  if (!sessions || !notes || !practices || !pack || !loaded) return <div className="page" />;
 
   const current = sessions.length ? sessions[sessions.length - 1].id : null;
   const roadOf = (after: string | null) => notes.filter(n => n.after === after);
@@ -291,7 +296,7 @@ function Main() {
   } else if (view?.kind === 'road') {
     const i = sessions.findIndex(s => s.id === view.after);
     const title = view.after ? `路上 · ${short(sessions[i].date)} 之後` : sessions.length ? '路上 · 第一次之前' : '路上 · 出發之前';
-    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} write={view.write} practices={practices} onPlay={play} onClose={close} />;
+    sheet = <RoadSheet title={title} after={view.after} notes={roadOf(view.after)} writable={view.after === current} quick={view.quick} write={view.write} practices={practices} onPlay={play} onPack={() => setView({ kind: 'pack', back: view })} onClose={close} />;
   } else if (view?.kind === 'book') {
     sheet = (
       <Book
@@ -353,7 +358,7 @@ function Main() {
                 </div>
                 <button className="big" type="button" onClick={() => setView({ kind: 'prep' })}>
                   <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 10h24v22H8z" fill="var(--paper)" stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round" /><path d="M13 17h14M13 23h10" stroke="var(--ink)" strokeWidth="2.2" strokeLinecap="round" /></svg>
-                  <span>去說說話之前<small>上次的一句話、想帶去說的、這段路上的天氣</small></span>
+                  <span>去說說話之前<small>打開背包，勾想帶去說的</small></span>
                 </button>
                 <small className="change-date">要改日期的話：</small>
               </>
@@ -379,7 +384,7 @@ function Main() {
       />
     );
   } else if (view?.kind === 'jar') {
-    sheet = <JarSheet sessions={sessions} onClose={close} />;
+    sheet = <JarSheet sessions={sessions} onPack={() => setView({ kind: 'pack', back: view })} onClose={close} />;
   } else if (view?.kind === 'prep') {
     sheet = (
       <Prep
@@ -388,10 +393,18 @@ function Main() {
         practices={practices}
         today={today}
         nextSession={settings.nextSession}
+        pack={pack}
         onOpenRoad={() => setView({ kind: 'road', after: current })}
+        onOpenPack={() => setView({ kind: 'pack', back: view })}
+        onShow={lines => setView({ kind: 'show', lines })}
         onClose={close}
       />
     );
+  } else if (view?.kind === 'pack') {
+    const back = view.back;
+    sheet = <PackSheet items={pack} todayMoods={notes.find(n => n.date === today)?.moods} onClose={() => setView(back)} />;
+  } else if (view?.kind === 'show') {
+    sheet = <ShowSheet lines={view.lines} last={sessions[sessions.length - 1]} road={roadOf(current)} onClose={() => setView({ kind: 'prep' })} />;
   }
 
   return (

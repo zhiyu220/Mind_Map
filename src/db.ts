@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Practice, RoadNote, Session, Settings } from './types';
+import type { PackItem, Practice, RoadNote, Session, Settings } from './types';
 import { sealing } from './lib/seal';
 
 interface KV {
@@ -11,6 +11,7 @@ export const db = new Dexie('my-sky') as Dexie & {
   sessions: EntityTable<Session, 'id'>;
   notes: EntityTable<RoadNote, 'id'>;
   practices: EntityTable<Practice, 'id'>;
+  pack: EntityTable<PackItem, 'id'>;
   kv: EntityTable<KV, 'key'>;
 };
 
@@ -20,6 +21,8 @@ db.version(1).stores({
   kv: 'key'
 });
 db.version(2).stores({ practices: 'id, createdAt' });
+// 3: 想帶去說, the backpack
+db.version(3).stores({ pack: 'id, createdAt' });
 // with a PIN set, records are sealed on the way in and opened on the way out (src/lib/seal.ts)
 db.use(sealing);
 

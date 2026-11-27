@@ -1,6 +1,6 @@
 import { db, getKV, getSettings, setKV, withoutRetired } from '../db';
 import { tidyRoad } from './store';
-import type { Practice, RoadNote, Session, Settings } from '../types';
+import type { PackItem, Practice, RoadNote, Session, Settings } from '../types';
 import { WEATHERS } from '../types';
 import { isSealed, seal, unseal, type Sealed } from './crypto';
 
@@ -12,13 +12,15 @@ export interface Backup {
   notes: RoadNote[];
   /** added in 1.1; older backups have none */
   practices?: Practice[];
+  /** 想帶去說, added in 2.2; older backups have none */
+  pack?: PackItem[];
   settings: Omit<Settings, 'pinHash' | 'faceId'>;
 }
 
 /** A backup file locked with a password of your choosing. */
 export async function makeBackup(password: string): Promise<File> {
   const { pinHash: _pin, faceId: _face, ...settings } = await getSettings();
-  const data: Backup = { app: 'my-sky', version: 1, exportedAt: new Date().toISOString(), sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), practices: await db.practices.toArray(), settings };
+  const data: Backup = { app: 'my-sky', version: 1, exportedAt: new Date().toISOString(), sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), practices: await db.practices.toArray(), pack: await db.pack.toArray(), settings };
   const sealed = await seal(data, password);
   // always the same name: saved to the same folder in 檔案, iOS offers to replace the old one
   return new File([JSON.stringify(sealed)], BACKUP_NAME, { type: 'application/json' });
@@ -118,6 +120,15 @@ function checkBackup(raw: unknown): Backup {
       if (!isObject(p) || !unique(p.id) || !isText(p.text) || !Array.isArray(p.tries) || !p.tries.every(isDay) || !isTimestamp(p.createdAt))
         throw new BadBackup('想練習的事不完整');
   }
+  if (data.pack !== undefined) {
+    if (!Array.isArray(data.pack)) throw new BadBackup('背包裡的東西不完整');
+    for (const p of data.pack)
+      if (
+        !isObject(p) || !unique(p.id) || !isText(p.text) || !['diary', 'found', 'own'].includes(p.from as string) || !isDay(p.date) ||
+        !maybe(p.group, isText) || !maybe(p.brought, isDay) || !isTimestamp(p.createdAt)
+      )
+        throw new BadBackup('背包裡的東西不完整');
+  }
   const st = data.settings as unknown;
   if (
     !isObject(st) || !maybe(st.customTopics, isWords) || !maybe(st.nextSession, isDay) ||
@@ -149,7 +160,7 @@ type Before = { at: number; data: Backup };
 /** Replaces everything on this phone with the backup (the lock stays as it is). Keeps a copy of what was here. */
 export async function restoreBackup(data: Backup) {
   const { pinHash: _pin, faceId: _face, ...settings } = await getSettings();
-  const now: Backup = { app: 'my-sky', version: 1, exportedAt: new Date().toISOString(), sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), practices: await db.practices.toArray(), settings };
+  const now: Backup = { app: 'my-sky', version: 1, exportedAt: new Date().toISOString(), sessions: await db.sessions.toArray(), notes: await db.notes.toArray(), practices: await db.practices.toArray(), pack: await db.pack.toArray(), settings };
   await setKV('beforeRestore', { at: Date.now(), data: now } satisfies Before);
   await replaceAll(data);
 }
@@ -174,14 +185,16 @@ export async function undoRestore() {
 }
 
 async function replaceAll(data: Backup) {
-  await db.transaction('rw', [db.sessions, db.notes, db.practices, db.kv], async () => {
+  await db.transaction('rw', [db.sessions, db.notes, db.practices, db.pack, db.kv], async () => {
     const cur = await getSettings();
     await db.sessions.clear();
     await db.notes.clear();
     await db.practices.clear();
+    await db.pack.clear();
     await db.sessions.bulkAdd(data.sessions);
     await db.notes.bulkAdd(data.notes);
     await db.practices.bulkAdd(data.practices ?? []);
+    await db.pack.bulkAdd(data.pack ?? []);
     await db.kv.put({ key: 'settings', value: { ...withoutRetired(data.settings), pinHash: cur.pinHash, faceId: cur.faceId } });
   });
   // backups from before the stretches were kept in order may carry notes on the wrong stretch

@@ -5,16 +5,16 @@ import { _forget, changePin, getLockbox, openWithPin, removePin, setPin } from '
 import { Locked } from './seal';
 import { hashPin } from './pin';
 import { lastExport, makeBackup, openBackup, readBackup, recordExport, restoreBackup, undoRestore } from './backup';
-import { addFound, saveDay, addPractice, addSession } from './store';
+import { addFound, saveDay, addPractice, addSession, addToPack } from './store';
 
 const blank = { weather: 'sun' as const, moods: ['平靜'], topics: ['自己'], quote: '其實我很害怕', notes: '說不出口的事' };
 
 /** The database as it sits on the phone, without the app opening anything. */
 async function onDisk() {
   const raw = new Dexie('my-sky');
-  raw.version(2).stores({ sessions: 'id, date', notes: 'id, after, createdAt', kv: 'key', practices: 'id, createdAt' });
+  raw.version(3).stores({ sessions: 'id, date', notes: 'id, after, createdAt', kv: 'key', practices: 'id, createdAt', pack: 'id, createdAt' });
   await raw.open();
-  const all = { sessions: await raw.table('sessions').toArray(), notes: await raw.table('notes').toArray(), practices: await raw.table('practices').toArray(), kv: await raw.table('kv').toArray() };
+  const all = { sessions: await raw.table('sessions').toArray(), notes: await raw.table('notes').toArray(), practices: await raw.table('practices').toArray(), pack: await raw.table('pack').toArray(), kv: await raw.table('kv').toArray() };
   raw.close();
   return JSON.stringify(all, (_k, v) => (v instanceof Uint8Array ? '<sealed>' : v));
 }
@@ -24,6 +24,7 @@ async function write() {
   await addFound(s.id, '原來我在等別人先開口');
   await saveDay({ text: '路上想到媽媽' }, '2026-09-05');
   await addPractice('睡前寫三件小事');
+  await addToPack({ text: '一直在想別人會不會不高興', from: 'diary', date: '2026-09-05', part: 'felt' }, ['疲累']);
   return s;
 }
 
@@ -39,7 +40,7 @@ describe('records sealed with a PIN', () => {
     expect(await onDisk()).toContain('其實我很害怕');
     await setPin('123456');
     const disk = await onDisk();
-    for (const words of ['其實我很害怕', '說不出口的事', '原來我在等別人先開口', '路上想到媽媽', '睡前寫三件小事', '平靜']) expect(disk).not.toContain(words);
+    for (const words of ['其實我很害怕', '說不出口的事', '原來我在等別人先開口', '路上想到媽媽', '睡前寫三件小事', '平靜', '一直在想別人會不會不高興', '沉沉的']) expect(disk).not.toContain(words);
     // the road can still be put in order
     expect(disk).toContain('2026-09-03');
     // and while open, the app reads everything as before

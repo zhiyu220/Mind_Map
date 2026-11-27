@@ -603,3 +603,37 @@ html.covered-up body::after { content: ""; position: fixed; inset: 0; z-index: 9
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* 想帶去說: the backpack */
+.pack-pop { position: fixed; z-index: 40; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 12px; background: #2f3a4a; color: #fffaf0; font-size: 14px; padding: 9px 14px; box-shadow: 0 6px 18px rgba(30, 40, 55, .25); animation: fade-in .15s ease-out; }
+@keyframes fade-in { from { opacity: 0; } }
+.light-card .notes { user-select: text; -webkit-user-select: text; }
+.sheet-body.pack { gap: 14px; }
+.seg { display: flex; padding: 4px; border-radius: 14px; background: var(--chip); }
+.seg button { flex: 1; border: 0; border-radius: 10px; background: none; padding: 8px 0; font-size: 15px; color: var(--sheet-soft); }
+.seg button[aria-checked="true"] { background: var(--paper); color: #233142; box-shadow: 0 1px 4px rgba(120, 90, 40, .14); }
+.pack-group { display: grid; gap: 8px; }
+.pack-group-name { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--sheet-ink); }
+.pack-group-name i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.pack-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pack-item { display: grid; gap: 4px; background: var(--paper); color: #2c3a4b; border: 1.5px solid var(--sheet-line); border-radius: 16px; padding: 12px 16px; }
+.pack-item .pack-text { font-size: 16px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pack-item small { font-size: 12px; color: #6d7783; }
+.pack-item .linkish { color: #6d7783; }
+.pack-item .chips { gap: 6px; margin-top: 4px; }
+.pack-item .chip { font-size: 13px; padding: 4px 11px; }
+.pack-check { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pack-check .toggle span { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.sheet-foot.center { flex-direction: column; justify-content: center; gap: 6px; }
+
+/* 拿給諮商師看: large, plain, nothing else */
+.sheet.show { background: var(--paper); color: #233142; z-index: 30; }
+.sheet.show .label { color: #8a6a45; }
+.sheet.show .sheet-body { padding-top: calc(48px + env(safe-area-inset-top, 0px)); gap: 22px; }
+.show-weather { display: flex; flex-wrap: wrap; gap: 4px; }
+.show-weather svg { width: 26px; height: 26px; }
+.show-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.show-list li { display: flex; gap: 16px; padding: 20px 0; border-bottom: 1px solid #efe6d4; }
+.show-list li:last-child { border-bottom: 0; }
+.show-list .n { font-size: 22px; color: #c9a46a; line-height: 1.45; flex: none; }
+.show-list p { margin: 0; font-size: 26px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }

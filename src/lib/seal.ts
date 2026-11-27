@@ -14,6 +14,7 @@ export const OPEN_FIELDS: Record<string, string[]> = {
   sessions: ['id', 'date'],
   notes: ['id', 'after', 'createdAt'],
   practices: ['id', 'createdAt'],
+  pack: ['id', 'createdAt'],
   kv: ['key']
 };
 /** kv rows that hold what you wrote (the copy kept before a restore, the session half written); settings and the like stay readable */

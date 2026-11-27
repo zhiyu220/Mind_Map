@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { PackPicker, packable } from './Pack';
 import type { Session } from '../types';
 import { WEATHER_NAME } from '../types';
 import { long, short } from '../lib/dates';
@@ -63,7 +64,8 @@ export function LampSheet({ sessions, onSaved, onClose }: { sessions: Session[];
  * The jar on the windowsill of the house at the start: every 後來我發現, one light at a time.
  * No count, no order to finish; just the next one, and the one before.
  */
-export function JarSheet({ sessions, onClose }: { sessions: Session[]; onClose: () => void }) {
+export function JarSheet({ sessions, onPack, onClose }: { sessions: Session[]; onPack?: () => void; onClose: () => void }) {
+  const body = useRef<HTMLDivElement>(null);
   const lights = sessions
     .flatMap(s => (s.found ?? []).map(f => ({ f, s })))
     .sort((a, b) => b.f.date.localeCompare(a.f.date) || b.f.createdAt - a.f.createdAt);
@@ -75,13 +77,15 @@ export function JarSheet({ sessions, onClose }: { sessions: Session[]; onClose: 
     <section className="sheet" role="dialog" aria-label="罐子">
       <div className="sheet-head">
         <button className="ghost" type="button" onClick={onClose}>回到小路</button>
+        {onPack && <button className="ghost" type="button" onClick={onPack}>想帶去說的背包 ›</button>}
       </div>
-      <div className="sheet-body jar">
+      <div className="sheet-body jar" ref={body}>
+        <PackPicker root={body} />
         <h2 className="q">罐子裡的光</h2>
         {at ? (
           <>
             <div className="light-card">
-              <span>{at.f.text}</span>
+              <span className="notes" {...packable('found', at.f.date)}>{at.f.text}</span>
               <small>{long(at.f.date)} · 從 {short(at.s.date)} 那次延伸出來的</small>
               {at.s.quote.trim() && <small>那次記下的：「{at.s.quote.trim()}」</small>}
             </div>
