@@ -282,6 +282,22 @@ input[type="date"].field { -webkit-appearance: none; appearance: none; display: 
 input[type="date"].field::-webkit-date-and-time-value { text-align: left; }
 textarea.field.tall { min-height: min(260px, calc(var(--seen-h, 100vh) * .35)); }
 
+/* typing in a sheet (src/lib/viewport.ts): a writing mode. The sheet is only the strip above the keyboard,
+   so everything but the box you're in steps aside: the top bar folds away, other questions, pickers and boxes
+   hide, the buttons shrink to one slim row, and the box grows to fill all the room that's left */
+html.typing .sheet-head { display: none; }
+html.typing .sheet-body { padding-block: calc(8px + env(safe-area-inset-top, 0px)) 6px; gap: 8px; }
+html.typing .sheet-body:has(.writing) > :not(:has(.writing)):not(.writing):not(.q) { display: none; }
+html.typing .sheet-body:has(.writing):not(:has(> .writing)) > .q { display: none; }
+html.typing .compose:has(.writing) > :not(:has(.writing)):not(.writing):not(.compose-row) { display: none; }
+/* the question stays, small, when the box answers it directly */
+html.typing .sheet-body:has(> .writing) > .q { font-size: 17px; margin: 0; }
+/* from the sheet down to the box: each one stretches, so the box gets every line of the strip */
+html.typing .sheet-body :has(.writing) { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 8px; }
+html.typing .sheet-body textarea.field.writing { flex: 1 1 auto; min-height: 84px; height: auto; padding: 10px 14px; outline: none; }
+html.typing .sheet-foot { padding-block: 4px 6px; }
+html.typing .sheet-foot .pill { font-size: 16px; padding: 6px 22px; box-shadow: 0 3px 0 var(--ink); }
+
 .search { position: relative; }
 .search svg { position: absolute; left: 14px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: #7a8491; }
 .search input { padding-left: 42px; }
