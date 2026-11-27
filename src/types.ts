@@ -10,7 +10,8 @@ export const WEATHER_NAME: Record<Weather, string> = {
   storm: '雷雨'
 };
 
-export const MOODS = ['平靜', '輕鬆', '感謝', '有希望', '疲累', '焦慮', '難過', '生氣', '委屈', '困惑', '空空的', '說不出來'];
+/** The twelve moods the app started with: still in the wheel (src/lib/moods.ts), so old records read as picked. */
+export const FIRST_MOODS = ['平靜', '輕鬆', '感謝', '有希望', '疲累', '焦慮', '難過', '生氣', '委屈', '困惑', '空空的', '說不出來'];
 export const TOPICS = ['家庭', '感情', '朋友', '工作／學業', '自己', '身體／睡眠', '過去的事'];
 
 export interface Song {
@@ -74,6 +75,8 @@ export interface RoadNote {
   star?: boolean;
   song?: Song;
   createdAt: number;
+  /** when the page was last written on; pages from before 2.2.0 have none */
+  updatedAt?: number;
 }
 
 /** The parts of a day's page you write. */
@@ -91,6 +94,28 @@ export interface Practice {
   /** put away for now; kept so it can come back */
   archived?: boolean;
   createdAt: number;
+}
+
+/**
+ * 想帶去說: a sentence in the backpack, to bring to the next session.
+ * Picked out of a diary page or a 後來我發現, or written in the backpack itself.
+ */
+export interface PackItem {
+  id: string;
+  text: string;
+  from: 'diary' | 'found' | 'own';
+  /** the day it was written (the diary page's, or the 後來我發現's) */
+  date: string;
+  /** which part of the diary page it came from */
+  part?: 'happened' | 'felt' | 'text';
+  /** the group it sits in: a mood family's name (lib/moods.ts), 'lamp', or none yet */
+  group?: string;
+  /** ticked in 去說說話之前, to bring this time */
+  chosen?: boolean;
+  /** the session day it was brought to: then it's put away, out of the backpack */
+  brought?: string;
+  createdAt: number;
+  updatedAt?: number;
 }
 
 export interface Settings {

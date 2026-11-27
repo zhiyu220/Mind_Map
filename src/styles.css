@@ -268,11 +268,38 @@ button:focus-visible, .hit:focus-visible, input:focus-visible, textarea:focus-vi
 
 .chips { display: flex; flex-wrap: wrap; gap: 9px; }
 .chip { border: 2px solid var(--ink); background: var(--chip); color: var(--sheet-ink); border-radius: 999px; padding: 7px 15px; font-size: 16px; }
-.chip[aria-pressed="true"] { background: var(--chip-on); color: #1f2d3d; }
+.chip[aria-pressed="true"], .chip.picked { background: var(--chip-on); color: #1f2d3d; }
 .chip.add { border-style: dashed; background: transparent; }
 .addrow { display: flex; flex-wrap: wrap; gap: 8px; }
 .quick-dates { display: flex; gap: 8px; flex-basis: 100%; }
 .addrow input { flex: 1; min-width: 0; }
+
+/* 心情輪 (MoodPicker): search, what's picked, used lately, then eight families as tabs */
+.moods { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
+.mood-find { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 16px; border-radius: 999px; background: var(--paper); border: 1.5px solid var(--sheet-line); }
+.mood-find svg { width: 18px; height: 18px; flex: none; fill: none; stroke: #7a8491; stroke-width: 1.8; stroke-linecap: round; }
+.mood-find input { flex: 1; min-width: 0; border: 0; background: none; font: inherit; font-size: 16px; color: #2c3a4b; outline: none; -webkit-appearance: none; appearance: none; }
+.mood-find input::placeholder { color: #8d949c; }
+.mood-find:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
+.mood-find input::-webkit-search-cancel-button { display: none; }
+.mood-picked { display: flex; flex-wrap: wrap; gap: 8px; }
+.mood-picked .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; padding: 6px 10px 6px 14px; }
+.mood-picked .chip.on { background: var(--sheet-ink); color: var(--sheet); border-color: var(--sheet-ink); }
+.mood-picked .chip svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; opacity: .7; }
+.mood-picked .chip.same { border: 1.5px solid var(--sheet-line); background: none; color: var(--sheet-soft); padding: 6px 13px; }
+.mood-picked .chip.same svg { opacity: 1; stroke-linejoin: round; }
+.mood-recent { display: grid; gap: 8px; min-width: 0; }
+.chips.row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -4px; padding: 2px 4px; }
+.chips.row::-webkit-scrollbar { display: none; }
+.chips.row .chip { flex: none; }
+.mood-tabs { display: flex; gap: 18px; overflow-x: auto; scrollbar-width: none; border-bottom: 1.5px solid var(--sheet-line); margin-inline: -4px; padding-inline: 4px; }
+.mood-tabs::-webkit-scrollbar { display: none; }
+.mood-tabs button { flex: none; position: relative; height: 42px; padding: 0; border: 0; background: none; font: inherit; font-size: 15px; color: var(--sheet-soft); }
+.mood-tabs button[aria-selected="true"] { color: var(--sheet-ink); box-shadow: inset 0 -2.5px 0 var(--sheet-ink); }
+/* a family with a word picked in it gets a small dot */
+.mood-tabs button.has::after { content: ""; position: absolute; top: 8px; right: -7px; width: 5px; height: 5px; border-radius: 50%; background: #c7913d; }
+.moods .chip { border-width: 1.5px; }
+.moods .chips:not(.row) .chip, .mood-results .chip { font-size: 15px; }
 
 .field { width: 100%; border: 2px solid var(--sheet-line); background: var(--paper); color: #2c3a4b; border-radius: 18px; padding: 14px 16px; font-size: 17px; line-height: 1.7; resize: none; }
 .field::placeholder { color: #9aa0a8; }
@@ -281,6 +308,22 @@ textarea.field { min-height: 150px; }
 input[type="date"].field { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; min-height: 52px; text-align: left; }
 input[type="date"].field::-webkit-date-and-time-value { text-align: left; }
 textarea.field.tall { min-height: min(260px, calc(var(--seen-h, 100vh) * .35)); }
+
+/* typing in a sheet (src/lib/viewport.ts): a writing mode. The sheet is only the strip above the keyboard,
+   so everything but the box you're in steps aside: the top bar folds away, other questions, pickers and boxes
+   hide, the buttons shrink to one slim row, and the box grows to fill all the room that's left */
+html.typing .sheet-head { display: none; }
+html.typing .sheet-body { padding-block: calc(8px + env(safe-area-inset-top, 0px)) 6px; gap: 8px; }
+html.typing .sheet-body:has(.writing) > :not(:has(.writing)):not(.writing):not(.q) { display: none; }
+html.typing .sheet-body:has(.writing):not(:has(> .writing)) > .q { display: none; }
+html.typing .compose:has(.writing) > :not(:has(.writing)):not(.writing):not(.compose-row) { display: none; }
+/* the question stays, small, when the box answers it directly */
+html.typing .sheet-body:has(> .writing) > .q { font-size: 17px; margin: 0; }
+/* from the sheet down to the box: each one stretches, so the box gets every line of the strip */
+html.typing .sheet-body :has(.writing) { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 8px; }
+html.typing .sheet-body textarea.field.writing { flex: 1 1 auto; min-height: 84px; height: auto; padding: 10px 14px; outline: none; }
+html.typing .sheet-foot { padding-block: 4px 6px; }
+html.typing .sheet-foot .pill { font-size: 16px; padding: 6px 22px; box-shadow: 0 3px 0 var(--ink); }
 
 .search { position: relative; }
 .search svg { position: absolute; left: 14px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: #7a8491; }
@@ -560,3 +603,37 @@ html.covered-up body::after { content: ""; position: fixed; inset: 0; z-index: 9
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* 想帶去說: the backpack */
+.pack-pop { position: fixed; z-index: 40; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 12px; background: #2f3a4a; color: #fffaf0; font-size: 14px; padding: 9px 14px; box-shadow: 0 6px 18px rgba(30, 40, 55, .25); animation: fade-in .15s ease-out; }
+@keyframes fade-in { from { opacity: 0; } }
+.light-card .notes { user-select: text; -webkit-user-select: text; }
+.sheet-body.pack { gap: 14px; }
+.seg { display: flex; padding: 4px; border-radius: 14px; background: var(--chip); }
+.seg button { flex: 1; border: 0; border-radius: 10px; background: none; padding: 8px 0; font-size: 15px; color: var(--sheet-soft); }
+.seg button[aria-checked="true"] { background: var(--paper); color: #233142; box-shadow: 0 1px 4px rgba(120, 90, 40, .14); }
+.pack-group { display: grid; gap: 8px; }
+.pack-group-name { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--sheet-ink); }
+.pack-group-name i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.pack-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pack-item { display: grid; gap: 4px; background: var(--paper); color: #2c3a4b; border: 1.5px solid var(--sheet-line); border-radius: 16px; padding: 12px 16px; }
+.pack-item .pack-text { font-size: 16px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pack-item small { font-size: 12px; color: #6d7783; }
+.pack-item .linkish { color: #6d7783; }
+.pack-item .chips { gap: 6px; margin-top: 4px; }
+.pack-item .chip { font-size: 13px; padding: 4px 11px; }
+.pack-check { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pack-check .toggle span { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.sheet-foot.center { flex-direction: column; justify-content: center; gap: 6px; }
+
+/* 拿給諮商師看: large, plain, nothing else */
+.sheet.show { background: var(--paper); color: #233142; z-index: 30; }
+.sheet.show .label { color: #8a6a45; }
+.sheet.show .sheet-body { padding-top: calc(48px + env(safe-area-inset-top, 0px)); gap: 22px; }
+.show-weather { display: flex; flex-wrap: wrap; gap: 4px; }
+.show-weather svg { width: 26px; height: 26px; }
+.show-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.show-list li { display: flex; gap: 16px; padding: 20px 0; border-bottom: 1px solid #efe6d4; }
+.show-list li:last-child { border-bottom: 0; }
+.show-list .n { font-size: 22px; color: #c9a46a; line-height: 1.45; flex: none; }
+.show-list p { margin: 0; font-size: 26px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }

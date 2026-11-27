@@ -1,7 +1,8 @@
-import { db, newId, getSettings, saveSettings } from '../db';
-import type { DayFields, Found, Practice, RoadNote, Session } from '../types';
+import { db, newId, getKV, getSettings, saveSettings, setKV } from '../db';
+import type { DayFields, Found, PackItem, Practice, RoadNote, Session } from '../types';
 import { todayKey } from './dates';
 import { restretch, stretchFor } from './stretch';
+import { familyOf, MOOD_FAMILIES } from './moods';
 
 export const byDate = (a: Session, b: Session) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
 
@@ -50,8 +51,13 @@ type SessionFields = Pick<Session, 'weather' | 'moods' | 'topics' | 'quote' | 'n
 export async function addSession(d: SessionFields, done: boolean, date = todayKey()) {
   const now = Date.now();
   const s: Session = { id: newId(), date, ...d, done, createdAt: now, updatedAt: now };
-  await db.transaction('rw', db.sessions, db.notes, db.kv, async () => {
+  await db.transaction('rw', [db.sessions, db.notes, db.pack, db.kv], async () => {
     await db.sessions.add(s);
+    // what was ticked to bring has been brought: it leaves the backpack by itself
+    if (date === todayKey()) {
+      await putAwayBrought(date);
+      await setKV(LEAVE_CHOSEN, undefined);
+    }
     // a dot added in the middle of the road splits that stretch: later notes move behind it
     await tidyStretches();
     // today's session reached: the "next session" sign moves on, and a rest is over
@@ -89,12 +95,13 @@ export async function saveDay(d: Partial<DayFields>, date = todayKey()): Promise
   return db.transaction('rw', db.sessions, db.notes, async () => {
     const was = await getDay(date);
     if (was) {
-      const note = { ...was, ...d };
+      const note = { ...was, ...d, updatedAt: Date.now() };
       await db.notes.put(note);
       return { note, was };
     }
     const after = stretchFor(date, (await db.sessions.toArray()).sort(byDate));
-    const note: RoadNote = { id: newId(), after, date, createdAt: Date.now(), text: '', ...d };
+    const now = Date.now();
+    const note: RoadNote = { id: newId(), after, date, createdAt: now, updatedAt: now, text: '', ...d };
     await db.notes.add(note);
     return { note };
   });
@@ -103,11 +110,11 @@ export async function saveDay(d: Partial<DayFields>, date = todayKey()): Promise
 /** 後來我發現: a sentence added to a session later on. */
 export async function addFound(sessionId: string, text: string, date = todayKey()) {
   const f: Found = { id: newId(), text, date, createdAt: Date.now() };
-  await db.sessions.where('id').equals(sessionId).modify(s => void (s.found = [...(s.found ?? []), f]));
+  await db.sessions.where('id').equals(sessionId).modify(s => void ((s.found = [...(s.found ?? []), f]), (s.updatedAt = f.createdAt)));
   return f;
 }
 export const deleteFound = (sessionId: string, id: string) =>
-  db.sessions.where('id').equals(sessionId).modify(s => void (s.found = (s.found ?? []).filter(f => f.id !== id)));
+  db.sessions.where('id').equals(sessionId).modify(s => void ((s.found = (s.found ?? []).filter(f => f.id !== id)), (s.updatedAt = Date.now())));
 
 export const deleteNote = (id: string) => db.notes.delete(id);
 
@@ -119,3 +126,39 @@ export const deletePractice = (id: string) => db.practices.delete(id);
 /** "試過了" for a day; pressing it again the same day takes it back. */
 export const tryPractice = (p: Practice, day = todayKey()) =>
   db.practices.update(p.id, { tries: p.tries.includes(day) ? p.tries.filter(d => d !== day) : [...p.tries, day].sort() });
+
+// ---------- 想帶去說: the backpack ----------
+
+/** A day's mood family (its name): the one most of its moods are in, the first picked when it's even. None for words of your own only. */
+export function dayFamily(moods: string[] | undefined): string | undefined {
+  const count = new Map<number, number>();
+  for (const m of moods ?? []) {
+    const f = familyOf(m);
+    if (f >= 0) count.set(f, (count.get(f) ?? 0) + 1);
+  }
+  let best = -1;
+  for (const [f, n] of count) if (best < 0 || n > count.get(best)!) best = f;
+  return best < 0 ? undefined : MOOD_FAMILIES[best].name;
+}
+
+/** Puts a sentence in the backpack, in the group of that day's mood (路燈 ones go with each other). */
+export async function addToPack(d: Pick<PackItem, 'text' | 'from' | 'date' | 'part'>, moods?: string[]) {
+  const item: PackItem = { id: newId(), ...d, text: d.text.trim(), group: d.from === 'found' ? 'lamp' : dayFamily(moods), createdAt: Date.now() };
+  await db.pack.add(item);
+  return item;
+}
+export const movePack = (id: string, group: string | undefined) => db.pack.update(id, { group, updatedAt: Date.now() });
+export const choosePack = (id: string, chosen: boolean) => db.pack.update(id, { chosen: chosen || undefined, updatedAt: Date.now() });
+export const deleteFromPack = (id: string) => db.pack.delete(id);
+
+/** What's still in the backpack: not yet brought to a session. */
+export const packNow = async () => (await db.pack.toArray()).filter(p => !p.brought);
+
+async function putAwayBrought(date: string) {
+  for (const p of await db.pack.toArray()) if (p.chosen && !p.brought) await db.pack.update(p.id, { brought: date, chosen: undefined });
+}
+
+/** 上次留在諮商室、說好要帶來的: ticked or not, kept as the id of that session (it isn't a backpack item). */
+const LEAVE_CHOSEN = 'leaveChosen';
+export const leaveChosen = async () => (await getKV<string>(LEAVE_CHOSEN)) ?? null;
+export const chooseLeave = (sessionId: string | null) => setKV(LEAVE_CHOSEN, sessionId ?? undefined);

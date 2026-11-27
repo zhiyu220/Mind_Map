@@ -3,10 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../db', () => ({
   getKV: vi.fn(async () => ({ access: 'tok', refresh: 'r', expires: Date.now() + 60_000, scope: 'user-modify-playback-state user-read-playback-state' })),
   setKV: vi.fn(),
-  getSettings: vi.fn(async () => ({ customTopics: [] }))
+  getSettings: vi.fn(async () => ({ customTopics: [], spotifyClientId: 'app' }))
 }));
 
-import { canRemote, playOnSpotify, trackIdFromLink } from './spotify';
+import { canRemote, finishSpotifyLogin, playOnSpotify, trackIdFromLink } from './spotify';
 
 describe('trackIdFromLink', () => {
   it('reads share links, intl links and URIs', () => {
@@ -53,5 +53,36 @@ describe('playOnSpotify', () => {
   it('reports when the account cannot be controlled', async () => {
     respond([{ id: 'phone', is_active: true, type: 'Smartphone' }], 403);
     expect(await playOnSpotify('abc')).toBe('premium');
+  });
+});
+
+describe('finishing a Spotify login', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const comeBack = (query: string, saved: Record<string, string>) => {
+    const session = new Map(Object.entries(saved));
+    vi.stubGlobal('location', { search: query, pathname: '/', origin: 'https://example.test' });
+    vi.stubGlobal('history', { replaceState: vi.fn() });
+    vi.stubGlobal('sessionStorage', { getItem: (k: string) => session.get(k) ?? null, removeItem: (k: string) => void session.delete(k) });
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_in: 3600 }), { status: 200 }));
+    vi.stubGlobal('fetch', fetch);
+    return { fetch, session };
+  };
+  const saved = { 'my-sky:spotify-verifier': 'v', 'my-sky:spotify-state': 's1' };
+
+  it('finishes the login this app started', async () => {
+    const { fetch, session } = comeBack('?code=c&state=s1', saved);
+    await finishSpotifyLogin();
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(session.size).toBe(0);
+  });
+
+  it('ignores a code that comes back with another state, or none', async () => {
+    for (const q of ['?code=c&state=other', '?code=c']) {
+      const { fetch, session } = comeBack(q, saved);
+      await finishSpotifyLogin();
+      expect(fetch).not.toHaveBeenCalled();
+      expect(session.size).toBe(0);
+    }
   });
 });

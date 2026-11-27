@@ -13,9 +13,19 @@ const onDisk = (page: Page) =>
     const req = indexedDB.open('my-sky');
     const db = await new Promise<IDBDatabase>(r => (req.onsuccess = () => r(req.result)));
     const all = (st: string) => new Promise<unknown[]>(r => { const q = db.transaction(st).objectStore(st).getAll(); q.onsuccess = () => r(q.result); });
-    const text = JSON.stringify({ s: await all('sessions'), n: await all('notes'), p: await all('practices'), kv: await all('kv') });
+    const text = JSON.stringify({ s: await all('sessions'), n: await all('notes'), p: await all('practices'), b: await all('pack'), kv: await all('kv') });
     db.close();
     return text;
+  });
+
+/** How many bytes the sealed half-written session takes in the database (0 when there's none). */
+const sealedDraftSize = (page: Page) =>
+  page.evaluate(async () => {
+    const req = indexedDB.open('my-sky');
+    const db = await new Promise<IDBDatabase>(r => (req.onsuccess = () => r(req.result)));
+    const row = await new Promise<{ $?: Uint8Array } | undefined>(r => { const q = db.transaction('kv').objectStore('kv').get('draft'); q.onsuccess = () => r(q.result); });
+    db.close();
+    return row?.$?.length ?? 0;
   });
 
 async function recordToday(page: Page) {
@@ -132,4 +142,139 @@ test('a backup made with a PIN set restores what was written', async ({ page }) 
   await expect(page.getByText('備份之後寫的')).toHaveCount(0);
   // still sealed on the phone after the restore
   expect(await onDisk(page)).not.toContain('要帶去說的事');
+});
+
+test('with a PIN, a session closed halfway is sealed too, and picked up again', async ({ page }) => {
+  await setPin(page, '135790');
+  await page.getByRole('button', { name: '記下今天' }).click();
+  await page.getByRole('button', { name: '有，今天去了' }).click();
+  await page.locator('.weathers .wbtn').first().click();
+  await expect.poll(() => sealedDraftSize(page)).toBeGreaterThan(0);
+  const before = await sealedDraftSize(page);
+  await page.locator('#raw').fill('剛走出來眼睛還是熱的');
+  // the draft reaches the database a moment after typing (sealed, so only its size shows): let it land before closing
+  await expect.poll(() => sealedDraftSize(page)).toBeGreaterThan(before + 25);
+
+  // the app closed halfway through
+  await page.reload();
+  await typePin(page, '135790');
+  await expect(page.locator('.lock')).toHaveCount(0);
+  expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).not.toContain('剛走出來');
+  expect(await onDisk(page)).not.toContain('剛走出來');
+
+  await page.getByRole('button', { name: '記下今天' }).click();
+  await page.getByRole('button', { name: '有，今天去了' }).click();
+  await expect(page.locator('#raw')).toHaveValue('剛走出來眼睛還是熱的');
+});
+
+test('with the keyboard up, the whole text box stays above the buttons', async ({ page }) => {
+  await page.getByRole('button', { name: '記下今天' }).click();
+  await page.getByRole('button', { name: '有，今天去了' }).click();
+  await page.locator('.weathers .wbtn').first().click();
+  await page.evaluate(() => document.getElementById('raw')!.focus({ preventScroll: true }));
+  // an iPhone keyboard: the part you can see shrinks, the page itself does not
+  await page.evaluate(() => {
+    const vv = window.visualViewport!;
+    Object.defineProperty(vv, 'height', { get: () => 300, configurable: true });
+    vv.dispatchEvent(new Event('resize'));
+  });
+  await page.keyboard.insertText('今天談到很多小時候的事，說著說著就哭了。諮商師說那不是我的錯，我一直記得這句話。回家的路上想了很久。');
+  await expect(page.locator('html')).toHaveClass(/typing/);
+  await expect(page.locator('html')).toHaveClass(/keyboard-up/);
+  // the top bar folds away while typing; the box sits fully between the top of the screen and the buttons
+  await expect(page.locator('.sheet-head')).toBeHidden();
+  await page.waitForTimeout(400);
+  const box = await page.locator('#raw').boundingBox();
+  const foot = await page.locator('.sheet-foot').boundingBox();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(foot!.y);
+  // and 下一題 still works with the keyboard up
+  await page.getByRole('button', { name: '下一題' }).click();
+  await expect(page.getByRole('heading', { name: /心情/ })).toBeVisible();
+});
+
+test('the mood wheel: a word from a family, one of your own, and the same as last time on the road', async ({ page }) => {
+  await page.getByRole('button', { name: '記下今天' }).click();
+  await page.getByRole('button', { name: '有，今天去了' }).click();
+  await page.locator('.weathers .wbtn').first().click();
+  await page.getByRole('button', { name: '下一題' }).click();
+  await expect(page.getByRole('heading', { name: '現在的心情' })).toBeVisible();
+  await page.getByRole('tab', { name: '緊緊的' }).click();
+  await page.getByRole('button', { name: '擔心', exact: true }).click();
+  await page.getByRole('searchbox', { name: '找一個詞，或自己寫' }).fill('搬家好累');
+  await page.getByRole('button', { name: '＋ 加上「搬家好累」' }).click();
+  await expect(page.getByRole('button', { name: '不選「擔心」' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '不選「搬家好累」' })).toBeVisible();
+  await page.getByRole('button', { name: '先存起來' }).click();
+  await expect(page.getByRole('button', { name: /^第 1 次諮商/ })).toBeVisible();
+
+  await page.locator('[aria-label^="現在這段路上"]').click();
+  await page.getByRole('button', { name: '寫今天' }).click();
+  // the page opens in the text box; stepping out of it brings back the rest of the page
+  await page.locator('#road-text').blur();
+  await page.getByRole('button', { name: '＋ 選心情' }).click();
+  await expect(page.locator('.mood-recent')).toContainText('搬家好累');
+  await page.getByRole('button', { name: '跟上次一樣' }).click();
+  await page.getByRole('button', { name: '收起來' }).click();
+  await page.getByRole('button', { name: '記下來' }).click();
+  await expect(page.locator('.toast')).toContainText('記下來了');
+  await expect(page.locator('.day .chips.static')).toContainText('擔心');
+  await expect(page.locator('.day .chips.static')).toContainText('搬家好累');
+});
+
+/** Selects some of the words shown on a page, as a finger would. */
+const selectWords = (page: Page, words: string) =>
+  page.evaluate(w => {
+    const el = [...document.querySelectorAll('[data-pack]')].find(e => e.textContent?.includes(w))!;
+    const node = el.firstChild!;
+    const at = node.textContent!.indexOf(w);
+    const r = document.createRange();
+    r.setStart(node, at);
+    r.setEnd(node, at + w.length);
+    document.getSelection()!.removeAllRanges();
+    document.getSelection()!.addRange(r);
+  }, words);
+
+test('想帶去說: words from the diary go in the backpack, sealed, and only the ticked ones are shown', async ({ page }) => {
+  await page.locator('[aria-label^="現在這段路上"]').click();
+  await page.getByRole('button', { name: '寫今天' }).click();
+  await page.locator('#road-text').fill('開會時先道歉了。是一直在想別人會不會不高興。');
+  await page.locator('#road-text').blur();
+  await page.getByRole('button', { name: '＋ 選心情' }).click();
+  await page.getByRole('tab', { name: '沉沉的' }).click();
+  await page.getByRole('button', { name: '疲累', exact: true }).click();
+  await page.getByRole('button', { name: '收起來' }).click();
+  await page.getByRole('button', { name: '記下來' }).click();
+  await expect(page.locator('.toast')).toContainText('記下來了');
+
+  await selectWords(page, '是一直在想別人會不會不高興。');
+  await page.getByRole('button', { name: '放進背包' }).click();
+  await expect(page.locator('.toast')).toContainText('放進背包了，放在「沉沉的」');
+
+  await page.getByRole('button', { name: '想帶去說的背包 ›' }).click();
+  await expect(page.locator('.pack-group', { hasText: '沉沉的' })).toContainText('是一直在想別人會不會不高興。');
+  await page.getByRole('button', { name: '＋ 自己寫一句' }).click();
+  await page.locator('#pack-text').fill('媽媽那通電話');
+  await page.getByRole('button', { name: '放進去' }).click();
+  await page.getByRole('radio', { name: '依時間' }).click();
+  await expect(page.locator('.pack-item')).toHaveCount(2);
+  await page.getByRole('button', { name: '關閉' }).click();
+  await page.getByRole('button', { name: '關閉' }).click();
+
+  await setPin(page, '135790');
+  expect(await onDisk(page)).not.toContain('媽媽那通電話');
+
+  // the day before: 去說說話之前, tick one, show it
+  await page.getByRole('button', { name: /點一下設定下次諮商/ }).click();
+  const d = new Date(Date.now() + 86400000);
+  await page.locator('#next-session').fill(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  await page.getByRole('button', { name: '好' }).click();
+  await page.getByRole('button', { name: /明天要去說說話了/ }).click();
+  await page.getByRole('checkbox', { name: /媽媽那通電話/ }).check();
+  await page.getByRole('button', { name: '拿給諮商師看（1 則）' }).click();
+  const shown = page.locator('section[aria-label="這次想說的"]');
+  await expect(shown).toContainText('媽媽那通電話');
+  await expect(shown).not.toContainText('是一直在想別人會不會不高興');
+  await page.getByRole('button', { name: '看完了，還給我' }).click();
+  await expect(page.locator('section[aria-label="去說說話之前"]')).toBeVisible();
 });
