@@ -192,3 +192,32 @@ test('with the keyboard up, the whole text box stays above the buttons', async (
   await page.getByRole('button', { name: '下一題' }).click();
   await expect(page.getByRole('heading', { name: /心情/ })).toBeVisible();
 });
+
+test('the mood wheel: a word from a family, one of your own, and the same as last time on the road', async ({ page }) => {
+  await page.getByRole('button', { name: '記下今天' }).click();
+  await page.getByRole('button', { name: '有，今天去了' }).click();
+  await page.locator('.weathers .wbtn').first().click();
+  await page.getByRole('button', { name: '下一題' }).click();
+  await expect(page.getByRole('heading', { name: '現在的心情' })).toBeVisible();
+  await page.getByRole('tab', { name: '緊緊的' }).click();
+  await page.getByRole('button', { name: '擔心', exact: true }).click();
+  await page.getByRole('searchbox', { name: '找一個詞，或自己寫' }).fill('搬家好累');
+  await page.getByRole('button', { name: '＋ 加上「搬家好累」' }).click();
+  await expect(page.getByRole('button', { name: '不選「擔心」' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '不選「搬家好累」' })).toBeVisible();
+  await page.getByRole('button', { name: '先存起來' }).click();
+  await expect(page.getByRole('button', { name: /^第 1 次諮商/ })).toBeVisible();
+
+  await page.locator('[aria-label^="現在這段路上"]').click();
+  await page.getByRole('button', { name: '寫今天' }).click();
+  // the page opens in the text box; stepping out of it brings back the rest of the page
+  await page.locator('#road-text').blur();
+  await page.getByRole('button', { name: '＋ 選心情' }).click();
+  await expect(page.locator('.mood-recent')).toContainText('搬家好累');
+  await page.getByRole('button', { name: '跟上次一樣' }).click();
+  await page.getByRole('button', { name: '收起來' }).click();
+  await page.getByRole('button', { name: '記下來' }).click();
+  await expect(page.locator('.toast')).toContainText('記下來了');
+  await expect(page.locator('.day .chips.static')).toContainText('擔心');
+  await expect(page.locator('.day .chips.static')).toContainText('搬家好累');
+});

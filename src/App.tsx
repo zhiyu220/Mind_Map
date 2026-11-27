@@ -281,6 +281,7 @@ function Main() {
         }
         mode={e ? 'edit' : past ? 'past' : 'today'}
         takenDates={sessions.map(s => s.date)}
+        editId={e?.id}
         customTopics={settings.customTopics}
         onAddTopic={t => saveSettings({ customTopics: [...settings.customTopics, t] })}
         onSave={(d, done) => saveFlow(d, done, e, past)}

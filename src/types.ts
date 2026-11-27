@@ -10,7 +10,8 @@ export const WEATHER_NAME: Record<Weather, string> = {
   storm: '雷雨'
 };
 
-export const MOODS = ['平靜', '輕鬆', '感謝', '有希望', '疲累', '焦慮', '難過', '生氣', '委屈', '困惑', '空空的', '說不出來'];
+/** The twelve moods the app started with: still in the wheel (src/lib/moods.ts), so old records read as picked. */
+export const FIRST_MOODS = ['平靜', '輕鬆', '感謝', '有希望', '疲累', '焦慮', '難過', '生氣', '委屈', '困惑', '空空的', '說不出來'];
 export const TOPICS = ['家庭', '感情', '朋友', '工作／學業', '自己', '身體／睡眠', '過去的事'];
 
 export interface Song {

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { Session, Song, Weather } from '../types';
-import { MOODS, TOPICS } from '../types';
+import { TOPICS } from '../types';
 import { headerDate, todayKey } from '../lib/dates';
 import { saveDraft } from '../lib/draft';
 import { WeatherPicker } from './Weather';
 import SongPicker from './SongPicker';
+import MoodPicker from './MoodPicker';
 
 export type Draft = Pick<Session, 'moods' | 'topics' | 'quote' | 'notes' | 'raw' | 'takeHome' | 'leave' | 'bringLeave'> & { weather: Weather | null; song?: Song; date?: string };
 
@@ -20,6 +21,8 @@ interface Props {
   mode: FlowMode;
   /** dates that already have a session, to mention it when picking a day */
   takenDates?: string[];
+  /** the session being changed, so 「跟上次一樣」 means the one before it */
+  editId?: string;
   customTopics: string[];
   onAddTopic: (t: string) => void;
   onSave: (d: Draft & { weather: Weather }, done: boolean) => void;
@@ -27,7 +30,7 @@ interface Props {
 }
 
 /** Recording a session day: one question per page; only the weather is needed. */
-export default function SessionFlow({ initial, mode, takenDates = [], customTopics, onAddTopic, onSave, onClose }: Props) {
+export default function SessionFlow({ initial, mode, takenDates = [], editId, customTopics, onAddTopic, onSave, onClose }: Props) {
   const editing = mode === 'edit';
   const past = mode === 'past' || (editing && !!initial.date && initial.date !== todayKey());
   const steps: readonly string[] = mode === 'today' ? STEPS : DATED_STEPS;
@@ -36,6 +39,7 @@ export default function SessionFlow({ initial, mode, takenDates = [], customTopi
   const [adding, setAdding] = useState(false);
   const [newTopic, setNewTopic] = useState('');
   const k = steps[step];
+  const skip = editId ? { session: editId } : undefined;
   const today = todayKey();
   const set = (patch: Partial<Draft>) => setD(cur => ({ ...cur, ...patch }));
   const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter(x => x !== v) : [...list, v]);
@@ -96,14 +100,8 @@ export default function SessionFlow({ initial, mode, takenDates = [], customTopi
         {k === 'mood' && (
           <>
             <h2 className="q">{past ? '那時的心情' : '現在的心情'}</h2>
-            <p className="sub">可以選很多個。</p>
-            <div className="chips">
-              {MOODS.map(m => (
-                <button key={m} className="chip" type="button" aria-pressed={d.moods.includes(m)} onClick={() => set({ moods: toggle(d.moods, m) })}>
-                  {m}
-                </button>
-              ))}
-            </div>
+            <p className="sub">可以選很多個，也可以用自己的話。</p>
+            <MoodPicker value={d.moods} onChange={moods => set({ moods })} skip={skip} />
           </>
         )}
         {k === 'topic' && (
