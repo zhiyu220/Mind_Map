@@ -41,22 +41,36 @@ export function fitSheetsToKeyboard() {
   };
   vv.addEventListener('resize', fit);
   vv.addEventListener('scroll', fit);
-  // Typing in a sheet (html.typing): the CSS folds the top bar away, slims the buttons and lets the box
-  // take whatever is left. This goes by focus, not by measuring, because the iPhone doesn't always tell.
+  // Writing in a sheet's text box: the CSS turns the sheet into a writing mode, where that box (.writing)
+  // takes the whole strip above the keyboard and everything else steps aside (html.typing).
+  // This goes by focus, not by measuring, because the iPhone doesn't always tell.
+  let box: HTMLElement | null = null;
   let leaving = 0;
+  const stop = () => {
+    root.classList.remove('typing');
+    box?.classList.remove('writing');
+    box = null;
+  };
   document.addEventListener('focusin', e => {
-    if (!isTextField(e.target as Element) || !(e.target as Element).closest('.sheet-body')) return;
-    clearTimeout(leaving);
-    root.classList.add('typing');
+    const el = e.target as Element;
+    if (!isTextField(el) || !el.closest('.sheet-body')) return;
     requestAnimationFrame(keepFieldInView);
     // again once the keyboard has finished sliding up
     setTimeout(keepFieldInView, 350);
+    // one-line boxes (a PIN, a topic, a password) only need scrolling into view; the writing mode is for writing
+    if (!(el instanceof HTMLTextAreaElement)) return stop();
+    clearTimeout(leaving);
+    if (box !== el) box?.classList.remove('writing');
+    box = el;
+    el.classList.add('writing');
+    root.classList.add('typing');
   });
-  // a moment's wait, so a tap on 下一題 lands on 下一題 and not on whatever slides under the finger
+  // Leaving the box undoes the writing mode a moment later, not at once: the layout changing under a finger
+  // halfway through a tap would make a tap on 下一題 or 記下來 land on nothing.
   document.addEventListener('focusout', () => {
     clearTimeout(leaving);
     leaving = window.setTimeout(() => {
-      if (!isTextField(document.activeElement)) root.classList.remove('typing');
+      if (!(document.activeElement instanceof HTMLTextAreaElement)) stop();
     }, 250);
   });
   fit();
