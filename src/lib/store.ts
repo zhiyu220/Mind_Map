@@ -89,12 +89,13 @@ export async function saveDay(d: Partial<DayFields>, date = todayKey()): Promise
   return db.transaction('rw', db.sessions, db.notes, async () => {
     const was = await getDay(date);
     if (was) {
-      const note = { ...was, ...d };
+      const note = { ...was, ...d, updatedAt: Date.now() };
       await db.notes.put(note);
       return { note, was };
     }
     const after = stretchFor(date, (await db.sessions.toArray()).sort(byDate));
-    const note: RoadNote = { id: newId(), after, date, createdAt: Date.now(), text: '', ...d };
+    const now = Date.now();
+    const note: RoadNote = { id: newId(), after, date, createdAt: now, updatedAt: now, text: '', ...d };
     await db.notes.add(note);
     return { note };
   });
@@ -103,11 +104,11 @@ export async function saveDay(d: Partial<DayFields>, date = todayKey()): Promise
 /** 後來我發現: a sentence added to a session later on. */
 export async function addFound(sessionId: string, text: string, date = todayKey()) {
   const f: Found = { id: newId(), text, date, createdAt: Date.now() };
-  await db.sessions.where('id').equals(sessionId).modify(s => void (s.found = [...(s.found ?? []), f]));
+  await db.sessions.where('id').equals(sessionId).modify(s => void ((s.found = [...(s.found ?? []), f]), (s.updatedAt = f.createdAt)));
   return f;
 }
 export const deleteFound = (sessionId: string, id: string) =>
-  db.sessions.where('id').equals(sessionId).modify(s => void (s.found = (s.found ?? []).filter(f => f.id !== id)));
+  db.sessions.where('id').equals(sessionId).modify(s => void ((s.found = (s.found ?? []).filter(f => f.id !== id)), (s.updatedAt = Date.now())));
 
 export const deleteNote = (id: string) => db.notes.delete(id);
 

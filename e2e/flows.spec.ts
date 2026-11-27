@@ -133,3 +133,22 @@ test('a backup made with a PIN set restores what was written', async ({ page }) 
   // still sealed on the phone after the restore
   expect(await onDisk(page)).not.toContain('要帶去說的事');
 });
+
+test('with a PIN, a session closed halfway is sealed too, and picked up again', async ({ page }) => {
+  await setPin(page, '135790');
+  await page.getByRole('button', { name: '記下今天' }).click();
+  await page.getByRole('button', { name: '有，今天去了' }).click();
+  await page.locator('.weathers .wbtn').first().click();
+  await page.locator('#raw').fill('剛走出來眼睛還是熱的');
+
+  // the app closed halfway through
+  await page.reload();
+  await typePin(page, '135790');
+  await expect(page.locator('.lock')).toHaveCount(0);
+  expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).not.toContain('剛走出來');
+  expect(await onDisk(page)).not.toContain('剛走出來');
+
+  await page.getByRole('button', { name: '記下今天' }).click();
+  await page.getByRole('button', { name: '有，今天去了' }).click();
+  await expect(page.locator('#raw')).toHaveValue('剛走出來眼睛還是熱的');
+});

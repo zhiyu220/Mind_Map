@@ -302,6 +302,8 @@ function BackupGroup() {
         setPw2('');
         refresh();
       }
+    } catch {
+      say('匯出沒有成功，紀錄都還在手機裡，可以再試一次');
     } finally {
       setBusy(false);
     }

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db, dropRetiredSettings, getSettings, saveSettings } from '../db';
 import { BACKUP_NAME, BadBackup, beforeRestoreAt, compareBackup, lastExport, makeBackup, openBackup, readBackup, recordExport, restoreBackup, undoRestore, type Backup } from './backup';
-import { unseal } from './crypto';
-import { addFound, saveDay, addPractice, addSession } from './store';
+import { seal, unseal } from './crypto';
+import { addFound, saveDay, addPractice, addSession, updateSession } from './store';
 
 const blank = { weather: 'sun' as const, moods: ['平靜'], topics: ['自己'], quote: '慢慢來', notes: '' };
 const asFile = (x: unknown) => new File([JSON.stringify(x)], 'backup.json', { type: 'application/json' });
@@ -143,10 +143,41 @@ describe('backups', () => {
       oldBackup([ses('a', '9/3')]),
       oldBackup([ses('a', '2026-09-03'), ses('a', '2026-09-10')]),
       oldBackup([ses('a', '2026-09-03', { moods: 'x' })]),
-      oldBackup([ses('a', '2026-09-03')], [{ id: 'n', after: 'a', date: 'soon', text: '', star: false, createdAt: 1 }])
+      oldBackup([ses('a', '2026-09-03')], [{ id: 'n', after: 'a', date: 'soon', text: '', star: false, createdAt: 1 }]),
+      oldBackup([ses('a', '2026-09-03', { quote: 3 })]),
+      oldBackup([ses('a', '2026-09-03', { found: [{ id: 'f', text: 1, date: '2026-09-04' }] })]),
+      oldBackup([ses('a', '2026-09-03')], [{ id: 'n', after: 'a', date: '2026-09-04', text: '', felt: ['x'], createdAt: 1 }]),
+      { ...oldBackup([ses('a', '2026-09-03')]), practices: [{ id: 'p', text: '散步', tries: ['昨天'], createdAt: 1 }] },
+      { ...oldBackup([ses('a', '2026-09-03')]), practices: [{ id: 'p', tries: [], createdAt: 1 }] },
+      { ...oldBackup([ses('a', '2026-09-03')]), settings: null },
+      { ...oldBackup([ses('a', '2026-09-03')]), settings: { customTopics: [], timeLock: { on: true, from: '晚上', to: '00:00' } } },
+      { ...oldBackup([ses('a', '2026-09-03')]), settings: { customTopics: 'x' } }
     ])
       await expect(readBackup(asFile(bad))).rejects.toBeInstanceOf(BadBackup);
     expect(await db.sessions.count()).toBe(1);
+  });
+
+  it('says a sealed file is broken (not that the password is wrong) when what opens is not a backup', async () => {
+    const odd = await seal({ hello: 'world' }, 'pw', 1000);
+    await expect(openBackup(odd, 'pw')).rejects.toBeInstanceOf(BadBackup);
+    const broken = await seal({ ...oldBackup([ses('a', '2026-09-03')]), practices: [{ id: 'p', text: 1, tries: [], createdAt: 1 }] }, 'pw', 1000);
+    await expect(openBackup(broken, 'pw')).rejects.toBeInstanceOf(BadBackup);
+    await expect(openBackup(broken, 'wrong')).rejects.not.toBeInstanceOf(BadBackup);
+  });
+
+  it('exports and restores a diary of years (more than the stack could spread at once)', async () => {
+    const long = '今天走出諮商室的時候，風有點大，可是心裡比較安靜了。'.repeat(40);
+    for (let d = 1; d <= 28; d++) await addSession({ ...blank, notes: long }, true, `2026-02-${String(d).padStart(2, '0')}`);
+    for (let d = 1; d <= 30; d++) await saveDay({ happened: long, felt: long }, `2026-04-${String(d).padStart(2, '0')}`);
+    const before = await snapshot();
+    const file = await makeBackup('pw');
+    expect(file.size).toBeGreaterThan(300_000);
+    const read = await readBackup(file);
+    if (!read.locked) throw new Error('should be locked');
+    await db.delete();
+    await db.open();
+    await restoreBackup(await openBackup(read.sealed, 'pw'));
+    expect(await snapshot()).toEqual(before);
   });
 
   it('can go back to before a restore, and the copy never goes into a backup', async () => {
@@ -183,6 +214,21 @@ describe('backups', () => {
     await addSession(blank, true, '2026-10-14');
     await saveDay({ text: 'x' }, '2026-10-15');
     expect(await lastExport()).toMatchObject({ sessions: 1, notes: 1 });
+  });
+
+  it('counts records changed after the last export, not only new ones', async () => {
+    const s = await addSession(blank, true, '2026-10-01');
+    const other = await addSession(blank, true, '2026-10-08');
+    await saveDay({ text: '一開始' }, '2026-10-02');
+    await saveDay({ text: '路上' }, '2026-10-09');
+    await recordExport(Date.now());
+    await new Promise(r => setTimeout(r, 5));
+    expect(await lastExport()).toMatchObject({ sessions: 0, notes: 0 });
+    await updateSession(s.id, { quote: '改過了' });
+    await saveDay({ text: '一開始，後來又補了' }, '2026-10-02');
+    expect(await lastExport()).toMatchObject({ sessions: 1, notes: 1 });
+    await addFound(other.id, '後來想到的');
+    expect(await lastExport()).toMatchObject({ sessions: 2, notes: 1 });
     const inside = await unseal<Backup>(JSON.parse(await (await makeBackup('pw')).text()), 'pw');
     expect(JSON.stringify(inside)).not.toContain('lastBackup');
   });

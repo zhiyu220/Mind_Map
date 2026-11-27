@@ -47,14 +47,15 @@ export async function shareOrDownload(file: File): Promise<boolean> {
 
 export const recordExport = (at = Date.now()) => setKV('lastBackup', { at });
 
-/** When you last exported, and what you've written since; null when you never have. */
+/** When you last exported, and how many records were written or changed since; null when you never have. */
 export async function lastExport(): Promise<{ at: number; sessions: number; notes: number } | null> {
   const last = await getKV<{ at: number }>('lastBackup');
   if (!last) return null;
+  const since = (r: { createdAt: number; updatedAt?: number }) => Math.max(r.createdAt, r.updatedAt ?? 0) > last.at;
   return {
     at: last.at,
-    sessions: await db.sessions.filter(s => s.createdAt > last.at).count(),
-    notes: await db.notes.filter(n => n.createdAt > last.at).count()
+    sessions: await db.sessions.filter(since).count(),
+    notes: await db.notes.filter(since).count()
   };
 }
 
@@ -67,9 +68,14 @@ export async function readBackup(file: File): Promise<BackupFile> {
   return { locked: false, data: checkBackup(raw) };
 }
 
-/** Throws when the password is wrong. */
+/** Throws when the password is wrong, and BadBackup when it opens but what's inside isn't right. */
 export async function openBackup(sealed: Sealed, password: string): Promise<Backup> {
-  return checkBackup(await unseal(sealed, password));
+  const raw = await unseal(sealed, password);
+  try {
+    return checkBackup(raw);
+  } catch (e) {
+    throw e instanceof BadBackup ? e : new BadBackup('裡面不是 Mind Map 的紀錄');
+  }
 }
 
 /** Thrown when a file opens but something inside it isn't right; nothing is written then. */
@@ -77,6 +83,12 @@ export class BadBackup extends Error {}
 
 const isDay = (x: unknown) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x);
 const isWords = (x: unknown) => Array.isArray(x) && x.every(w => typeof w === 'string');
+const isTime = (x: unknown) => typeof x === 'string' && /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(x);
+const isObject = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
+/** Left out, or of the given kind */
+const maybe = (x: unknown, ok: (x: unknown) => boolean) => x === undefined || ok(x);
+const isText = (x: unknown) => typeof x === 'string';
+const isTimestamp = (x: unknown) => typeof x === 'number' && Number.isFinite(x);
 
 /**
  * Checks every record before anything is replaced, so a damaged file can't empty the phone.
@@ -88,13 +100,31 @@ function checkBackup(raw: unknown): Backup {
   const ids = new Set<string>();
   const unique = (id: unknown) => typeof id === 'string' && !ids.has(id) && !!ids.add(id);
   for (const s of data.sessions)
-    if (!s || !unique(s.id) || !isDay(s.date) || !WEATHERS.includes(s.weather) || !isWords(s.moods) || !isWords(s.topics))
+    if (
+      !isObject(s) || !unique(s.id) || !isDay(s.date) || !WEATHERS.includes(s.weather) || !isWords(s.moods) || !isWords(s.topics) ||
+      !maybe(s.quote, isText) || !maybe(s.notes, isText) || !isTimestamp(s.createdAt) ||
+      !maybe(s.found, f => Array.isArray(f) && f.every(x => isObject(x) && isText(x.id) && isText(x.text) && isDay(x.date)))
+    )
       throw new BadBackup('一次諮商的紀錄不完整');
   for (const n of data.notes)
-    if (!n || !unique(n.id) || !isDay(n.date) || (n.weather !== undefined && !WEATHERS.includes(n.weather)))
+    if (
+      !isObject(n) || !unique(n.id) || !isDay(n.date) || !maybe(n.weather, w => WEATHERS.includes(w as never)) ||
+      !maybe(n.text, isText) || !maybe(n.happened, isText) || !maybe(n.felt, isText) || !maybe(n.moods, isWords) || !isTimestamp(n.createdAt)
+    )
       throw new BadBackup('路上的一則紀錄不完整');
-  if (data.practices !== undefined && !Array.isArray(data.practices)) throw new BadBackup('想練習的事不完整');
-  return data;
+  if (data.practices !== undefined) {
+    if (!Array.isArray(data.practices)) throw new BadBackup('想練習的事不完整');
+    for (const p of data.practices)
+      if (!isObject(p) || !unique(p.id) || !isText(p.text) || !Array.isArray(p.tries) || !p.tries.every(isDay) || !isTimestamp(p.createdAt))
+        throw new BadBackup('想練習的事不完整');
+  }
+  const st = data.settings as unknown;
+  if (
+    !isObject(st) || !maybe(st.customTopics, isWords) || !maybe(st.nextSession, isDay) ||
+    !maybe(st.timeLock, t => isObject(t) && typeof t.on === 'boolean' && isTime(t.from) && isTime(t.to))
+  )
+    throw new BadBackup('設定不完整');
+  return { ...data, settings: { ...data.settings, customTopics: data.settings.customTopics ?? [] } };
 }
 
 /** What a backup holds next to what's on this phone, for the confirm before restoring. */

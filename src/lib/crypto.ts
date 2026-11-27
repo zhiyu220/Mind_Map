@@ -1,6 +1,8 @@
 // Password protection for backup files: AES-GCM with a key stretched from your password (PBKDF2).
 // A backup file is a diary you might keep in iCloud or send to yourself, so it never leaves in plain text.
 
+import { fromB64, toB64 } from './b64';
+
 export interface Sealed {
   app: 'my-sky';
   sealed: 1;
@@ -11,8 +13,6 @@ export interface Sealed {
 
 const ITERATIONS = 600_000;
 const enc = new TextEncoder();
-const toB64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
-const fromB64 = (s: string): Uint8Array<ArrayBuffer> => new Uint8Array(Array.from(atob(s), c => c.charCodeAt(0)));
 
 async function keyFrom(password: string, salt: Uint8Array<ArrayBuffer>, iterations: number) {
   const base = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
