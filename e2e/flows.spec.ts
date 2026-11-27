@@ -133,3 +133,23 @@ test('a backup made with a PIN set restores what was written', async ({ page }) 
   // still sealed on the phone after the restore
   expect(await onDisk(page)).not.toContain('要帶去說的事');
 });
+
+test('with the keyboard up, the whole text box stays above the buttons', async ({ page }) => {
+  await page.getByRole('button', { name: '記下今天' }).click();
+  await page.getByRole('button', { name: '有，今天去了' }).click();
+  await page.locator('.weathers .wbtn').first().click();
+  await page.evaluate(() => document.getElementById('raw')!.focus({ preventScroll: true }));
+  // an iPhone keyboard: the part you can see shrinks, the page itself does not
+  await page.evaluate(() => {
+    const vv = window.visualViewport!;
+    Object.defineProperty(vv, 'height', { get: () => 300, configurable: true });
+    vv.dispatchEvent(new Event('resize'));
+  });
+  await page.keyboard.insertText('今天談到很多小時候的事，說著說著就哭了。諮商師說那不是我的錯，我一直記得這句話。回家的路上想了很久。');
+  await expect(page.locator('html')).toHaveClass(/keyboard-up/);
+  const box = await page.locator('#raw').boundingBox();
+  const foot = await page.locator('.sheet-foot').boundingBox();
+  const head = await page.locator('.sheet-head').boundingBox();
+  expect(box!.y + box!.height).toBeLessThanOrEqual(foot!.y);
+  expect(box!.y).toBeGreaterThanOrEqual(head!.y + head!.height);
+});
