@@ -18,6 +18,16 @@ const onDisk = (page: Page) =>
     return text;
   });
 
+/** How many bytes the sealed half-written session takes in the database (0 when there's none). */
+const sealedDraftSize = (page: Page) =>
+  page.evaluate(async () => {
+    const req = indexedDB.open('my-sky');
+    const db = await new Promise<IDBDatabase>(r => (req.onsuccess = () => r(req.result)));
+    const row = await new Promise<{ $?: Uint8Array } | undefined>(r => { const q = db.transaction('kv').objectStore('kv').get('draft'); q.onsuccess = () => r(q.result); });
+    db.close();
+    return row?.$?.length ?? 0;
+  });
+
 async function recordToday(page: Page) {
   await page.getByRole('button', { name: '記下今天' }).click();
   await page.getByRole('button', { name: '有，今天去了' }).click();
@@ -139,7 +149,11 @@ test('with a PIN, a session closed halfway is sealed too, and picked up again', 
   await page.getByRole('button', { name: '記下今天' }).click();
   await page.getByRole('button', { name: '有，今天去了' }).click();
   await page.locator('.weathers .wbtn').first().click();
+  await expect.poll(() => sealedDraftSize(page)).toBeGreaterThan(0);
+  const before = await sealedDraftSize(page);
   await page.locator('#raw').fill('剛走出來眼睛還是熱的');
+  // the draft reaches the database a moment after typing (sealed, so only its size shows): let it land before closing
+  await expect.poll(() => sealedDraftSize(page)).toBeGreaterThan(before + 25);
 
   // the app closed halfway through
   await page.reload();
